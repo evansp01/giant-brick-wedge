@@ -1,15 +1,15 @@
-/** @file print.S
- *  @brief Assembly wrapper for the print syscall
+/** @file exec.S
+ *  @brief Assembly wrapper for the exec syscall
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
  **/
 
 #include <syscall_int.h>
 
-.global print
-print:
+.global exec
+exec:
     pushl %esi                # Save old %esi value
     leal 8(%esp), %esi        # Get the first argument
-    int $PRINT_INT            # Call the print syscall
+    int $EXEC_INT             # Call the exec syscall
     popl %esi                 # Restore the value of %esi
     ret
