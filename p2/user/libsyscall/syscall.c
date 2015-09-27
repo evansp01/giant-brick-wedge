@@ -37,66 +37,6 @@ int wait(int *status_ptr)
 	return -1;
 }
 
-int yield(int pid)
-{
-	return -1;
-}
-
-int deschedule(int *flag)
-{
-	return -1;
-}
-
-int make_runnable(int pid)
-{
-	return -1;
-}
-
-int gettid(void)
-{
-	return -1;
-}
-
-int sleep(int ticks)
-{
-	return -1;
-}
-
-int swexn(void *esp3, swexn_handler_t eip, void *arg, ureg_t *newureg)
-{
-	return -1;
-}
-
-char getchar(void)
-{
-	return -1;
-}
-
-int readline(int size, char *buf)
-{
-	return -1;
-}
-
-int print(int size, char *buf)
-{
-	return -1;
-}
-
-int set_term_color(int color)
-{
-	return -1;
-}
-
-int get_cursor_pos(int *row, int *col)
-{
-  return -1;
-}
-
-int set_cursor_pos(int row, int col)
-{
-	return -1;
-}
-
 void halt(void)
 {
 	while (1)
@@ -124,11 +64,6 @@ int new_pages(void * addr, int len)
 int remove_pages(void * addr)
 {
 	return -1;
-}
-
-unsigned int get_ticks()
-{
-	return 1;
 }
 
 void misbehave(int mode)
