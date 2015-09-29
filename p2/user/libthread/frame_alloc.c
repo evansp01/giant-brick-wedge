@@ -26,7 +26,7 @@ void* alloc_frame()
 {
     char* next_page = frame_info.first_low - (frame_info.frame_size + PAGE_SIZE) * frame_info.num_frames;
     if (new_pages(next_page, frame_info.frame_size) >= 0) {
-        return next_page;
+        return next_page + frame_info.frame_size - sizeof(void*);
     } else {
         return NULL;
     }

@@ -21,10 +21,33 @@ int thr_init(unsigned int size)
     //mutexes??????
     return 0;
 }
+
+/*
+// Code for translation to assembly
 int thr_create(void* (*func)(void*), void* args)
 {
+    void *stack = alloc_frame(); // stored in register %edx
+    stack-1 = arg;
+    stack-2 = func;
+    int child = thread_fork();   // stored in register %eax
+    
+    if (child < 0) {
+        free_frame(stack);
+        return child;
+    }
+    else if (child > 0) {
+        return child;
+    }
+    else {
+        esp = stack;
+        *esp = stack;
+        esp -= 0x8;
+        thr_wrapper();
+    }
     return 0;
 }
+*/
+
 int thr_join(int tid, void** statusp)
 {
     return 0;
