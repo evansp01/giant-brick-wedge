@@ -93,12 +93,12 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the user/progs
 # directory
 #
-STUDENTTESTS = test_exit print_and_exit test_thread test_console
+STUDENTTESTS = test_exit print_and_exit test_thread test_console test_queue
 
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
-THREAD_OBJS = malloc.o panic.o
+THREAD_OBJS = malloc.o panic.o queue.o
 
 # Thread Group Library Support.
 #
