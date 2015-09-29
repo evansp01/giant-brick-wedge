@@ -10,6 +10,7 @@
 #include <thr_internals.h>
 #include <autostack.h>
 #include <syscall.h>
+#include <thread.h>
 
 /* thread library functions */
 int thr_init(unsigned int size)
