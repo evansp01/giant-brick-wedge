@@ -9,6 +9,7 @@
  */
 #include <thr_internals.h>
 #include <autostack.h>
+#include <syscall.h>
 
 /* thread library functions */
 int thr_init(unsigned int size)
@@ -22,6 +23,13 @@ int thr_init(unsigned int size)
     return 0;
 }
 
+void thr_wrapper(void *(*func)(void*), void *arg, int *stack_base){
+    *stack_base = gettid();
+    //hey it would be cool to have a tcb entry
+    void *status = func(arg);
+    thr_exit(status);
+}
+
 /*
 // Code for translation to assembly
 int thr_create(void* (*func)(void*), void* args)
@@ -30,7 +38,6 @@ int thr_create(void* (*func)(void*), void* args)
     stack-1 = arg;
     stack-2 = func;
     int child = thread_fork();   // stored in register %eax
-    
     if (child < 0) {
         free_frame(stack);
         return child;
@@ -52,13 +59,16 @@ int thr_join(int tid, void** statusp)
 {
     return 0;
 }
+
 void thr_exit(void* status)
 {
 }
+
 int thr_getid(void)
 {
     return 0;
 }
+
 int thr_yield(int tid)
 {
     return 0;
