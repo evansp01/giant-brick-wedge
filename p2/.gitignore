@@ -48,3 +48,4 @@ kernel.strip
 temp/*
 .md5s
 kernel.log
+*.swp

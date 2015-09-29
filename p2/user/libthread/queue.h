@@ -50,7 +50,8 @@ struct queue {
  **/
 #define queue_add(q, item) ({ \
     int index = queue_add_index(&(q)->descriptor, (char**)&(q)->queue_data); \
-    (q)->queue_data[index] = (item); })
+    (q)->queue_data[index] = (item); \
+})
 
 /** @brief Removes an item from the tail of the queue
  *
@@ -61,7 +62,8 @@ struct queue {
  **/
 #define queue_remove(q) ({ \
     int index = queue_remove_index(&(q)->descriptor, (char**)&(q)->queue_data); \
-    (q)->queue_data[index]; })
+    (q)->queue_data[index]; \
+})
 
 /** @brief Peeks at the item which will next be removed from the queue
  *
