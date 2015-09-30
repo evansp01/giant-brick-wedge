@@ -2,7 +2,10 @@
  *  @brief A very simple test suite for variable queues.
  *
  *  @author Ryan Pearl <rpearl>
+ *  
  */
+ 
+// TODO: Add more tests for VQ
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -224,6 +227,30 @@ void test_insert_before() {
 	assert(!cur);
 }
 
+void test_iterate() {
+  list_t list;
+
+	Q_INIT_HEAD(&list);
+
+	node_t nodes[LIST_LEN];
+
+	int i;
+	for (i = 0; i < LIST_LEN; i++) {
+		Q_INIT_ELEM(&nodes[i], link);
+    nodes[i].data = i;
+		Q_INSERT_FRONT(&list, &nodes[i], link);
+	}
+
+	assert(Q_GET_FRONT(&list) == &nodes[LIST_LEN-1]);
+	assert(Q_GET_TAIL(&list) == &nodes[0]);
+
+	node_t *cur = Q_GET_FRONT(&list);
+  
+  Q_FOREACH(cur,&list,link) {
+    //printf("Element: %d\n", cur->data);
+  }
+}
+
 #define RUN_TEST(t) do {\
 	printf("Running "#t"()...");\
 	t();\
@@ -238,5 +265,7 @@ int main() {
 	RUN_TEST(test_insert_before);
 	RUN_TEST(test_insert_after);
 	RUN_TEST(test_remove);
+  RUN_TEST(test_removes);
+  RUN_TEST(test_iterate);
 	return 0;
 }

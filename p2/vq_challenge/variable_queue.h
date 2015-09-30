@@ -2,9 +2,8 @@
  *
  *  @brief Generalized queue module for data collection
  *
- *  @author Your name here
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  **/
-
 
 
 /** @def Q_NEW_HEAD(Q_HEAD_TYPE, Q_ELEM_TYPE) 
@@ -21,8 +20,11 @@
  *         Q_ELEM_TYPE must be a structure.
  *  
  **/
- 
-#define Q_NEW_HEAD(Q_HEAD_TYPE, Q_ELEM_TYPE) ;
+#define Q_NEW_HEAD(Q_HEAD_TYPE, Q_ELEM_TYPE) \
+typedef struct Q_HEAD_TYPE{\
+struct Q_ELEM_TYPE *head;\
+struct Q_ELEM_TYPE *tail;\
+} Q_HEAD_TYPE;
 
 /** @def Q_NEW_LINK(Q_ELEM_TYPE)
  *
@@ -40,8 +42,12 @@
  *
  *  @param Q_ELEM_TYPE the type of the structure containing the link
  **/
- #define Q_NEW_LINK(Q_ELEM_TYPE) ;
- 
+#define Q_NEW_LINK(Q_ELEM_TYPE) \
+struct link {\
+struct Q_ELEM_TYPE *next;\
+struct Q_ELEM_TYPE *prev;\
+}
+
  
 /** @def Q_INIT_HEAD(Q_HEAD)
  *
@@ -49,7 +55,10 @@
  *         properly.
  *  @param Q_HEAD Pointer to queue head to initialize
  **/
-#define Q_INIT_HEAD(Q_HEAD) ;
+#define Q_INIT_HEAD(Q_HEAD) ({\
+(*Q_HEAD).head = NULL;\
+(*Q_HEAD).tail = NULL;\
+})
 
 /** @def Q_INIT_ELEM(Q_ELEM, LINK_NAME)
  *
@@ -61,7 +70,10 @@
  *  @param Q_ELEM Pointer to the structure instance containing the link
  *  @param LINK_NAME The name of the link to initialize
  **/
-#define Q_INIT_ELEM(Q_ELEM, LINK_NAME) ;
+#define Q_INIT_ELEM(Q_ELEM, LINK_NAME) ({ \
+(*Q_ELEM).LINK_NAME.next = NULL;\
+(*Q_ELEM).LINK_NAME.prev = NULL;\
+})
  
 /** @def Q_INSERT_FRONT(Q_HEAD, Q_ELEM, LINK_NAME)
  *
@@ -79,8 +91,16 @@
  *  @return Void (you may change this if your implementation calls for a 
  *                return value)
  **/
-#define Q_INSERT_FRONT(Q_HEAD, Q_ELEM, LINK_NAME) ;
- 
+#define Q_INSERT_FRONT(Q_HEAD, Q_ELEM, LINK_NAME) ({ \
+if ((*Q_HEAD).head == NULL) {\
+(*Q_HEAD).tail = Q_ELEM;\
+} else {\
+(*Q_ELEM).LINK_NAME.next = (*Q_HEAD).head;\
+(*((*Q_HEAD).head)).LINK_NAME.prev = Q_ELEM;\
+}\
+(*Q_HEAD).head = Q_ELEM;\
+})
+
 /** @def Q_INSERT_TAIL(Q_HEAD, Q_ELEM, LINK_NAME) 
  *  @brief Inserts the queue element pointed to by Q_ELEM at the end of the 
  *         queue headed by the structure pointed to by Q_HEAD. 
@@ -96,8 +116,15 @@
  *  @return Void (you may change this if your implementation calls for a 
  *                return value)
  **/
-#define Q_INSERT_TAIL(Q_HEAD, Q_ELEM, LINK_NAME) ;
-
+#define Q_INSERT_TAIL(Q_HEAD, Q_ELEM, LINK_NAME) ({\
+if ((*Q_HEAD).tail == NULL) {\
+(*Q_HEAD).head = Q_ELEM;\
+} else {\
+(*Q_ELEM).LINK_NAME.prev = (*Q_HEAD).tail;\
+(*((*Q_HEAD).tail)).LINK_NAME.next = Q_ELEM;\
+}\
+(*Q_HEAD).tail = Q_ELEM;\
+})
 
 /** @def Q_GET_FRONT(Q_HEAD)
  *  
@@ -108,7 +135,8 @@
  *  @return Pointer to the first element in the queue, or NULL if the queue
  *          is empty
  **/
-#define Q_GET_FRONT(Q_HEAD) ;
+#define Q_GET_FRONT(Q_HEAD) \
+(*Q_HEAD).head
  
 /** @def Q_GET_TAIL(Q_HEAD)
  *
@@ -119,7 +147,8 @@
  *  @return Pointer to the last element in the queue, or NULL if the queue
  *          is empty
  **/
-#define Q_GET_TAIL(Q_HEAD) ;
+#define Q_GET_TAIL(Q_HEAD) \
+(*Q_HEAD).tail
 
 
 /** @def Q_GET_NEXT(Q_ELEM, LINK_NAME)
@@ -135,7 +164,8 @@
  *
  *  @return The element after Q_ELEM, or NULL if there is no next element
  **/
-#define Q_GET_NEXT(Q_ELEM, LINK_NAME) ;
+#define Q_GET_NEXT(Q_ELEM, LINK_NAME) \
+(*Q_ELEM).LINK_NAME.next
  
 /** @def Q_GET_PREV(Q_ELEM, LINK_NAME)
  * 
@@ -150,7 +180,8 @@
  *
  *  @return The element before Q_ELEM, or NULL if there is no next element
  **/
-#define Q_GET_PREV(Q_ELEM, LINK_NAME) ;
+#define Q_GET_PREV(Q_ELEM, LINK_NAME) \
+(*Q_ELEM).LINK_NAME.prev
 
 /** @def Q_INSERT_AFTER(Q_HEAD, Q_INQ, Q_TOINSERT, LINK_NAME)
  *
@@ -166,8 +197,16 @@
  *  @param Q_TOINSERT Element to insert into queue
  *  @param LINK_NAME  Name of link field used to organize the queue
  **/
-
-#define Q_INSERT_AFTER(Q_HEAD,Q_INQ,Q_TOINSERT,LINK_NAME);
+#define Q_INSERT_AFTER(Q_HEAD,Q_INQ,Q_TOINSERT,LINK_NAME) ({\
+if ((*Q_HEAD).tail == Q_INQ) {\
+(*Q_HEAD).tail = Q_TOINSERT;\
+} else {\
+(*Q_TOINSERT).LINK_NAME.next = (*Q_INQ).LINK_NAME.next;\
+(*((*Q_INQ).LINK_NAME.next)).LINK_NAME.prev = Q_TOINSERT;\
+}\
+(*Q_INQ).LINK_NAME.next = Q_TOINSERT;\
+(*Q_TOINSERT).LINK_NAME.prev = Q_INQ;\
+})
 
 /** @def Q_INSERT_BEFORE(Q_HEAD, Q_INQ, Q_TOINSERT, LINK_NAME)
  *
@@ -183,8 +222,16 @@
  *  @param Q_TOINSERT Element to insert into queue
  *  @param LINK_NAME  Name of link field used to organize the queue
  **/
-
-#define Q_INSERT_BEFORE(Q_HEAD,Q_INQ,Q_TOINSERT,LINK_NAME);
+#define Q_INSERT_BEFORE(Q_HEAD,Q_INQ,Q_TOINSERT,LINK_NAME) ({\
+if ((*Q_HEAD).head == Q_INQ) {\
+(*Q_HEAD).head = Q_TOINSERT;\
+} else {\
+(*Q_TOINSERT).LINK_NAME.prev = (*Q_INQ).LINK_NAME.prev;\
+(*((*Q_INQ).LINK_NAME.prev)).LINK_NAME.next = Q_TOINSERT;\
+}\
+(*Q_INQ).LINK_NAME.prev = Q_TOINSERT;\
+(*Q_TOINSERT).LINK_NAME.next = Q_INQ;\
+})
 
 /** @def Q_REMOVE(Q_HEAD,Q_ELEM,LINK_NAME)
  * 
@@ -205,7 +252,25 @@
  *  @return Void (if you would like to return a value, you may change this
  *                specification)
  **/
-#define Q_REMOVE(Q_HEAD,Q_ELEM,LINK_NAME) ;
+#define Q_REMOVE(Q_HEAD,Q_ELEM,LINK_NAME) ({\
+if ((*Q_HEAD).head == (*Q_HEAD).tail) {\
+(*Q_HEAD).head = NULL;\
+(*Q_HEAD).tail = NULL;\
+} else if ((*Q_HEAD).head == Q_ELEM) {\
+(*Q_HEAD).head = (*Q_ELEM).LINK_NAME.next;\
+(*((*Q_ELEM).LINK_NAME.next)).LINK_NAME.prev = NULL;\
+(*Q_ELEM).LINK_NAME.next = NULL;\
+} else if ((*Q_HEAD).tail == Q_ELEM) {\
+(*Q_HEAD).tail = (*Q_ELEM).LINK_NAME.prev;\
+(*((*Q_ELEM).LINK_NAME.prev)).LINK_NAME.next = NULL;\
+(*Q_ELEM).LINK_NAME.prev = NULL;\
+} else {\
+(*((*Q_ELEM).LINK_NAME.prev)).LINK_NAME.next = (*Q_ELEM).LINK_NAME.next;\
+(*((*Q_ELEM).LINK_NAME.next)).LINK_NAME.prev = (*Q_ELEM).LINK_NAME.prev;\
+(*Q_ELEM).LINK_NAME.next = NULL;\
+(*Q_ELEM).LINK_NAME.prev = NULL;\
+}\
+})
 
 /** @def Q_FOREACH(CURRENT_ELEM,Q_HEAD,LINK_NAME) 
  *
@@ -235,5 +300,6 @@
  *  @param LINK_NAME The name of the link used to organize the queue headed
  *         by Q_HEAD.
  **/
-
-#define Q_FOREACH(CURRENT_ELEM,Q_HEAD,LINK_NAME) ;
+#define Q_FOREACH(CURRENT_ELEM,Q_HEAD,LINK_NAME) \
+for (CURRENT_ELEM = (*Q_HEAD).head; CURRENT_ELEM != NULL;\
+CURRENT_ELEM = (*CURRENT_ELEM).LINK_NAME.next)
