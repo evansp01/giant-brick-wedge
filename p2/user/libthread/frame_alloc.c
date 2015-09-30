@@ -31,7 +31,7 @@ void* alloc_frame()
     if (status >= 0) {
         return next_page + frame_info.frame_size - sizeof(void*);
     } else {
-        lprintf("frame allocation at %p failed with error code %d\n", next_page, status);
+        lprintf("frame allocation at %p failed with error code %d and num_frames %d\n", next_page, status, frame_info.num_frames);
         return NULL;
     }
 }
