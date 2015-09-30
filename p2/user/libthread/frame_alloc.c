@@ -18,7 +18,11 @@ static struct frame_alloc frame_info = {
 
 void frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
 {
-    frame_info.frame_size = ((size - 1 / PAGE_SIZE) + 1) * PAGE_SIZE;
+    if (size == 0) {
+        frame_info.frame_size = PAGE_SIZE;
+    } else {
+        frame_info.frame_size = (((size - 1) / PAGE_SIZE) + 1) * PAGE_SIZE;
+    }
     frame_info.first_high = stack_high;
     frame_info.first_low = stack_low;
 }
@@ -31,7 +35,8 @@ void* alloc_frame()
     if (status >= 0) {
         return next_page + frame_info.frame_size - sizeof(void*);
     } else {
-        lprintf("frame allocation at %p failed with error code %d and num_frames %d\n", next_page, status, frame_info.num_frames);
+        lprintf("frame allocation at %p of size %d failed with error code %d and num_frames %d\n",
+                next_page, frame_info.frame_size, status, frame_info.num_frames);
         return NULL;
     }
 }
