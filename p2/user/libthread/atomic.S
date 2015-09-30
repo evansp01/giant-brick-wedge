@@ -1,0 +1,20 @@
+/** @file atomic.S
+ *  @brief Some atomic operations
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
+.global atomic_xchg
+atomic_xchg:
+        movl    4(%esp),  %ecx      # get *ptr
+        movl    8(%esp),  %eax      # get value
+  lock  xchg    (%ecx),   %eax      # perform xchg
+        ret
+
+.global atomic_cas
+atomic_cas:
+        movl    4(%esp),  %ecx      # get *ptr
+        movl    8(%esp),  %edx      # get newval
+        movl    12(%esp), %eax      # get oldval
+  lock  cmpxchg %edx,     (%ecx)    # perform cas
+        ret
