@@ -1,4 +1,5 @@
 #include <syscall_int.h>
+#include <simics.h>
 
 .global thr_create
 thr_create:
@@ -12,7 +13,7 @@ thr_create:
     mov %ecx, -0x4(%edx)   # put arg on stack
     int $THREAD_FORK_INT   # call thread fork
     mov %eax, %ecx         # store return value in ecx
-    cmp %ecx, 0
+    cmp $0, %ecx
     je child
     ja parent
     push %edx              # the failure case (push stack address)

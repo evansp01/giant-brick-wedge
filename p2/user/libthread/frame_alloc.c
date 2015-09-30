@@ -1,5 +1,6 @@
 #include <syscall.h>
 #include <stdlib.h>
+#include <simics.h>
 
 struct frame_alloc {
     char* first_high;

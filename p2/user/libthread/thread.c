@@ -11,6 +11,7 @@
 #include <autostack.h>
 #include <syscall.h>
 #include <thread.h>
+#include <simics.h>
 
 /* thread library functions */
 int thr_init(unsigned int size)

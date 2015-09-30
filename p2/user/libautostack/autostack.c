@@ -5,6 +5,7 @@
 
 #include <syscall.h>
 #include <malloc.h>
+#include <simics.h>
 
 #define EXCEPTION_STACK_SIZE 1000 * sizeof(void*)
 
@@ -26,7 +27,7 @@ void threaded_fault(void* arg, ureg_t* ureg)
 
 void install_autostack(void* stack_high, void* stack_low)
 {
-    stack.handler_stack = malloc(EXCEPTION_STACK_SIZE);
+    stack.handler_stack = _malloc(EXCEPTION_STACK_SIZE);
     stack.stack_low = stack_low;
     stack.stack_high = stack_high;
     swexn(stack.handler_stack, autostack_fault, &stack, NULL);
