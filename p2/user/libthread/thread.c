@@ -54,6 +54,7 @@ int thr_init(unsigned int size)
     thread_info.base_tid = gettid();
     Q_INIT_HEAD(&thread_info.TCB_list);
     mutex_init(&thread_info.TCB_mutex);
+    add_TCB_entry(stack_high, gettid());
     MAGIC_BREAK;
     return 0;
 }
