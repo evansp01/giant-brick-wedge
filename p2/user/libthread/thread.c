@@ -13,6 +13,22 @@
 #include <syscall.h>
 #include <thread.h>
 #include <simics.h>
+#include <mutex.h>
+#include <variable_queue.h>
+
+typedef struct TCB {
+    Q_NEW_LINK(TCB) link;
+    void *stack;
+    void *exit_val;
+    int tid;
+    int status;
+    int joining;
+} TCB_t;
+
+Q_NEW_HEAD(TCB_list_t, TCB);
+
+static mutex_t TCB_mutex;
+static TCB_list_t TCB_list;
 
 /* thread library functions */
 int thr_init(unsigned int size)
@@ -24,18 +40,29 @@ int thr_init(unsigned int size)
     MAGIC_BREAK;
     //something about malloc?
     //mutexes??????
+    Q_INIT_HEAD(&TCB_list);
+    mutex_init(&TCB_mutex);
     return 0;
 }
 
-void thr_wrapper(void *(*func)(void*), void *arg, int *stack_base){
-    *stack_base = gettid();
-    //hey it would be cool to have a tcb entry
+void thr_wrapper(void *(*func)(void*), void *arg, int *stack_base)
+{
+    void *base = stack_base;
+    int tid = gettid();
+    *stack_base = tid;
+    
+    // Add TCB entry for current node if it does not already exist
+    add_TCB_entry(base, tid);
+    
     void *status = func(arg);
     thr_exit(status);
 }
 
 int thr_join(int tid, void** statusp)
 {
+    
+    
+    
     return 0;
 }
 
@@ -51,10 +78,44 @@ void thr_exit(void* status)
 
 int thr_getid(void)
 {
+    // TODO: Get tid for base thread
+    
+    // TODO: Get tid from stack if not in base thread
+    
+    // Get system tid if other options fail
     return gettid();
 }
 
 int thr_yield(int tid)
 {
     return yield(tid);
+}
+
+
+void add_TCB_entry(void *stack, int tid)
+{
+    // Acquire TCB list mutex
+    mutex_lock(&TCB_mutex);
+    
+    // Check if TCB entry has already been created
+    TCB_t* cur;
+    Q_FOREACH(cur, &TCB_list, link) {      
+        if (cur->tid == tid) {
+            mutex_unlock(&TCB_mutex);
+            return;
+        }
+    }
+    
+    // Otherwise create TCB entry
+    TCB_t* node = (TCB_t*)malloc(sizeof(TCB_t));
+    Q_INIT_ELEM(node, link);
+    node->stack = stack;
+    node->tid = tid;
+    node->exit_val = NULL;
+    node->status = 0;
+    node->joining = 0;
+    Q_INSERT_TAIL(&TCB_list, node, link);
+    
+    // Release TCB list mutex
+    mutex_unlock(&TCB_mutex);
 }
