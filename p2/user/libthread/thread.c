@@ -27,8 +27,15 @@ typedef struct TCB {
 
 Q_NEW_HEAD(TCB_list_t, TCB);
 
-static mutex_t TCB_mutex;
-static TCB_list_t TCB_list;
+/** @brief A struct for keeping track of threads */
+typedef struct thread_info_t {
+    mutex_t TCB_mutex;
+    TCB_list_t TCB_list;
+    int base_tid;
+} thread_info_t;
+
+/** @brief Thread info struct */
+static thread_info_t thread_info;
 
 /* thread library functions */
 int thr_init(unsigned int size)
@@ -40,8 +47,9 @@ int thr_init(unsigned int size)
     MAGIC_BREAK;
     //something about malloc?
     //mutexes??????
-    Q_INIT_HEAD(&TCB_list);
-    mutex_init(&TCB_mutex);
+    thread_info.base_tid = gettid();
+    Q_INIT_HEAD(&thread_info.TCB_list);
+    mutex_init(&thread_info.TCB_mutex);
     return 0;
 }
 
@@ -60,7 +68,6 @@ void thr_wrapper(void *(*func)(void*), void *arg, int *stack_base)
 
 int thr_join(int tid, void** statusp)
 {
-    
     
     
     return 0;
@@ -95,13 +102,13 @@ int thr_yield(int tid)
 void add_TCB_entry(void *stack, int tid)
 {
     // Acquire TCB list mutex
-    mutex_lock(&TCB_mutex);
+    mutex_lock(&thread_info.TCB_mutex);
     
     // Check if TCB entry has already been created
     TCB_t* cur;
-    Q_FOREACH(cur, &TCB_list, link) {      
+    Q_FOREACH(cur, &thread_info.TCB_list, link) {      
         if (cur->tid == tid) {
-            mutex_unlock(&TCB_mutex);
+            mutex_unlock(&thread_info.TCB_mutex);
             return;
         }
     }
@@ -114,8 +121,8 @@ void add_TCB_entry(void *stack, int tid)
     node->exit_val = NULL;
     node->status = 0;
     node->joining = 0;
-    Q_INSERT_TAIL(&TCB_list, node, link);
+    Q_INSERT_TAIL(&thread_info.TCB_list, node, link);
     
     // Release TCB list mutex
-    mutex_unlock(&TCB_mutex);
+    mutex_unlock(&thread_info.TCB_mutex);
 }
