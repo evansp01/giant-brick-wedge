@@ -4,6 +4,7 @@
  **/
 #ifndef QUEUE_H
 #define QUEUE_H
+#include <malloc.h>
 
 #define QUEUE_DEFAULT_SIZE 8
 #define QUEUE_MIN_RESIZE 8
@@ -91,6 +92,8 @@ struct queue {
  **/
 #define QUEUE_SIZE(q) ({ \
         queue_size_helper(&(q)->descriptor); })
+
+#define QUEUE_FREE(q) free((q)->queue_data)
 
 /* Functions called by the macros -- should not be used by user */
 void queue_init_helper(struct queue* q, char** queue_data, int data_size, int start_size);

@@ -11,8 +11,8 @@
 TYPEDEF_QUEUE(tid_queue_t, int);
 
 typedef struct cond {
-    mutex_t cv_mutex;
-    tid_queue_t cv_queue;
+    mutex_t m;
+    tid_queue_t waiting;
 } cond_t;
 
 #endif /* _COND_TYPE_H */
