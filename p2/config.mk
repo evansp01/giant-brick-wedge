@@ -62,7 +62,17 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410TESTS = startle
+410USER_LIBS_EARLY = libthrgrp.a
+
+410TESTS = startle actual_wait agility_drill beady_test bistromath cat \
+	cvar_test cyclone excellent getpid_test1 halt_test join_specific_test \
+	juggle largetest mandelbrot multitest mutex_destroy_test \
+	paraguay stack_test1 switzerland thr_exit_join wild_test1
+
+# racer  - needs semaphore
+# nibbles - can't build
+# rwlock_downgrade_read_test - rwlocks
+#
 
 ###########################################################################
 # Test programs you have written which you wish to run
