@@ -7,8 +7,9 @@
 
 
 typedef struct mutex {
-    int lock;
-    int owner;
+    volatile int lock;
+    volatile int waiting;
+    volatile int owner;
 } mutex_t;
 
 #endif /* _MUTEX_TYPE_H */

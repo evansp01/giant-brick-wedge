@@ -18,3 +18,13 @@ atomic_cas:
         movl    12(%esp), %eax      # get oldval
   lock  cmpxchg %edx,     (%ecx)    # perform cas
         ret
+
+.global atomic_inc
+atomic_inc:
+        movl 4(%esp), %ecx
+  lock  incl (%ecx)
+
+.global atomic_dec
+atomic_dec:
+        movl 4(%esp), %ecx
+  lock  decl (%ecx)
