@@ -172,7 +172,7 @@ frame_t* create_frame_entry(void* page)
 }
 
 
-#define REUSE_FRAMES
+//#define REUSE_FRAMES
 
 /** @brief Free a previously allocated stack frame
  *
@@ -183,9 +183,9 @@ frame_t* create_frame_entry(void* page)
  **/
 void free_frame(void* stack)
 {
-    void* page = stack_to_page(stack);
     mutex_lock(&frame_info.frame_mutex);
 #ifdef REUSE_FRAMES
+    void* page = stack_to_page(stack);
     frame_t* node = create_frame_entry(page);
     node->unused = 1;
 #endif
@@ -201,9 +201,9 @@ void free_frame(void* stack)
  **/
 void free_frame_and_vanish(void* stack)
 {
-    void* page = stack_to_page(stack);
     mutex_lock(&frame_info.frame_mutex);
 #ifdef REUSE_FRAMES
+    void* page = stack_to_page(stack);
     frame_t* node = create_frame_entry(page);
     mutex_unlock(&frame_info.frame_mutex);
     free_and_vanish(&node->unused);

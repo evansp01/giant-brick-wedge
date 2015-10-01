@@ -54,7 +54,7 @@ int thr_init(unsigned int size)
     thread_info.base_tid = gettid();
     Q_INIT_HEAD(&thread_info.TCB_list);
     mutex_init(&thread_info.TCB_mutex);
-    add_TCB_entry(stack_high, gettid());
+    add_TCB_entry(stack_high, thread_info.base_tid);
     MAGIC_BREAK;
     return 0;
 }
@@ -167,6 +167,7 @@ void add_TCB_entry(void* stack, int tid)
     node->exit_val = NULL;
     node->status = RUNNING;
     node->joining = 0;
+    cond_init(&node->cvar);
     Q_INSERT_TAIL(&thread_info.TCB_list, node, link);
     // Release TCB list mutex
     mutex_unlock(&thread_info.TCB_mutex);
