@@ -55,10 +55,10 @@
  *         properly.
  *  @param Q_HEAD Pointer to queue head to initialize
  **/
-#define Q_INIT_HEAD(Q_HEAD) ({ \
+#define Q_INIT_HEAD(Q_HEAD) do { \
     Q_GET_FRONT(Q_HEAD) = NULL; \
     Q_GET_TAIL(Q_HEAD) = NULL; \
-})
+} while(0)
 
 /** @def Q_INIT_ELEM(Q_ELEM, LINK_NAME)
  *
