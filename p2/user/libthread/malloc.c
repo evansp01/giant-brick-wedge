@@ -11,47 +11,65 @@
 #include <malloc.h>
 #include <thr_internals.h>
 
-static int malloc_initialized = 0;
+static int thread_initialized = 0;
 static mutex_t malloc_mutex;
+
+void initialize_malloc()
+{
+    mutex_init(&malloc_mutex);
+    thread_initialized = 1;
+}
 
 inline void ensure_initialized()
 {
-    if (!malloc_initialized) {
+    if (!thread_initialized) {
         mutex_init(&malloc_mutex);
     }
 }
 
 void* malloc(size_t __size)
 {
-    ensure_initialized();
-    mutex_lock(&malloc_mutex);
-    void* return_val = _malloc(__size);
-    mutex_unlock(&malloc_mutex);
-    return return_val;
+    if (thread_initialized) {
+        mutex_lock(&malloc_mutex);
+        void* return_val = _malloc(__size);
+        mutex_unlock(&malloc_mutex);
+        return return_val;
+    } else {
+        return _malloc(__size);
+    }
 }
 
 void* calloc(size_t __nelt, size_t __eltsize)
 {
-    ensure_initialized();
-    mutex_lock(&malloc_mutex);
-    void* return_val = _calloc(__nelt, __eltsize);
-    mutex_unlock(&malloc_mutex);
-    return return_val;
+    if (thread_initialized) {
+        mutex_lock(&malloc_mutex);
+        void* return_val = _calloc(__nelt, __eltsize);
+        mutex_unlock(&malloc_mutex);
+        return return_val;
+    }
+    return _calloc(__nelt, __eltsize);
 }
 
 void* realloc(void* __buf, size_t __new_size)
 {
-    ensure_initialized();
-    mutex_lock(&malloc_mutex);
-    void* return_val = _realloc(__buf, __new_size);
-    mutex_unlock(&malloc_mutex);
-    return return_val;
+    if (thread_initialized) {
+        mutex_lock(&malloc_mutex);
+        void* return_val = _realloc(__buf, __new_size);
+        mutex_unlock(&malloc_mutex);
+        return return_val;
+
+    } else {
+        return _realloc(__buf, __new_size);
+    }
 }
 
 void free(void* __buf)
 {
-    ensure_initialized();
-    mutex_lock(&malloc_mutex);
-    free(__buf);
-    mutex_unlock(&malloc_mutex);
+    if (thread_initialized) {
+        mutex_lock(&malloc_mutex);
+        free(__buf);
+        mutex_unlock(&malloc_mutex);
+    } else {
+        free(__buf);
+    }
 }
