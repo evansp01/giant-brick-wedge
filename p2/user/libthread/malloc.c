@@ -4,27 +4,54 @@
  * to make them thread safe.
  *
  */
-
 #include <stdlib.h>
 #include <types.h>
+#include <mutex.h>
 #include <stddef.h>
+#include <malloc.h>
+#include <thr_internals.h>
 
-void *malloc(size_t __size)
+static int malloc_initialized = 0;
+static mutex_t malloc_mutex;
+
+inline void ensure_initialized()
 {
-  return NULL;
+    if (!malloc_initialized) {
+        mutex_init(&malloc_mutex);
+    }
 }
 
-void *calloc(size_t __nelt, size_t __eltsize)
+void* malloc(size_t __size)
 {
-  return NULL;
+    ensure_initialized();
+    mutex_lock(&malloc_mutex);
+    void* return_val = _malloc(__size);
+    mutex_unlock(&malloc_mutex);
+    return return_val;
 }
 
-void *realloc(void *__buf, size_t __new_size)
+void* calloc(size_t __nelt, size_t __eltsize)
 {
-  return NULL;
+    ensure_initialized();
+    mutex_lock(&malloc_mutex);
+    void* return_val = _calloc(__nelt, __eltsize);
+    mutex_unlock(&malloc_mutex);
+    return return_val;
 }
 
-void free(void *__buf)
+void* realloc(void* __buf, size_t __new_size)
 {
-  return;
+    ensure_initialized();
+    mutex_lock(&malloc_mutex);
+    void* return_val = _realloc(__buf, __new_size);
+    mutex_unlock(&malloc_mutex);
+    return return_val;
+}
+
+void free(void* __buf)
+{
+    ensure_initialized();
+    mutex_lock(&malloc_mutex);
+    free(__buf);
+    mutex_unlock(&malloc_mutex);
 }

@@ -1,27 +1,4 @@
 ###########################################################################
-#
-#    #####          #######         #######         ######            ###
-#   #     #            #            #     #         #     #           ###
-#   #                  #            #     #         #     #           ###
-#    #####             #            #     #         ######             #
-#         #            #            #     #         #
-#   #     #            #            #     #         #                 ###
-#    #####             #            #######         #                 ###
-#
-#
-# Please read the directions in README and in this config.mk carefully.
-# Do -N-O-T- just dump things randomly in here until your project builds.
-# If you do that, you run an excellent chance of turning in something
-# which can't be graded.  If you think the build infrastructure is
-# somehow restricting you from doing something you need to do, contact
-# the course staff--don't just hit it with a hammer and move on.
-#
-# [Once you've read this message, please edit it out of your config.mk!!]
-###########################################################################
-
-
-
-###########################################################################
 # This is the include file for the make file.
 ###########################################################################
 # You should have to edit only this file to get things to build.
@@ -98,7 +75,8 @@ STUDENTTESTS = test_exit print_and_exit test_thread test_console test_queue
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
-THREAD_OBJS = malloc.o panic.o queue.o frame_alloc.o thread.o thr_create.o
+THREAD_OBJS = malloc.o panic.o queue.o frame_alloc.o thread.o thr_create.o \
+			  mutex.o atomic.o
 
 # Thread Group Library Support.
 #
