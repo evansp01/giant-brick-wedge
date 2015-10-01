@@ -7,15 +7,9 @@
  **/
 #include <mutex.h>
 #include <thread.h>
+#include <syscall.h>
 #include <thr_internals.h>
 #include <simics.h>
-
-inline void yield_owner_or_other(int tid)
-{
-    if (thr_yield(tid) < 0) {
-        thr_yield(-1);
-    }
-}
 
 int mutex_init(mutex_t* mp)
 {
@@ -46,8 +40,11 @@ void mutex_lock(mutex_t* mp)
     atomic_inc(&mp->waiting);
     //now try and get the lock again
     do {
-        //yield to whoever owns the lock
-        yield_owner_or_other(mp->owner);
+        // try to yield to the owner
+        if(yield(mp->owner) < 0){
+            //but if that doesn't work, settle for anyone
+            yield(-1);
+        }
     }
     while (atomic_xchg(&mp->lock, 1) != 0);
     //we got  the lock, stop waiting

@@ -1,4 +1,4 @@
-/** @file queue.c
+/** @file array_queue.c
  *  @brief Helper functions for a generic array based queue
  *
  *  A series of helper functions for implementing a queue. These functions
@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "queue.h"
+#include "array_queue.h"
 
 /** @brief Initialize a queue struct, and the queue_data that goes with it
  *
@@ -145,7 +145,7 @@ int queue_add_index(struct queue* q, char** queue_data)
  **/
 int queue_remove_index(struct queue* q, char** queue_data)
 {
-    if ((q->size + 10) * 4 < q->capacity) {
+    if ((q->size + QUEUE_MIN_RESIZE) * 4 < q->capacity) {
         queue_shrink(q, queue_data);
     }
     int temp = q->deq;
