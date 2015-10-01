@@ -55,6 +55,7 @@ int thr_init(unsigned int size)
     Q_INIT_HEAD(&thread_info.TCB_list);
     mutex_init(&thread_info.TCB_mutex);
     add_TCB_entry(stack_high, thread_info.base_tid);
+    initialize_malloc();
     MAGIC_BREAK;
     return 0;
 }

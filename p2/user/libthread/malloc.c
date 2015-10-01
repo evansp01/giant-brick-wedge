@@ -20,13 +20,6 @@ void initialize_malloc()
     thread_initialized = 1;
 }
 
-inline void ensure_initialized()
-{
-    if (!thread_initialized) {
-        mutex_init(&malloc_mutex);
-    }
-}
-
 void* malloc(size_t __size)
 {
     if (thread_initialized) {
@@ -67,9 +60,9 @@ void free(void* __buf)
 {
     if (thread_initialized) {
         mutex_lock(&malloc_mutex);
-        free(__buf);
+        _free(__buf);
         mutex_unlock(&malloc_mutex);
     } else {
-        free(__buf);
+        _free(__buf);
     }
 }
