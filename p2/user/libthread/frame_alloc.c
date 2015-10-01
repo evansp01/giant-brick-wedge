@@ -74,7 +74,7 @@ void* stack_start()
 {
     char* esp = (char*)get_esp();
     char* max_esp = frame_info.first_high;
-    char* min_esp = (char*)frame_ptr(frame_info.num_frames);
+    char* min_esp = (char*)frame_ptr(frame_info.num_frames - 1);
     // if esp cannot be in a stack frame, return NULL
     // TODO: are these really < and >
     if (esp > max_esp || esp < min_esp) {
@@ -171,6 +171,9 @@ frame_t* create_frame_entry(void* page)
     return node;
 }
 
+
+#define REUSE_FRAMES
+
 /** @brief Free a previously allocated stack frame
  *
  *  Frees a previously allocated frame, allowing it to be reused
@@ -182,9 +185,10 @@ void free_frame(void* stack)
 {
     void* page = stack_to_page(stack);
     mutex_lock(&frame_info.frame_mutex);
+#ifdef REUSE_FRAMES
     frame_t* node = create_frame_entry(page);
-    //note that we don't really care if the system call fails. We tried.
     node->unused = 1;
+#endif
     mutex_unlock(&frame_info.frame_mutex);
 }
 
@@ -199,7 +203,12 @@ void free_frame_and_vanish(void* stack)
 {
     void* page = stack_to_page(stack);
     mutex_lock(&frame_info.frame_mutex);
+#ifdef REUSE_FRAMES
     frame_t* node = create_frame_entry(page);
     mutex_unlock(&frame_info.frame_mutex);
     free_and_vanish(&node->unused);
+#else
+    mutex_unlock(&frame_info.frame_mutex);
+    vanish();
+#endif
 }
