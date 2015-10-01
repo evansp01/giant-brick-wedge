@@ -4,7 +4,7 @@
  **/
 
 #include <stdio.h>
-#include "queue.h"
+#include "array_queue.h"
 
 TYPEDEF_QUEUE(int_queue, short);
 
@@ -18,18 +18,18 @@ void test_queue(int_queue* q, int num_items)
 {
     int i;
     for (i = 1; i <= num_items; i++) {
-        queue_add(q, i);
+        QUEUE_ADD(q, i);
     }
     for (i = 1; i <= num_items; i++) {
         int temp;
-        if (queue_empty(q)) {
+        if (QUEUE_EMPTY(q)) {
             printf("error empty but shouldn't be\n");
         }
-        if ((temp = queue_remove(q)) != i) {
+        if ((temp = QUEUE_REMOVE(q)) != i) {
             printf("error expected %d got %d\n", i, temp);
         }
     }
-    if (!queue_empty(q)) {
+    if (!QUEUE_EMPTY(q)) {
         printf("error queue not empty but should be\n");
     }
 }
@@ -40,10 +40,11 @@ void test_queue(int_queue* q, int num_items)
 int main()
 {
     int_queue q;
-    queue_init(&q);
+    QUEUE_INIT(&q);
     int i;
     for (i = 10; i <= 10000; i += 10) {
         test_queue(&q, i);
     }
+    printf("Ran all tests\n");
     return 0;
 }

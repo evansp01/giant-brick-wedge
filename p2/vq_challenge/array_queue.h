@@ -1,11 +1,12 @@
-/** @file queue.h
+/** @file array_queue.h
  *  @brief A set of macros for constructing a queue
  *  @author Evan Palmer (esp)
  **/
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#define QUEUE_DEFAULT_SIZE 10
+#define QUEUE_DEFAULT_SIZE 8
+#define QUEUE_MIN_RESIZE 8
 
 /* @brief A struct for items needed for all queues */
 struct queue {
@@ -27,8 +28,8 @@ struct queue {
 
 /* Macros for the different allowed queue_init arguments */
 #define QUEUE_INIT_SELECT(_1,_2, NAME,...) NAME
-#define queue_init1(q) queue_init2(q, QUEUE_DEFAULT_SIZE)
-#define queue_init2(q, start_size) ({ \
+#define QUEUE_INIT1(q) QUEUE_INIT2(q, QUEUE_DEFAULT_SIZE)
+#define QUEUE_INIT2(q, start_size) ({ \
         queue_init_helper(&(q)->descriptor, \
                           (char **)&(q)->queue_data, \
                           sizeof(*(q)->queue_data) / sizeof(char),\
@@ -40,7 +41,7 @@ struct queue {
  *  @param start_size If present, the size of the queue
  *  @return void
  **/
-#define queue_init(...) QUEUE_INIT_SELECT(__VA_ARGS__, queue_init2, queue_init1)(__VA_ARGS__)
+#define QUEUE_INIT(...) QUEUE_INIT_SELECT(__VA_ARGS__, QUEUE_INIT2, QUEUE_INIT1)(__VA_ARGS__)
 
 /** @brief Adds an item onto the queue
  *
@@ -48,7 +49,7 @@ struct queue {
  *  @param item The item to add
  *  @return the time added
  **/
-#define queue_add(q, item) ({ \
+#define QUEUE_ADD(q, item) ({ \
     int index = queue_add_index(&(q)->descriptor, (char**)&(q)->queue_data); \
     (q)->queue_data[index] = (item); \
 })
@@ -60,7 +61,7 @@ struct queue {
  *  @param q The queue to remove from
  *  @return the popped item
  **/
-#define queue_remove(q) ({ \
+#define QUEUE_REMOVE(q) ({ \
     int index = queue_remove_index(&(q)->descriptor, (char**)&(q)->queue_data); \
     (q)->queue_data[index]; \
 })
@@ -72,7 +73,7 @@ struct queue {
  *  @param q The queue to peek at
  *  @return the item
  **/
-#define queue_peek(q) ({ \
+#define QUEUE_PEEK(q) ({ \
     (q)->queue_data[queue_peek_index(&(q)->descriptor)]; })
 
 /** @brief Is the queue currently empty
@@ -80,7 +81,7 @@ struct queue {
  *  @param q The queue to check
  *  @return A nonzero int if the queue is empty
  **/
-#define queue_empty(q) ({ \
+#define QUEUE_EMPTY(q) ({ \
         queue_empty_helper(&(q)->descriptor); })
 
 /** @brief Gives the current size of the queue
@@ -88,7 +89,7 @@ struct queue {
  * @param q The queue to get the size of
  * @return The size of the queue as an int
  **/
-#define queue_size(q) ({ \
+#define QUEUE_SIZE(q) ({ \
         queue_size_helper(&(q)->descriptor); })
 
 /* Functions called by the macros -- should not be used by user */
