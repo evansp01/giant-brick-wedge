@@ -37,3 +37,15 @@ alloc_failed:
 exit:
     pop %ebp
     ret
+
+
+.global free_and_vanish
+free_and_vanish:
+    movl 4(%esp), %edx     # move the page address to edx for syscall
+    movl $1, (%edx)        # *node->unused = 1
+    int $VANISH_INT        # vanish()
+
+.global get_esp
+get_esp:
+    movl %esp, %eax
+    ret

@@ -8,6 +8,7 @@
  *
  */
 #include <thr_internals.h>
+#include <stdlib.h>
 #include <autostack.h>
 #include <syscall.h>
 #include <thread.h>
@@ -20,6 +21,7 @@ int thr_init(unsigned int size)
     void *stack_low, *stack_high;
     get_stack_bounds(&stack_high, &stack_low);
     frame_alloc_init(size, stack_high, stack_low);
+    MAGIC_BREAK;
     //something about malloc?
     //mutexes??????
     return 0;
@@ -32,31 +34,6 @@ void thr_wrapper(void *(*func)(void*), void *arg, int *stack_base){
     thr_exit(status);
 }
 
-/*
-// Code for translation to assembly
-int thr_create(void* (*func)(void*), void* args)
-{
-    void *stack = alloc_frame(); // stored in register %edx
-    stack-1 = arg;
-    stack-2 = func;
-    int child = thread_fork();   // stored in register %eax
-    if (child < 0) {
-        free_frame(stack);
-        return child;
-    }
-    else if (child > 0) {
-        return child;
-    }
-    else {
-        esp = stack;
-        *esp = stack;
-        esp -= 0x8;
-        thr_wrapper();
-    }
-    return 0;
-}
-*/
-
 int thr_join(int tid, void** statusp)
 {
     return 0;
@@ -64,14 +41,20 @@ int thr_join(int tid, void** statusp)
 
 void thr_exit(void* status)
 {
+    //put exit status in tcb
+    //tcb_add_exit(gettid(), status);
+    //get my stack pointer
+    //free_and_vanish
+    void *stack = NULL;
+    free_frame_and_vanish(stack);
 }
 
 int thr_getid(void)
 {
-    return 0;
+    return gettid();
 }
 
 int thr_yield(int tid)
 {
-    return 0;
+    return yield(tid);
 }
