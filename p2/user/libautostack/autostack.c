@@ -6,6 +6,7 @@
 #include <syscall.h>
 #include <malloc.h>
 #include <simics.h>
+#include <autostack.h>
 
 #define EXCEPTION_STACK_SIZE 1000 * sizeof(void*)
 
@@ -19,6 +20,31 @@ struct autostack stack;
 
 void autostack_fault(void* arg, ureg_t* ureg)
 {
+    // If not a pagefault, return and let default handler run
+    if (ureg->cause != SWEXN_CAUSE_PAGEFAULT)
+        return;
+    
+    // Allocate new page below current lowest point of stack
+    // TODO: Should growth size be larger than a page size?
+    // TODO: Calculate the required memory based on the faulting memory
+    //       address, then do new_pages based on that size
+    void* new_low = stack.stack_low - PAGE_SIZE;
+    int status = new_pages(new_low, PAGE_SIZE);
+    
+    // Stack extension failed, let default exception handler run on retry
+    if (status < 0) {
+        lprintf("stack extension allocation at %p failed with status %d\n",
+                new_low, status);
+        return;
+    }
+    
+    // Update stack low address
+    else {
+        stack.stack_low = new_low;
+    }
+    
+    // Re-register exception handler with original register state
+    swexn(stack.handler_stack, autostack_fault, &stack, ureg);
 }
 
 void threaded_fault(void* arg, ureg_t* ureg)
