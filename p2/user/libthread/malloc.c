@@ -16,8 +16,8 @@ static mutex_t malloc_mutex;
 
 void initialize_malloc()
 {
-    mutex_init(&malloc_mutex);
     thread_initialized = 1;
+    mutex_init(&malloc_mutex);
 }
 
 void* malloc(size_t __size)
@@ -39,8 +39,9 @@ void* calloc(size_t __nelt, size_t __eltsize)
         void* return_val = _calloc(__nelt, __eltsize);
         mutex_unlock(&malloc_mutex);
         return return_val;
+    } else {
+        return _calloc(__nelt, __eltsize);
     }
-    return _calloc(__nelt, __eltsize);
 }
 
 void* realloc(void* __buf, size_t __new_size)
@@ -50,7 +51,6 @@ void* realloc(void* __buf, size_t __new_size)
         void* return_val = _realloc(__buf, __new_size);
         mutex_unlock(&malloc_mutex);
         return return_val;
-
     } else {
         return _realloc(__buf, __new_size);
     }

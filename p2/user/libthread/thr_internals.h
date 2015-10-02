@@ -15,7 +15,9 @@ void frame_alloc_init(unsigned int size, void *stack_high, void *stack_low);
 void* alloc_frame();
 void free_frame(void* frame);
 void free_frame_and_vanish(void* frame);
-void add_TCB_entry(void *stack, int tid);
+
+
+void ensure_tcb_exists(void* stack, int tid);
 
 //assembly function frees page and vanishes
 void free_and_vanish(int* free_attempted);

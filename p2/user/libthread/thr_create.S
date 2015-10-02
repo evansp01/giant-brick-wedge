@@ -19,17 +19,17 @@ thr_create:
     je child
     ja parent
 failure:
-    pushl %ecx              
+    pushl %ecx
     pushl %edx              # the failure case (pushl stack address)
     call free_frame         # free the stack
     add $4, %esp            # restore the stack pointer
-    popl %ecx                
+    popl %ecx
     movl %ecx, %eax         # return the value from thread_fork
     jmp exit
 parent:
     pushl %ecx              # set tid as arg2
     pushl %edx              # set stack pointer as arg1
-    call add_TCB_entry      # attempt to add TCB entry
+    call ensure_tcb_exists  # attempt to add TCB entry
     add $4, %esp            # restore the stack pointer
     popl %ecx
     movl %ecx, %eax         # return the value from thread_fork
