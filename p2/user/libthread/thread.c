@@ -78,7 +78,9 @@ void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
 
 int thread_join_helper(tcb_t* entry, void** statusp)
 {
-    *statusp = entry->exit_val;
+    if(statusp != NULL){
+        *statusp = entry->exit_val;
+    }
     Q_REMOVE(&thread_info.tcb_list, entry, link);
     free(entry);
     return 0;
