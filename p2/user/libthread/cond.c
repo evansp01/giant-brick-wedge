@@ -28,7 +28,7 @@ void cond_wait(cond_t* cv, mutex_t* mp)
     mutex_unlock(&cv->m);
     deschedule(&dontreject);
     //end atomically
-    mutex_lock(&cv->m);
+    mutex_lock(mp);
 }
 
 void cond_signal(cond_t* cv)
