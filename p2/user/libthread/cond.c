@@ -2,6 +2,7 @@
 #include <thr_internals.h>
 #include <syscall.h>
 #include <thread.h>
+#include <simics.h>
 
 int cond_init(cond_t* cv)
 {

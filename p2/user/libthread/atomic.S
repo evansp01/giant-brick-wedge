@@ -23,8 +23,10 @@ atomic_cas:
 atomic_inc:
         movl 4(%esp), %ecx
   lock  incl (%ecx)
+        ret
 
 .global atomic_dec
 atomic_dec:
         movl 4(%esp), %ecx
   lock  decl (%ecx)
+        ret
