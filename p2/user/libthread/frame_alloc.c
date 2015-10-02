@@ -8,7 +8,7 @@
 typedef struct frame_node {
     Q_NEW_LINK(frame_node) link;
     void* frame;
-    int unused;
+    volatile int unused;
 } frame_t;
 
 Q_NEW_HEAD(frame_list_t, frame_node);

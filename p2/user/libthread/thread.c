@@ -27,9 +27,9 @@ typedef struct TCB {
     void* stack;
     void* exit_val;
     int tid;
-    int joining;
     cond_t cvar;
-    enum thread_status status;
+    volatile int joining;
+    volatile enum thread_status status;
 } TCB_t;
 
 Q_NEW_HEAD(TCB_list_t, TCB);
@@ -65,7 +65,7 @@ TCB_t* get_TCB_entry(int tid);
 void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
 {
     void* base = stack_base;
-    int tid = gettid();
+    int tid = thr_getid();
     *stack_base = tid;
 
     // Add TCB entry for current node if it does not already exist
@@ -91,14 +91,14 @@ int thr_join(int tid, void** statusp)
         mutex_unlock(&thread_info.TCB_mutex);
         return -1;
     }
-    entry->joining = 1;
     if (entry->status == EXITED) {
         int status = thread_join_helper(entry, statusp);
         mutex_unlock(&thread_info.TCB_mutex);
         return status;
     }
+    entry->joining = 1;
     cond_wait(&entry->cvar, &thread_info.TCB_mutex);
-    if (!entry->status == EXITED) {
+    if (entry->status != EXITED) {
         lprintf("Joiner was signaled, but thread has not exited, oh no!\n");
     }
     int status = thread_join_helper(entry, statusp);
