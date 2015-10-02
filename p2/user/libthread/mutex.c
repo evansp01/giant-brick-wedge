@@ -23,7 +23,7 @@ int mutex_init(mutex_t* mp)
 void mutex_destroy(mutex_t* mp)
 {
     //lock the mutex
-    if (atomic_xchg(&mp->lock, 1) == 0) {
+    if (atomic_xchg(&mp->lock, 1) == 1) {
         lprintf("mutex destroyed while holding lock");
         task_vanish(-1);
     }
