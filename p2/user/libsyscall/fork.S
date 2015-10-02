@@ -9,3 +9,4 @@
 .global fork
 fork:
     int $FORK_INT
+    ret
