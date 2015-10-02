@@ -82,6 +82,7 @@ int thread_join_helper(tcb_t* entry, void** statusp)
         *statusp = entry->exit_val;
     }
     Q_REMOVE(&thread_info.tcb_list, entry, link);
+    cond_destroy(&entry->cvar);
     free(entry);
     return 0;
 }
