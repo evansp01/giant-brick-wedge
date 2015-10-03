@@ -116,7 +116,7 @@ void* get_existing_frame()
     int found = 0;
     Q_FOREACH(current, &frame_info.frames, link)
     {
-        if (!current->unused == 1) {
+        if (current->unused == 1) {
             found = 1;
             break;
         }
