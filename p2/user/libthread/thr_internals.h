@@ -4,8 +4,6 @@
  *         internal to the thread library.
  */
 
-
-
 #ifndef THR_INTERNALS_H
 #define THR_INTERNALS_H
 
@@ -13,7 +11,7 @@
 void initialize_malloc();
 
 //frame_alloc.c headers
-void frame_alloc_init(unsigned int size, void *stack_high, void *stack_low);
+void frame_alloc_init(unsigned int size, void* stack_high, void* stack_low);
 void* alloc_frame();
 void free_frame(void* frame);
 void free_frame_and_vanish(void* frame);
@@ -22,14 +20,13 @@ void free_frame_and_vanish(void* frame);
 void ensure_tcb_exists(void* stack, int tid);
 
 //thr_create.S headers
-void free_and_vanish(int* free_attempted);
-void *get_esp();
+void free_and_vanish(volatile int* free_attempted);
+void* get_esp();
 
 //atomic.S headers
-int atomic_xchg(volatile int *ptr, int value);
-int atomic_cas(volatile int *ptr, int newval, int oldval);
-void atomic_inc(volatile int *ptr);
-void atomic_dec(volatile int *ptr);
-
+int atomic_xchg(volatile int* ptr, int value);
+int atomic_cas(volatile int* ptr, int newval, int oldval);
+void atomic_inc(volatile int* ptr);
+void atomic_dec(volatile int* ptr);
 
 #endif /* THR_INTERNALS_H */

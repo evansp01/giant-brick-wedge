@@ -19,7 +19,7 @@
 int mutex_init(mutex_t* mp)
 {
     //unlocked and nobody owns
-    mp->lock = LOCKED;
+    mp->lock = UNLOCKED;
     mp->owner = UNSPECIFIED;
     mp->waiting = 0;
     return 0;
