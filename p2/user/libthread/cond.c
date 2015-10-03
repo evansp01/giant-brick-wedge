@@ -3,6 +3,7 @@
 #include <syscall.h>
 #include <thread.h>
 #include <simics.h>
+#include <errors.h>
 
 int cond_init(cond_t* cv)
 {
