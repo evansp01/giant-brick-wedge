@@ -9,26 +9,30 @@
 #include <thread.h>
 #include <syscall.h>
 #include <thr_internals.h>
-#include <simics.h>
+#include <errors.h>
+
+
+#define LOCKED 1
+#define UNLOCKED 0
+#define UNSPECIFIED -1
 
 int mutex_init(mutex_t* mp)
 {
     //unlocked and nobody owns
-    mp->lock = 0;
+    mp->lock = LOCKED;
+    mp->owner = UNSPECIFIED;
     mp->waiting = 0;
-    mp->owner = -1;
     return 0;
 }
 
 void mutex_destroy(mutex_t* mp)
 {
     //lock the mutex
-    if (atomic_xchg(&mp->lock, 1) == 1) {
-        lprintf("mutex destroyed while holding lock");
-        task_vanish(-1);
+    if (atomic_xchg(&mp->lock, LOCKED) == LOCKED) {
+        EXIT_ERROR("mutex destroyed while holding lock");
     }
     //set the owner to nobody
-    mp->owner = -1;
+    mp->owner = UNSPECIFIED;
 }
 
 void mutex_lock(mutex_t* mp)
@@ -36,7 +40,7 @@ void mutex_lock(mutex_t* mp)
     //might as well get the tid, we'll need it later
     int thread_id = thr_getid();
     //let's see if we can get the lock immediately
-    if (atomic_xchg(&mp->lock, 1) == 0) {
+    if (atomic_xchg(&mp->lock, LOCKED) == UNLOCKED) {
         mp->owner = thread_id;
         return;
     }
@@ -47,9 +51,9 @@ void mutex_lock(mutex_t* mp)
         // try to yield to the owner
         if (yield(mp->owner) < 0) {
             //but if that doesn't work, settle for anyone
-            yield(-1);
+            yield(UNSPECIFIED);
         }
-    } while (atomic_xchg(&mp->lock, 1) != 0);
+    } while (atomic_xchg(&mp->lock, LOCKED) != UNLOCKED);
     //we got  the lock, stop waiting
     atomic_dec(&mp->waiting);
     mp->owner = thread_id;
@@ -57,18 +61,17 @@ void mutex_lock(mutex_t* mp)
 
 void mutex_unlock(mutex_t* mp)
 {
-    if (mp->lock == 1 && mp->owner == -1) {
-        lprintf("cannot unlock destroyed mutex\n");
-        task_vanish(-1);
+    if (mp->lock == LOCKED && mp->owner == UNSPECIFIED) {
+        WARN("cannot unlock destroyed mutex");
         return;
     }
     //if people are waiting, we will yield so we don't get the lock too much
     if (mp->waiting > 0) {
-        mp->owner = -1;
-        mp->lock = 0;
-        thr_yield(-1);
+        mp->owner = UNSPECIFIED;
+        mp->lock = UNLOCKED;
+        yield(UNSPECIFIED);
     } else {
-        mp->owner = -1;
-        mp->lock = 0;
+        mp->owner = UNSPECIFIED;
+        mp->lock = UNLOCKED;
     }
 }
