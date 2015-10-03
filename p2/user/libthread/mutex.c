@@ -62,8 +62,7 @@ void mutex_lock(mutex_t* mp)
 void mutex_unlock(mutex_t* mp)
 {
     if (mp->lock == LOCKED && mp->owner == UNSPECIFIED) {
-        WARN("cannot unlock destroyed mutex");
-        return;
+        EXIT_ERROR("cannot unlock mutex which is destroyed or not owned");
     }
     //if people are waiting, we will yield so we don't get the lock too much
     if (mp->waiting > 0) {

@@ -16,6 +16,9 @@ int cond_init(cond_t* cv)
 void cond_destroy(cond_t* cv)
 {
     mutex_destroy(&cv->m);
+    if (!QUEUE_EMPTY(&cv->waiting)) {
+        EXIT_ERROR("condition variable destroyed, but queue not empty");
+    }
     QUEUE_FREE(&cv->waiting);
 }
 
