@@ -16,10 +16,10 @@ int sem_init(sem_t* sem, int count)
 void sem_wait(sem_t* sem)
 {
     mutex_lock(&sem->m);
-    while (sem->count <= 0) {
+    sem->count--;
+    if (sem->count < 0) {
         cond_wait(&sem->cv, &sem->m);
     }
-    sem->count--;
     mutex_unlock(&sem->m);
 }
 
