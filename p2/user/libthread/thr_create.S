@@ -17,7 +17,7 @@ thr_create:
     movl %eax, %ecx         # store return value in ecx
     cmp $0, %ecx
     je child
-    ja parent
+    jg parent
 failure:
     pushl %ecx
     pushl %edx              # the failure case (pushl stack address)
@@ -41,7 +41,7 @@ child:
     call thr_wrapper        # run away and never return
     nop                     # we should never get here
 alloc_failed:
-    movl $-1, %eax
+    movl $-2, %eax
 exit:
     pop %ebp
     ret

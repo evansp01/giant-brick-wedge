@@ -172,7 +172,7 @@ frame_t* create_frame_entry(void* page)
 }
 
 
-//#define REUSE_FRAMES
+#define REUSE_FRAMES
 
 /** @brief Free a previously allocated stack frame
  *
