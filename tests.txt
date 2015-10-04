@@ -1,0 +1,45 @@
+Tests
+
+Passed:
+    startle
+    actual_wait
+    agility_drill
+    cvar_test
+    cyclone
+    getpid_test1
+    join_specific_test
+    paraguay
+    stack_test1
+    switzerland
+    thr_exit_join
+    mutex_destroy_test
+    racer
+    
+Seems to pass:
+    mandelbrot (visual)
+    
+Passed on all misbehavior modes:
+    cyclone (default)
+    racer (default)
+    startle
+    agility_drill
+    
+Failed:
+    largetest - ROUND 12: failed after spawning 3539 threads - syscall to thread_fork fails
+    wild_test1 - needs fatal thread handler
+    
+Unknown:
+    multitest - infinite stress test?
+
+Not yet tested:
+    beady_test
+    bistromath
+    excellent
+    halt_test
+    juggle
+    cat - program to print out files
+    
+Not yet compiled:
+    nibbles - can't build
+    rwlock_downgrade_read_test - rwlocks
+    
