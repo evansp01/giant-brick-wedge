@@ -42,7 +42,7 @@ static struct frame_alloc frame_info = {
  *  @param stack_low The end value of the stack for the main thread
  *  @return void
  **/
-void frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
+int frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
 {
     if (size == 0) {
         frame_info.frame_size = PAGE_SIZE;
@@ -51,17 +51,36 @@ void frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
     }
     frame_info.first_high = stack_high;
     frame_info.first_low = stack_low;
+    char* required_low = frame_info.first_high - frame_info.frame_size;
+    if (required_low < frame_info.first_low) {
+        int count = (frame_info.first_low - required_low - 1) / PAGE_SIZE + 1;
+        char *new_low = frame_info.first_low - PAGE_SIZE * count;
+        int status = new_pages((void*)new_low, PAGE_SIZE * count);
+        // Stack extension failed, let default exception handler run on retry
+        if (status < 0) {
+            return status;
+        }
+        // Update stack low address
+        frame_info.first_low = new_low;
+    }
     Q_INIT_HEAD(&frame_info.frames);
     mutex_init(&frame_info.frame_mutex);
+    return 0;
 }
 
 void* page_to_stack(void* frame)
 {
+    if (frame == frame_info.first_low) {
+        return frame_info.first_high;
+    }
     return ((char*)frame) + frame_info.frame_size - sizeof(void*);
 }
 
 void* stack_to_page(void* stack)
 {
+    if (stack == frame_info.first_high) {
+        return frame_info.first_low;
+    }
     return ((char*)stack) - frame_info.frame_size + sizeof(void*);
 }
 
@@ -70,7 +89,7 @@ void* frame_ptr(int index)
     return frame_info.first_low - (frame_info.frame_size + PAGE_SIZE) * index;
 }
 
-void* stack_start()
+enum stack_status get_address_stack(void** addr)
 {
     char* esp = (char*)get_esp();
     char* max_esp = frame_info.first_high;
@@ -78,27 +97,31 @@ void* stack_start()
     // if esp cannot be in a stack frame, return NULL
     // TODO: are these really < and >
     if (esp > max_esp || esp < min_esp) {
-        return NULL;
+        *addr = NULL;
+        return NOT_ON_STACK;
     }
     // if esp is within the first stack frame
     // TODO: are these really <= and >=
     if (esp <= frame_info.first_high && esp >= frame_info.first_low) {
-        return frame_info.first_high;
+        *addr = frame_info.first_high;
+        return FIRST_STACK;
     }
     // so esp must be somewhere in the allocated thread stacks
     unsigned int offset = frame_info.first_low - esp;
     // which frame do we think it is in
-    int canidate = (offset / (frame_info.frame_size + PAGE_SIZE)) + 1;
+    int candidate = (offset / (frame_info.frame_size + PAGE_SIZE)) + 1;
 
-    char* canidate_low = frame_ptr(canidate);
-    char* canidate_high = page_to_stack(canidate_low);
+    char* candidate_low = frame_ptr(candidate);
+    char* candidate_high = page_to_stack(candidate_low);
 
     // TODO: are these really <= and >=
-    if (esp >= canidate_low && esp <= canidate_high) {
-        return canidate_high;
+    if (esp >= candidate_low && esp <= candidate_high) {
+        *addr = candidate_high;
+        return THREAD_STACK;
     }
     //seems to be somewhere in an unallocated page
-    return NULL;
+    *addr = NULL;
+    return UNALLOCATED_PAGE;
 }
 
 int alloc_address(void* alloc_page)
@@ -171,9 +194,6 @@ frame_t* create_frame_entry(void* page)
     return node;
 }
 
-
-#define REUSE_FRAMES
-
 /** @brief Free a previously allocated stack frame
  *
  *  Frees a previously allocated frame, allowing it to be reused
@@ -184,11 +204,9 @@ frame_t* create_frame_entry(void* page)
 void free_frame(void* stack)
 {
     mutex_lock(&frame_info.frame_mutex);
-#ifdef REUSE_FRAMES
     void* page = stack_to_page(stack);
     frame_t* node = create_frame_entry(page);
     node->unused = 1;
-#endif
     mutex_unlock(&frame_info.frame_mutex);
 }
 
@@ -202,13 +220,8 @@ void free_frame(void* stack)
 void free_frame_and_vanish(void* stack)
 {
     mutex_lock(&frame_info.frame_mutex);
-#ifdef REUSE_FRAMES
     void* page = stack_to_page(stack);
     frame_t* node = create_frame_entry(page);
     mutex_unlock(&frame_info.frame_mutex);
     free_and_vanish(&node->unused);
-#else
-    mutex_unlock(&frame_info.frame_mutex);
-    vanish();
-#endif
 }

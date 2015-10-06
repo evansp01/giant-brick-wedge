@@ -14,10 +14,18 @@ void threaded_exit();
 void initialize_malloc();
 
 //frame_alloc.c headers
-void frame_alloc_init(unsigned int size, void* stack_high, void* stack_low);
+int frame_alloc_init(unsigned int size, void* stack_high, void* stack_low);
 void* alloc_frame();
 void free_frame(void* frame);
 void free_frame_and_vanish(void* frame);
+
+enum stack_status {
+    NOT_ON_STACK,
+    UNALLOCATED_PAGE,
+    FIRST_STACK,
+    THREAD_STACK
+};
+enum stack_status get_address_stack(void** addr);
 
 //thread.c headers
 void ensure_tcb_exists(void* stack, int tid);

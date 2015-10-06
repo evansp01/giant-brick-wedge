@@ -57,7 +57,9 @@ int thr_init(unsigned int size)
     install_threaded();
     void* stack_low, *stack_high;
     get_stack_bounds(&stack_high, &stack_low);
-    frame_alloc_init(size, stack_high, stack_low);
+    if(frame_alloc_init(size, stack_high, stack_low) < 0){
+        return -1;
+    }
     thread_info.base_tid = gettid();
     Q_INIT_HEAD(&thread_info.tcb_list);
     mutex_init(&thread_info.tcb_mutex);
@@ -133,11 +135,17 @@ void thr_exit(void* status)
 
 int thr_getid(void)
 {
-    // TODO: Get tid for base thread
-
-    // TODO: Get tid from stack if not in base thread
-
-    // Get system tid if other options fail
+    int* stack;
+    switch (get_address_stack((void**)&stack)) {
+    case FIRST_STACK:
+        return thread_info.base_tid;
+    case THREAD_STACK:
+        return *stack;
+    case UNALLOCATED_PAGE:
+    case NOT_ON_STACK:
+        break;
+    }
+    // we don't know who you are. The system does though!
     return gettid();
 }
 
