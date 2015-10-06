@@ -11,38 +11,48 @@
 #define EXCEPTION_STACK_SIZE PAGE_SIZE
 
 struct autostack {
-    void* stack_high;
-    void* stack_low;
+    unsigned int stack_high;
+    unsigned int stack_low;
     void* handler_stack;
 };
 
 struct autostack stack;
 
+/*
+ *
+ * If a thread encounters a page fault, the user-space software exception handler has
+ * a chance to react; otherwise, the kernel’s default policy will kill the thread. In the case of a page
+ * fault, the cause field of the ureg structure will be 14 (SWEXN CAUSE PAGEFAULT), the eip field will
+ * contain the address of the faulting instruction, the cr2 field will contain the memory address which
+ * resulted in the fault, and the error code field will contain the reason why that memory address
+ * was inaccessible (see Intel’s documentation of the page-fault exception for details).
+ */
+
 void autostack_fault(void* arg, ureg_t* ureg)
 {
     // If not a pagefault, return and let default handler run
-    if (ureg->cause != SWEXN_CAUSE_PAGEFAULT)
+    if (ureg->cause != SWEXN_CAUSE_PAGEFAULT) {
+        //TODO: should we do something else here?
         return;
-    
+    }
+    if ((ureg->error_code & 0x1) != 0) {
+        //permissions error
+        return;
+    }
+    if (ureg->cr2 > stack.stack_low)
+        return;
+
     // Allocate new page below current lowest point of stack
-    // TODO: Should growth size be larger than a page size?
-    // TODO: Calculate the required memory based on the faulting memory
-    //       address, then do new_pages based on that size
-    void* new_low = stack.stack_low - PAGE_SIZE;
-    int status = new_pages(new_low, PAGE_SIZE);
-    
+    int page_count = (stack.stack_low - ureg->cr2 - 1) / PAGE_SIZE + 1;
+    unsigned int new_low = stack.stack_low - PAGE_SIZE * page_count;
+    int status = new_pages((void*)new_low, PAGE_SIZE * page_count);
     // Stack extension failed, let default exception handler run on retry
     if (status < 0) {
-        lprintf("stack extension allocation at %p failed with status %d\n",
-                new_low, status);
+        lprintf("stack extension at %x failed with status %d", new_low, status);
         return;
     }
-    
     // Update stack low address
-    else {
-        stack.stack_low = new_low;
-    }
-    
+    stack.stack_low = new_low;
     // Re-register exception handler with original register state
     swexn(stack.handler_stack, autostack_fault, &stack, ureg);
 }
@@ -54,10 +64,9 @@ void threaded_fault(void* arg, ureg_t* ureg)
 void install_autostack(void* stack_high, void* stack_low)
 {
     stack.handler_stack = malloc(EXCEPTION_STACK_SIZE);
-    stack.handler_stack = (void *)(((char *)stack.handler_stack)
-                                   + EXCEPTION_STACK_SIZE);
-    stack.stack_low = stack_low;
-    stack.stack_high = stack_high;
+    stack.handler_stack = ((char*)stack.handler_stack) + EXCEPTION_STACK_SIZE;
+    stack.stack_low = (unsigned int)stack_low;
+    stack.stack_high = (unsigned int)stack_high;
     swexn(stack.handler_stack, autostack_fault, &stack, NULL);
 }
 
@@ -66,8 +75,8 @@ void install_threaded()
     swexn(stack.handler_stack, threaded_fault, &stack, NULL);
 }
 
-void get_stack_bounds(void **stack_high, void **stack_low) {
-    *stack_high = stack.stack_high;
-    *stack_low = stack.stack_low;
+void get_stack_bounds(void** stack_high, void** stack_low)
+{
+    *stack_high = (void*)stack.stack_high;
+    *stack_low = (void*)stack.stack_low;
 }
-
