@@ -62,13 +62,11 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410USER_LIBS_EARLY = libthrgrp.a
-
 410TESTS = startle actual_wait agility_drill beady_test bistromath cat \
 	cvar_test cyclone excellent getpid_test1 halt_test join_specific_test \
 	juggle largetest mandelbrot multitest mutex_destroy_test \
 	paraguay stack_test1 switzerland thr_exit_join wild_test1 racer \
-    misbehave misbehave_wrap
+    misbehave misbehave_wrap rwlock_downgrade_read_test
 
 # nibbles - can't build
 # rwlock_downgrade_read_test - rwlocks
@@ -80,13 +78,14 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the user/progs
 # directory
 #
-STUDENTTESTS = test_exit print_and_exit test_thread test_console
+STUDENTTESTS = test_exit print_and_exit test_thread test_console \
+               rwlock_read_test rwlock_write_test rwlock_downgrade_test
 
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
 THREAD_OBJS = malloc.o panic.o array_queue.o frame_alloc.o thread.o thr_create.o \
-			  mutex.o atomic.o cond.o sem.o
+			  mutex.o atomic.o cond.o sem.o rwlock.o
 
 # Thread Group Library Support.
 #
@@ -94,7 +93,7 @@ THREAD_OBJS = malloc.o panic.o array_queue.o frame_alloc.o thread.o thr_create.o
 # P3" we give you can't build libthrgrp.a.  Once you install your thread
 # library and fix THREAD_OBJS above, uncomment this line to enable building
 # libthrgrp.a:
-#410USER_LIBS_EARLY += libthrgrp.a
+410USER_LIBS_EARLY += libthrgrp.a
 
 ###########################################################################
 # Object files for your syscall wrappers
