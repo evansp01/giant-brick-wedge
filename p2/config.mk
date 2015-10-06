@@ -68,7 +68,7 @@ UPDATE_METHOD = afs
 	cvar_test cyclone excellent getpid_test1 halt_test join_specific_test \
 	juggle largetest mandelbrot multitest mutex_destroy_test \
 	paraguay stack_test1 switzerland thr_exit_join wild_test1 racer \
-    misbehave misbehave_wrap
+    misbehave misbehave_wrap initial fine grained locks
 
 # nibbles - can't build
 # rwlock_downgrade_read_test - rwlocks
@@ -86,7 +86,7 @@ STUDENTTESTS = test_exit print_and_exit test_thread test_console
 # Object files for your thread library
 ###########################################################################
 THREAD_OBJS = malloc.o panic.o array_queue.o frame_alloc.o thread.o thr_create.o \
-			  mutex.o atomic.o cond.o sem.o
+			  mutex.o atomic.o cond.o sem.o exit.o
 
 # Thread Group Library Support.
 #

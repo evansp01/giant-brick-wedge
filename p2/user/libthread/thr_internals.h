@@ -7,6 +7,9 @@
 #ifndef THR_INTERNALS_H
 #define THR_INTERNALS_H
 
+//exit.c headers
+void threaded_exit();
+
 //malloc.c headers
 void initialize_malloc();
 
