@@ -84,8 +84,8 @@ STUDENTTESTS = test_exit print_and_exit test_thread test_console \
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
-THREAD_OBJS = malloc.o panic.o array_queue.o frame_alloc.o thread.o thr_create.o \
-			  mutex.o atomic.o cond.o sem.o rwlock.o
+THREAD_OBJS = malloc.o panic.o array_queue.o frame_alloc.o thread.o \
+			  thr_create.o mutex.o atomic.o cond.o sem.o exit.o rwlock.o
 
 # Thread Group Library Support.
 #

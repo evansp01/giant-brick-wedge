@@ -47,8 +47,9 @@ typedef struct thread_info_t {
 /** @brief Thread info struct */
 static thread_info_t thread_info;
 
-tcb_t* add_tcb_entry(void* stack, int tid);
 tcb_t* get_tcb_entry(int tid);
+tcb_t* get_locked_tcb_entry(int tid);
+tcb_t* create_tcb_entry(void* stack, int tid);
 
 /* thread library functions */
 int thr_init(unsigned int size)
@@ -60,8 +61,10 @@ int thr_init(unsigned int size)
     thread_info.base_tid = gettid();
     Q_INIT_HEAD(&thread_info.tcb_list);
     mutex_init(&thread_info.tcb_mutex);
-    add_tcb_entry(stack_high, thread_info.base_tid);
+    tcb_t* entry = create_tcb_entry(stack_high, thread_info.base_tid);
+    Q_INSERT_TAIL(&thread_info.tcb_list, entry, link);
     initialize_malloc();
+    threaded_exit();
     return 0;
 }
 
@@ -79,45 +82,42 @@ void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
     thr_exit(status);
 }
 
-int thread_join_helper(tcb_t* entry, void** statusp)
+int thr_join(int tid, void** statusp)
 {
-    if(statusp != NULL){
+    tcb_t* entry = get_locked_tcb_entry(tid);
+    if (entry == NULL) {
+        return -1;
+    }
+    if (entry->status == NOTYET || entry->joining) {
+        mutex_unlock(&entry->mutex);
+        return -1;
+    }
+    //we have the lock for the entry
+    entry->joining = 1;
+    if (entry->status != EXITED) {
+        cond_wait(&entry->cvar, &entry->mutex);
+    }
+    if (entry->status != EXITED) {
+        EXIT_ERROR("Joiner signaled, but thread has not exited");
+    }
+    //now that the entry is joining, we should be okay
+    mutex_unlock(&entry->mutex);
+    // we have no locks at all!
+    mutex_lock(&thread_info.tcb_mutex);
+    Q_REMOVE(&thread_info.tcb_list, entry, link);
+    mutex_unlock(&thread_info.tcb_mutex);
+    if (statusp != NULL) {
         *statusp = entry->exit_val;
     }
-    Q_REMOVE(&thread_info.tcb_list, entry, link);
     cond_destroy(&entry->cvar);
     mutex_destroy(&entry->mutex);
     free(entry);
     return 0;
 }
 
-int thr_join(int tid, void** statusp)
-{
-    mutex_lock(&thread_info.tcb_mutex);
-    tcb_t* entry = get_tcb_entry(tid);
-    if (entry == NULL || entry->status == NOTYET || entry->joining) {
-        mutex_unlock(&thread_info.tcb_mutex);
-        return -1;
-    }
-    if (entry->status == EXITED) {
-        int status = thread_join_helper(entry, statusp);
-        mutex_unlock(&thread_info.tcb_mutex);
-        return status;
-    }
-    entry->joining = 1;
-    cond_wait(&entry->cvar, &thread_info.tcb_mutex);
-    if (entry->status != EXITED) {
-        EXIT_ERROR("Joiner signaled, but thread has not exited");
-    }
-    int status = thread_join_helper(entry, statusp);
-    mutex_unlock(&thread_info.tcb_mutex);
-    return status;
-}
-
 void thr_exit(void* status)
 {
-    mutex_lock(&thread_info.tcb_mutex);
-    tcb_t* entry = get_tcb_entry(thr_getid());
+    tcb_t* entry = get_locked_tcb_entry(thr_getid());
     if (entry == NULL) {
         EXIT_ERROR("Thread %d exiting has no tcb entry", gettid());
     }
@@ -127,7 +127,7 @@ void thr_exit(void* status)
     if (entry->joining) {
         cond_signal(&entry->cvar);
     }
-    mutex_unlock(&thread_info.tcb_mutex);
+    mutex_unlock(&entry->mutex);
     free_frame_and_vanish(stack);
 }
 
@@ -146,13 +146,29 @@ int thr_yield(int tid)
     return yield(tid);
 }
 
+tcb_t* get_locked_tcb_entry(int tid)
+{
+    tcb_t* entry;
+    mutex_lock(&thread_info.tcb_mutex);
+    Q_FOREACH(entry, &thread_info.tcb_list, link)
+    {
+        if (entry->tid == tid) {
+            mutex_lock(&entry->mutex);
+            mutex_unlock(&thread_info.tcb_mutex);
+            return entry;
+        }
+    }
+    mutex_unlock(&thread_info.tcb_mutex);
+    return NULL;
+}
+
 tcb_t* get_tcb_entry(int tid)
 {
-    tcb_t* cur;
-    Q_FOREACH(cur, &thread_info.tcb_list, link)
+    tcb_t* entry;
+    Q_FOREACH(entry, &thread_info.tcb_list, link)
     {
-        if (cur->tid == tid) {
-            return cur;
+        if (entry->tid == tid) {
+            return entry;
         }
     }
     return NULL;
@@ -161,27 +177,31 @@ tcb_t* get_tcb_entry(int tid)
 void ensure_tcb_exists(void* stack, int tid)
 {
     // Acquire tcb list mutex
-    mutex_lock(&thread_info.tcb_mutex);
     // Check if tcb entry has already been created
+    mutex_lock(&thread_info.tcb_mutex);
     tcb_t* entry = get_tcb_entry(tid);
     if (entry != NULL) {
+        mutex_lock(&entry->mutex);
+        mutex_unlock(&thread_info.tcb_mutex);
         //acknowledge that the thread exists
         entry->status = RUNNING;
         //drop the mutex
-        mutex_unlock(&thread_info.tcb_mutex);
+        mutex_unlock(&entry->mutex);
         //allow the other guy to wake up
         cond_signal(&entry->cvar);
         return;
     }
-    // Otherwise create tcb entry
-    entry = add_tcb_entry(stack, tid);
-    //wait for other thread to acknowledge
-    cond_wait(&entry->cvar, &thread_info.tcb_mutex);
-    // Release tcb list mutex
+    entry = create_tcb_entry(stack, tid);
+    Q_INSERT_TAIL(&thread_info.tcb_list, entry, link);
+    mutex_lock(&entry->mutex);
     mutex_unlock(&thread_info.tcb_mutex);
+    //wait for other thread to acknowledge
+    cond_wait(&entry->cvar, &entry->mutex);
+    mutex_unlock(&entry->mutex);
+    // Release tcb list mutex
 }
 
-tcb_t* add_tcb_entry(void* stack, int tid)
+tcb_t* create_tcb_entry(void* stack, int tid)
 {
     tcb_t* entry = (tcb_t*)malloc(sizeof(tcb_t));
     Q_INIT_ELEM(entry, link);
@@ -192,6 +212,5 @@ tcb_t* add_tcb_entry(void* stack, int tid)
     entry->status = NOTYET;
     cond_init(&entry->cvar);
     mutex_init(&entry->mutex);
-    Q_INSERT_TAIL(&thread_info.tcb_list, entry, link);
     return entry;
 }
