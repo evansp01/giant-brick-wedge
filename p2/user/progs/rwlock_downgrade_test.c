@@ -88,7 +88,6 @@ void *downgrade(void *args)
         lprintf("Wrong order, expected reader");
         pass = -1;
     }
-    lprintf("Reader(downgraded) %d running", thr_num);
     sleep(500);
     rwlock_downgrade(&lock);
     lprintf("Reader(downgraded) %d running", thr_num);
