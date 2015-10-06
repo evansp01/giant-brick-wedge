@@ -47,8 +47,9 @@ typedef struct thread_info_t {
 /** @brief Thread info struct */
 static thread_info_t thread_info;
 
-tcb_t* create_tcb_entry(void* stack, int tid);
+tcb_t* get_tcb_entry(int tid);
 tcb_t* get_locked_tcb_entry(int tid);
+tcb_t* create_tcb_entry(void* stack, int tid);
 
 /* thread library functions */
 int thr_init(unsigned int size)
@@ -101,6 +102,7 @@ int thr_join(int tid, void** statusp)
     }
     //now that the entry is joining, we should be okay
     mutex_unlock(&entry->mutex);
+    // we have no locks at all!
     mutex_lock(&thread_info.tcb_mutex);
     Q_REMOVE(&thread_info.tcb_list, entry, link);
     mutex_unlock(&thread_info.tcb_mutex);
@@ -160,12 +162,27 @@ tcb_t* get_locked_tcb_entry(int tid)
     return NULL;
 }
 
+tcb_t* get_tcb_entry(int tid)
+{
+    tcb_t* entry;
+    Q_FOREACH(entry, &thread_info.tcb_list, link)
+    {
+        if (entry->tid == tid) {
+            return entry;
+        }
+    }
+    return NULL;
+}
+
 void ensure_tcb_exists(void* stack, int tid)
 {
     // Acquire tcb list mutex
     // Check if tcb entry has already been created
-    tcb_t* entry = get_locked_tcb_entry(tid);
+    mutex_lock(&thread_info.tcb_mutex);
+    tcb_t* entry = get_tcb_entry(tid);
     if (entry != NULL) {
+        mutex_lock(&entry->mutex);
+        mutex_unlock(&thread_info.tcb_mutex);
         //acknowledge that the thread exists
         entry->status = RUNNING;
         //drop the mutex
@@ -174,11 +191,9 @@ void ensure_tcb_exists(void* stack, int tid)
         cond_signal(&entry->cvar);
         return;
     }
-    // Otherwise create tcb entry
     entry = create_tcb_entry(stack, tid);
-    mutex_lock(&thread_info.tcb_mutex);
-    mutex_lock(&entry->mutex);
     Q_INSERT_TAIL(&thread_info.tcb_list, entry, link);
+    mutex_lock(&entry->mutex);
     mutex_unlock(&thread_info.tcb_mutex);
     //wait for other thread to acknowledge
     cond_wait(&entry->cvar, &entry->mutex);

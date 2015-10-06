@@ -68,7 +68,7 @@ UPDATE_METHOD = afs
 	cvar_test cyclone excellent getpid_test1 halt_test join_specific_test \
 	juggle largetest mandelbrot multitest mutex_destroy_test \
 	paraguay stack_test1 switzerland thr_exit_join wild_test1 racer \
-    misbehave misbehave_wrap initial fine grained locks
+    misbehave misbehave_wrap
 
 # nibbles - can't build
 # rwlock_downgrade_read_test - rwlocks
