@@ -12,7 +12,6 @@ void threaded_exit()
 
 void exit(int status)
 {
-    lprintf("hii");
     if (thread_initialized) {
         thr_exit((void *)status);
         EXIT_ERROR("thread exit returned");
