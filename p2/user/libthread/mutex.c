@@ -24,7 +24,7 @@
  *  to the unlocked state.
  *
  *  @param mp The mutex to initialize
- *  @return void
+ *  @return zero on success, less than zero on failure
  **/
 int mutex_init(mutex_t* mp)
 {

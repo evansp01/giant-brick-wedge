@@ -5,6 +5,13 @@
 #include <simics.h>
 #include <errors.h>
 
+/** @brief Initialize a condition variable allocating needed resources
+ *  It is not valid to wait, signal, or broadcast on a condition variable
+ *  before it has been initialized
+ *
+ *  @param cv The condition variable to initialize
+ *  @return zero on success, less than zero on failure
+ */
 int cond_init(cond_t* cv)
 {
     if (mutex_init(&cv->m) < 0) {
@@ -14,6 +21,13 @@ int cond_init(cond_t* cv)
     return 0;
 }
 
+/** @brief Destroy a condition variable freeing all associated resources
+ *  It is illegel to destroy a condition variable while there are threads
+ *  waiting on it
+ *
+ *  @param cv The condition variable to destroy
+ *  @return void
+ **/
 void cond_destroy(cond_t* cv)
 {
     mutex_destroy(&cv->m);
@@ -23,6 +37,12 @@ void cond_destroy(cond_t* cv)
     QUEUE_FREE(&cv->waiting);
 }
 
+/** @brief Wait on a condition variable until signaled by cond_signal
+ *
+ *  @param cv The condition variable to wait on
+ *  @param mp The mutex to wait with
+ *  @return void
+ **/
 void cond_wait(cond_t* cv, mutex_t* mp)
 {
     int dontreject = 0;
@@ -36,6 +56,11 @@ void cond_wait(cond_t* cv, mutex_t* mp)
     mutex_lock(mp);
 }
 
+/** @brief Signal a waiting thread if such a thread exists
+ *
+ *  @param cv The condition variable to signal on
+ *  @return void
+ **/
 void cond_signal(cond_t* cv)
 {
     int tid;
@@ -51,6 +76,11 @@ void cond_signal(cond_t* cv)
     mutex_unlock(&cv->m);
 }
 
+/** @brief Signal all threads currently waiting on the condition variable
+ *
+ *  @param cv The condition varaible to broadcast on
+ *  @return void
+ **/
 void cond_broadcast(cond_t* cv)
 {
     int tid;
