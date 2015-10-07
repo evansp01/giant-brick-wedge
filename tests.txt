@@ -7,39 +7,49 @@ Passed:
     cvar_test
     cyclone
     getpid_test1
+    halt_test
     join_specific_test
     paraguay
     stack_test1
     switzerland
     thr_exit_join
     mutex_destroy_test
-    racer
+    rwlock_downgrade_read_test
+    juggle 4 3 2 0
     
 Seems to pass:
     mandelbrot (visual)
+    racer (infinite)
+    multitest (infinite)
+    wild_test1 (what is the expected behavior for single thread fault?)
     
 Passed on all misbehavior modes:
-    cyclone (default)
-    racer (default)
     startle
+    actual_wait
     agility_drill
-    
-Failed:
-    largetest - ROUND 12: failed after spawning 3539 threads - syscall to thread_fork fails
-    wild_test1 - needs fatal thread handler
-    
-Unknown:
-    multitest - infinite stress test?
+    actual_wait
+    cvar_test
+    cyclone
+    getpid_test1
+    join_specific_test
+    paraguay
+    stack_test1
+    switzerland
+    thr_exit_join
+    mutex_destroy_test
+    rwlock_downgrade_read_test
 
+Fails acceptably:
+    largetest - ROUND 12: failed after spawning 3755 threads - syscall to thread_fork fails
+
+Unknown:
+    excellent (think about what to do for certain types of thread crashes)
+    
 Not yet tested:
-    beady_test
-    bistromath
-    excellent
-    halt_test
-    juggle
+    beady_test - game
+    bistromath - game
     cat - program to print out files
     
 Not yet compiled:
     nibbles - can't build
-    rwlock_downgrade_read_test - rwlocks
     

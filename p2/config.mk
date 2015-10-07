@@ -69,8 +69,6 @@ UPDATE_METHOD = afs
     misbehave misbehave_wrap rwlock_downgrade_read_test
 
 # nibbles - can't build
-# rwlock_downgrade_read_test - rwlocks
-#
 
 ###########################################################################
 # Test programs you have written which you wish to run
