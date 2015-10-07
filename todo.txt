@@ -1,18 +1,32 @@
 Stuff to do:
-    
-    Finer grain locks
-    RWlocks
     Check void functions exiting
-    Threaded exception handler
-    Stack size for main thread
-    Improve stack handler
-    thr_getid()
-    frame_alloc special case for main thread
-    automatic thr_exit
-    
-    pass all given tests
-    test using landslide
-    
+    ?Threaded exception handler
+    ?automatic thr_exit
     Comments / Doxygen docs
     Design decisions
     general -> think about possible things that could go wrong
+
+Testing:
+    pass all given tests
+    test using landslide
+
+Reserved for commenting
+
+Evan:
+  mutex.c
+  cond.c
+  frame_alloc.c
+  autostack.c
+  thr_internals.h
+  exit.c
+
+Jonathan:
+  rwlock.c
+  sem.c
+  panic.c
+  thr_create.S => thread_asm.S?
+  thread.c
+  atomics.h
+
+
+
