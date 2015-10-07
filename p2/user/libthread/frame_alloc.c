@@ -35,12 +35,13 @@ static struct frame_alloc frame_info = {
  *
  *  Initializes the frame allocator with a size of frames to allocate and
  *  information about the stack of the initial thread. The initial thread's
- *  stack must not grow after this has been called
+ *  stack must not grow after this has been called. Also ensures that the
+ *  stack of the calling thread is at least size
  *
  *  @param size The size of frames
  *  @param stack_high The start value of the stack for the main thread
  *  @param stack_low The end value of the stack for the main thread
- *  @return void
+ *  @return zero on success and less than zero on failure
  **/
 int frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
 {
@@ -68,14 +69,24 @@ int frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
     return 0;
 }
 
-void* page_to_stack(void* frame)
+/** @brief Determine the top of the stack based on the allocated page
+ *
+ *  @param page The start of the allocated region (lowest address)
+ *  @return A pointer to the top of the stack
+ **/
+void* page_to_stack(void* page)
 {
-    if (frame == frame_info.first_low) {
+    if (page == frame_info.first_low) {
         return frame_info.first_high;
     }
-    return ((char*)frame) + frame_info.frame_size - sizeof(void*);
+    return ((char*)page) + frame_info.frame_size - sizeof(void*);
 }
 
+/** @brief Determine the pointer to the allocated page based on the stack
+ *
+ *  @param stack The top of the stack
+ *  @return A pointer to the lowest allocated address
+ **/
 void* stack_to_page(void* stack)
 {
     if (stack == frame_info.first_high) {
@@ -84,46 +95,58 @@ void* stack_to_page(void* stack)
     return ((char*)stack) - frame_info.frame_size + sizeof(void*);
 }
 
+/** @brief Get a pointer to the stack frame corresponding to index i
+ *
+ *  @param index The index of the stack frame to retreive
+ *  @return A pointer to the stack frame
+ **/
 void* frame_ptr(int index)
 {
     return frame_info.first_low - (frame_info.frame_size + PAGE_SIZE) * index;
 }
 
-enum stack_status get_address_stack(void** addr)
+/** @brief Gets the address of the stack which addr is on if the stack exists
+ *  If the status returned is FIRST_STACK or THREAD_STACK, then *stack will be
+ *  the highest address on the releveant stack. If the status is NOT_ON_STACK
+ *  or UNALLOCATED_PAGE then the stack pointer will not be modified.
+ *
+ *  @param addr The address to determine the stack of
+ *  @param stack A pointer which will be set to stack if a stack was found
+ *  @return the status of the function
+ **/
+enum stack_status get_address_stack(void *addr, void** stack)
 {
-    char* esp = (char*)get_esp();
+    char* esp = (char*)addr;
     char* max_esp = frame_info.first_high;
     char* min_esp = (char*)frame_ptr(frame_info.num_frames - 1);
     // if esp cannot be in a stack frame, return NULL
-    // TODO: are these really < and >
     if (esp > max_esp || esp < min_esp) {
-        *addr = NULL;
         return NOT_ON_STACK;
     }
     // if esp is within the first stack frame
-    // TODO: are these really <= and >=
     if (esp <= frame_info.first_high && esp >= frame_info.first_low) {
-        *addr = frame_info.first_high;
+        *stack = frame_info.first_high;
         return FIRST_STACK;
     }
     // so esp must be somewhere in the allocated thread stacks
     unsigned int offset = frame_info.first_low - esp;
     // which frame do we think it is in
     int candidate = (offset / (frame_info.frame_size + PAGE_SIZE)) + 1;
-
     char* candidate_low = frame_ptr(candidate);
     char* candidate_high = page_to_stack(candidate_low);
-
-    // TODO: are these really <= and >=
     if (esp >= candidate_low && esp <= candidate_high) {
-        *addr = candidate_high;
+        *stack = candidate_high;
         return THREAD_STACK;
     }
     //seems to be somewhere in an unallocated page
-    *addr = NULL;
     return UNALLOCATED_PAGE;
 }
 
+/** @brief Create a new stack frame at alloc_page
+ *
+ *  @param alloc_page The location to allocate the stack at
+ *  @return zero on success less than zero on failure
+ **/
 int alloc_address(void* alloc_page)
 {
     int status = new_pages(alloc_page, frame_info.frame_size);
@@ -133,6 +156,9 @@ int alloc_address(void* alloc_page)
     return status;
 }
 
+/** @brief Get an existing unused stack frame if such a frame exists
+ *  @return an existing stack frame, or NULL if no such frame exists
+ **/
 void* get_existing_frame()
 {
     frame_t* current;
@@ -184,6 +210,11 @@ void* alloc_frame()
     return stack_top;
 }
 
+/** @brief Add a frame to the list of potentially available stack frames
+ *
+ *  @param page The address of the frame to add to the list
+ *  @return a pointer to the created entry in the list of stack frames
+ **/
 frame_t* create_frame_entry(void* page)
 {
     frame_t* node = (frame_t*)malloc(sizeof(frame_t));
@@ -203,8 +234,8 @@ frame_t* create_frame_entry(void* page)
  **/
 void free_frame(void* stack)
 {
-    mutex_lock(&frame_info.frame_mutex);
     void* page = stack_to_page(stack);
+    mutex_lock(&frame_info.frame_mutex);
     frame_t* node = create_frame_entry(page);
     node->unused = 1;
     mutex_unlock(&frame_info.frame_mutex);
@@ -219,8 +250,8 @@ void free_frame(void* stack)
  **/
 void free_frame_and_vanish(void* stack)
 {
-    mutex_lock(&frame_info.frame_mutex);
     void* page = stack_to_page(stack);
+    mutex_lock(&frame_info.frame_mutex);
     frame_t* node = create_frame_entry(page);
     mutex_unlock(&frame_info.frame_mutex);
     free_and_vanish(&node->unused);

@@ -136,7 +136,7 @@ void thr_exit(void* status)
 int thr_getid(void)
 {
     int* stack;
-    switch (get_address_stack((void**)&stack)) {
+    switch (get_address_stack(get_esp(), (void**)&stack)) {
     case FIRST_STACK:
         return thread_info.base_tid;
     case THREAD_STACK:

@@ -25,7 +25,7 @@ enum stack_status {
     FIRST_STACK,
     THREAD_STACK
 };
-enum stack_status get_address_stack(void** addr);
+enum stack_status get_address_stack(void *addr, void** stack);
 
 //thread.c headers
 void ensure_tcb_exists(void* stack, int tid);
