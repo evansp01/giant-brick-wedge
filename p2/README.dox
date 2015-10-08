@@ -131,11 +131,23 @@ Thread Create
 Storing in registers for create
 -------------------------------
 
+Our thread create is written in assembly since once we are in the child thread
+we don't want to use the stack until we have set up the stack pointer so we
+are not on our parent's stack.
+
 Making sure tcb is created when function returns
 ------------------------------------------------
 
-Syncronizing main and created thread
-------------------------------------
+Thread create is responsible for adding the entry for the created thread to the
+tcb. It is important that when the parent returns, and when the child starts
+running this tcb entry exists. To ensure this, the first thread which is run
+will create the tcb entry, and then wait on a condition variable for the second
+thread to acknowledge that the entry has been created.
+
+Simply checking if the tcb entry exists and creating it if not in both threads
+is not sufficient to prevent a race. If the child thread exits and is joined
+before the main thread gets to run, this would result in an extra tcb entry
+being added for the child.
 
 Thread Exit and Join
 ====================
@@ -168,11 +180,29 @@ in a timely manner.
 Thread get id
 =============
 
-Fancy fancy id on stack
------------------------
+As part of thread create, we store the created thread's id at the top of its
+thread stack. This allows us to look up the thread id quickly in normal
+circumstances. To do this, we look at the current value of esp, and determine
+which thread stack it is on, and then return the id at the top of that stack.
+
+In cases where esp does not point to a region associated with a thread stack,
+we defer to the gettid system call (this could be the case if a thread was
+in an exception handler perhaps). It is reasonable to assume that threads
+will not execute on other thread's stacks.
+
 
 Thread exit and exit override
 -----------------------------
+
+We wrote an alternate version of exit which get's linked instead of the
+provided exit function. This version of exit calls thread exit if the thread
+library has been initalized, and does the normal set_status and vanish if it
+has not.
+
+The correctness of this solution does depend on the link order of the program.
+With the current Makefile, it works, but it's not as clean as we might like.
+A nicer solution would be to user the --wrap exit flag in gcc.
+
 
 Autostack Handler
 =================
