@@ -203,6 +203,10 @@ The correctness of this solution does depend on the link order of the program.
 With the current Makefile, it works, but it's not as clean as we might like.
 A nicer solution would be to user the --wrap exit flag in gcc.
 
+For this to work properly:
+    libstdlib.a must be in 410USER_LIBS_LATE
+    libthread.a must be in STUDENT_LIBS_EARLY
+
 
 Autostack Handler
 =================
