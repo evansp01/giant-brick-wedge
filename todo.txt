@@ -1,6 +1,5 @@
 Stuff to do:
     Check void functions exiting
-    ?Threaded exception handler
     ?automatic thr_exit
     Comments / Doxygen docs
     Design decisions
@@ -13,12 +12,12 @@ Testing:
 Reserved for commenting
 
 Evan:
-  mutex.c
-  cond.c
-  frame_alloc.c
+  -mutex.c
+  -cond.c
+  -frame_alloc.c
   autostack.c
   thr_internals.h
-  exit.c
+  -exit.c
 
 Jonathan:
   rwlock.c

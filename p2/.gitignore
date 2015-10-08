@@ -49,3 +49,6 @@ temp/*
 .md5s
 kernel.log
 *.swp
+doc/*
+doxygen.warn
+

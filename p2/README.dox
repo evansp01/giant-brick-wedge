@@ -1,10 +1,95 @@
 /**
 
-@mainpage 15-410 Project 2
+@mainpage 15=410 Project 2
 
-@author Name1 (id1)
-@author Name2 (id2)
-
-Same drill as last time.
+@author Jonathan Ong (jonathao)
+@author Evan Palmer (esp)
 
 */
+
+
+
+Concurrecy
+==========
+
+Mutexes
+=======
+
+Fairness
+--------
+
+Condition Varaibles
+===================
+
+That race condition we solve by yielding
+----------------------------------------
+
+Semaphores
+==========
+
+Reader Writer Locks
+===================
+
+Fairness
+-------
+
+
+Thread Library
+==============
+
+Thread init
+===========
+
+Guarantees for thread stack size and stuff
+
+tid is system tid and why
+-------------------------
+
+  deschedule in cvars would be awful
+
+Fine grained locks
+------------------
+
+Frame Allocator
+===============
+
+Reusing Frames
+--------------
+
+Thread Create
+=============
+
+Storing in registers for create
+-------------------------------
+
+Making sure tcb is created when function returns
+------------------------------------------------
+
+Syncronizing main and created thread
+------------------------------------
+
+Thread Exit and Join
+====================
+
+Freeing the frame without weird race
+-------------------------------------
+
+Making sure only one person is joining
+--------------------------------------
+
+Waiting and signaling with exit
+------------------------------
+
+Thread get id
+=============
+
+Fancy fancy id on stack
+-----------------------
+
+Thread exit and exit override
+-----------------------------
+
+Autostack Handler
+=================
+
+We did it! Grow the required amount, reregister handler
