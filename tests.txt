@@ -53,3 +53,28 @@ Not yet tested:
 Not yet compiled:
     nibbles - can't build
     
+Landslide:
+    thr_exit_join                   30m         PASS
+    mutex_test                      30m         PASS
+    paradise_lost                   30m         PASS
+    broadcast_test                  30m         PASS
+    paraguay                        30m         PASS
+    rwlock_downgrade_read_test      30m         PASS
+    
+    thr_exit_join                   3h          PASS
+    mutex_test                      3h          PASS
+    paradise_lost                   3h          PASS
+    broadcast_test                  3h          PASS
+    paraguay                        3h          PASS
+    rwlock_downgrade_read_test      3h          PASS
+    
+    thr_exit_join                   12h         ...IN PROGRESS... [andrew u5]
+    mutex_test                      12h         ...IN PROGRESS... [andrew u2]
+    paradise_lost                   12h         PASS
+    broadcast_test                  12h         
+    paraguay                        12h         ...IN PROGRESS... [andrew u3]
+    rwlock_downgrade_read_test      12h         
+    
+    
+    
+    
