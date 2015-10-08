@@ -1,5 +1,8 @@
 /** @file rwlock_type.h
  *  @brief This file defines the type for reader/writer locks.
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs.
  */
 
 #ifndef _RWLOCK_TYPE_H
@@ -11,7 +14,8 @@
 #define RWLOCK_READ  0
 #define RWLOCK_WRITE 1
 
-
+/** @brief Struct for reader/writer locks
+ */
 typedef struct rwlock {
     mutex_t m;
     cond_t cv_readers;

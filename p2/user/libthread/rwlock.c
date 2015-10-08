@@ -1,7 +1,10 @@
-/** @file mutex.c
+/** @file rwlock.c
  *  @brief An implementation of reader/writer locks
  *
+ *  TODO: Describe rwlocks in detail
+ *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs.
  **/
 
 #include <rwlock.h>
@@ -10,6 +13,11 @@
 #include <thread.h>
 #include <simics.h>
 
+/** @brief Initializes a reader/writer lock for use
+ *
+ *  @param rwlock Reader/writer lock to initialize
+ *  @return 0 for success, -1 for failure
+ **/
 int rwlock_init(rwlock_t *rwlock)
 {
     rwlock->mode = RWLOCK_READ;
@@ -25,6 +33,11 @@ int rwlock_init(rwlock_t *rwlock)
     return 0;
 }
 
+/** @brief Destroys a reader/writer lock after use
+ *
+ *  @param rwlock Reader/writer lock to destroy
+ *  @return Void
+ **/
 void rwlock_destroy(rwlock_t *rwlock)
 {
     mutex_destroy(&rwlock->m);
@@ -32,18 +45,26 @@ void rwlock_destroy(rwlock_t *rwlock)
     cond_destroy(&rwlock->cv_writers);
 }
 
+/** @brief Locks a reader/writer lock for the given mode type
+ *
+ *  @param rwlock Reader/writer lock to be locked
+ *  @param rwlock Type of lock
+ *  @return Void
+ **/
 void rwlock_lock (rwlock_t *rwlock, int type)
 {
     mutex_lock(&rwlock->m);
     
     // A reader is attempting to get the lock
     if (type == RWLOCK_READ) {
+        
         // If there are writers queued then wait for next reader broadcast
         if (rwlock->writers_waiting > 0 || rwlock->writers_queued > 0) {
             rwlock->readers_waiting++;
             cond_wait(&rwlock->cv_readers, &rwlock->m);
             rwlock->readers_waiting--;
         }
+        
         // Carry on with reading
         rwlock->readers_active++;
     }
@@ -78,6 +99,14 @@ void rwlock_lock (rwlock_t *rwlock, int type)
     mutex_unlock(&rwlock->m);
 }
 
+/** @brief Unlocks the reader/writer lock that the current thread holds
+ *
+ *  Behavior is undefined if the calling thread is not a current owner of
+ *  the reader/writer lock
+ *
+ *  @param rwlock Reader/writer lock to be unlocked
+ *  @return Void
+ **/
 void rwlock_unlock(rwlock_t *rwlock)
 {
     mutex_lock(&rwlock->m);
@@ -111,7 +140,7 @@ void rwlock_unlock(rwlock_t *rwlock)
     /* Lock is currently in WRITE mode
      * State: A writer is currently active
      */
-    else if (rwlock->mode == RWLOCK_WRITE) {
+    else if (rwlock->mode == RWLOCK_WRITE && rwlock->owner == thr_getid()) {
         rwlock->writers_queued--;
         
         // If there are still queued writers
@@ -139,6 +168,14 @@ void rwlock_unlock(rwlock_t *rwlock)
     mutex_unlock(&rwlock->m);
 }
 
+/** @brief Downgrades the reader/writer lock that the current thread holds
+ *
+ *  Does nothing if the lock is not in WRITE mode, or if the current thread
+ *  if not the owner of the lock
+ *
+ *  @param rwlock Reader/writer lock to be downgraded
+ *  @return Void
+ **/
 void rwlock_downgrade(rwlock_t *rwlock)
 {
     mutex_lock(&rwlock->m);
