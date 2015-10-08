@@ -7,21 +7,69 @@
 
 
 
-
 Concurrecy
 ==========
 
 Mutexes
 =======
 
-Fairness
---------
+Our mutexes are fairly standard. They use an atomic exchange instruction to
+aquire the lock, and threads which fail to aquire the lock yield because the
+kernel is single threaded.
+
+Our mutexes have a few optimizations over a simple implementaton
+
+while(atomic_xchg(mutex->lock, LOCKED) == LOCKED){
+    yield(-1);
+}
+
+When a thread aquires the lock on a mutex, it sets itself as the owner of that
+mutex. When the owner is set, other threads which fail to get to the lock will
+yield to the owner instead of to an arbitrary thread. This helps in the case
+where many threads are waiting on a single mutex, since once the owner is set
+the threads will yield to the thread with the mutex.
+
+Additioanly we keep an atomic counter of the number of threads waiting on the
+mutex. When threads attempt to lock the mutex, they first optimiztically try
+to grab the lock, and if that fails, they increment the waiting counter and
+enter the yield and try to lock loop.
+
+When a thread releases a mutex, it checks to see if there are currently any
+threads waiting. If there are threads waiting on the mutex, the unlocking thread
+yields to an arbitrary thread. This prevents a single thread from hogging the
+lock in a case where there is code like.
+
+for(;;) {
+    mutex_lock(mutex);
+    i++;
+    mutex_unlock(mutex);
+}
+
+We considered implementing locks with an even stronger fairness guarantee
+using fetch and add to produce tickts, but it seemed like under heavy contention
+these locks would require many calls to yield, since aquiring thread would have
+to yield until the thread with the correct ticket got scheudled. Maybe this
+could be improved by adding a lock free datastructure which recorded who had
+what ticket, but that seemed unnecesarily complex.
+
+Our locks have the nice property that in the common case, they are very simple.
+If a lock is not contended, aquiring the lock is little more than an exchange
+and releasing the lock does not include yeilding. It is only under contention
+that we use the atomic counters and yield tricks.
 
 Condition Varaibles
 ===================
 
-That race condition we solve by yielding
-----------------------------------------
+Our condition variable implementation is not very exciting. In cond_wait
+we needed to atomically release the conditon variable mutex and deschedule
+the thread. This operation only needs to be atomic with respect to cond_signal,
+so we implement the guarantee there.
+
+In cond_signal, when waking up a thread, we keep in mind that the thread might
+not yet have been descheduled. If the schedule system call returns an error,
+we yield to the thread we are attempting to schedule, allowing it to deschedule
+itself before we attempt again. So, we only conclude that a thread has been
+awoken once the schedule system call has been run without an error.
 
 Semaphores
 ==========
@@ -29,6 +77,8 @@ Our semaphores were implemented using mutexes and condition variables. Our
 implementation is straightforward and gets its guarantees for fairness from
 our implementations of mutexes and condition variables.
 
+
+I have nothing to say
 
 Reader Writer Locks
 ===================
@@ -50,7 +100,6 @@ have a finite number of readers to wait on (all readers in the queue at the
 point in time when the writer joins) before they are guaranteed to acquire
 the lock.
 
-
 Thread Library
 ==============
 
@@ -62,7 +111,11 @@ Guarantees for thread stack size and stuff
 tid is system tid and why
 -------------------------
 
-  deschedule in cvars would be awful
+We chose our thread ids to match the system thread id. There are cases like
+an M:N system thread to thread implementation, but it works in our case.
+Additionally, using this implmentation allows us for very simple and efficient
+implementations of thr_yield, and greatly simplifies calling schedule and
+deschedule in our condition variable code.
 
 Fine grained locks
 ------------------
