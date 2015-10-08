@@ -1,10 +1,9 @@
 /**
 
-@mainpage 15=410 Project 2
+@mainpage 15-410 Project 2
 
 @author Jonathan Ong (jonathao)
 @author Evan Palmer (esp)
-
 
 
 Concurrecy
@@ -77,9 +76,6 @@ Our semaphores were implemented using mutexes and condition variables. Our
 implementation is straightforward and gets its guarantees for fairness from
 our implementations of mutexes and condition variables.
 
-
-I have nothing to say
-
 Reader Writer Locks
 ===================
 Our reader/writer locks were implemented using condition variables and mutexes.
@@ -123,8 +119,11 @@ Fine grained locks
 Frame Allocator
 ===============
 
-Reusing Frames
---------------
+Our frame allocator keeps track of frames which have been released by exited
+threads. These frames are reused to ensure that the memory efficiency is
+maximized. This can be done since all thread frames are guaranteed to be of a
+standard size. The allocator only requests new frames once there are no
+remaining frames in the list of reusable frames. 
 
 Thread Create
 =============
@@ -141,14 +140,30 @@ Syncronizing main and created thread
 Thread Exit and Join
 ====================
 
-Freeing the frame without weird race
--------------------------------------
+Thread exit is responsible for cleaning up the thread stack and placing the
+return status in its tcb entry. This ensures that the memory used by the thread
+is freed in a timely manner. The tcb entry is retained to allow other threads
+to join to the exited thread in the future.
 
-Making sure only one person is joining
---------------------------------------
+We created an additional field within our tcb to indicate if a thread has
+already requested to join the current thread. This ensures that only one
+thread can wait to join a particular thread, while other join requests would
+immediately fail at the point of request.
 
-Waiting and signaling with exit
-------------------------------
+Threads must release mutexes before releasing its stack frame and vanishing.
+Thus there is a possibly race condition since a stack frame has to be marked as
+released before it is fully released. This was solved by having a variable in
+the tcb marking the frame's usage status. The code to free the frame and vanish
+the task was written in assembly to set the frame status to 'unused' and then
+immediately vanish. New threads would avoid reusing the frame before the status
+had been set, and once the status is set the thread stack is no longer required
+and thus would be safe to reuse.
+
+If a thread attempts to join another thread which is still active, it will
+wait on a condition variable. The exiting thread signals this conditional
+variable right before it exits, thus allowing the joining thread to proceed
+in a timely manner.
+
 
 Thread get id
 =============
@@ -161,7 +176,12 @@ Thread exit and exit override
 
 Autostack Handler
 =================
+Our autostack handler was written according to the specifications provided.
+The handler checks that a page fault occured, grows the stack by the required
+amount, then re-registers the handler.
 
-We did it! Grow the required amount, reregister handler
+Our thread-crash handler for multi-threaded applications simply kills all
+threads in the current task whenever a crash occurs, to prevent further
+undefined behavior from occuring.
 
 */
