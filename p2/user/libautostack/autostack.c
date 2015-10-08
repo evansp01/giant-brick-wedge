@@ -59,29 +59,10 @@ void autostack_fault(void* arg, ureg_t* ureg)
 
 void threaded_fault(void* arg, ureg_t* ureg)
 {
-    switch (ureg->cause) {
-    // these are traps, probably they don't come here
-    case SWEXN_CAUSE_DEBUG:
-    case SWEXN_CAUSE_BREAKPOINT:
-    case SWEXN_CAUSE_OVERFLOW:
-        swexn(stack.handler_stack, threaded_fault, &stack, NULL);
-        return;
-    // here are faults. We die when these happen
-    case SWEXN_CAUSE_FPUFAULT:  /* old x87 FPU is angry */
-    case SWEXN_CAUSE_SIMDFAULT: /* SSE/SSE2 FPU is angry */
-        lprintf("I am very surprised");
-    case SWEXN_CAUSE_DIVIDE: /* Very clever, Intel */
-    case SWEXN_CAUSE_BOUNDCHECK:
-    case SWEXN_CAUSE_OPCODE:     /* SIGILL */
-    case SWEXN_CAUSE_NOFPU:      /* FPU missing/disabled/busy */
-    case SWEXN_CAUSE_SEGFAULT:   /* segment not present */
-    case SWEXN_CAUSE_STACKFAULT: /* ouch */
-    case SWEXN_CAUSE_PROTFAULT:  /* aka GPF */
-    case SWEXN_CAUSE_PAGEFAULT:  /* cr2 is valid! */
-    case SWEXN_CAUSE_ALIGNFAULT:
-    default:
-        task_vanish(ureg->cause);
-    }
+    lprintf("Thread %d received an unhandled exception %x exiting",
+            gettid(), ureg->cause);
+    lprintf("Killing process");
+    task_vanish(ureg->cause);
 }
 
 void install_autostack(void* stack_high, void* stack_low)

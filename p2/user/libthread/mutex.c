@@ -63,7 +63,7 @@ void mutex_lock(mutex_t* mp)
     //might as well get the tid, we'll need it later
     int thread_id = thr_getid();
     //let's see if we can get the lock immediately (provided nobody is waiting)
-    if (mp->waiting == 0 && atomic_xchg(&mp->lock, LOCKED) == UNLOCKED) {
+    if (atomic_xchg(&mp->lock, LOCKED) == UNLOCKED) {
         mp->owner = thread_id;
         return;
     }
