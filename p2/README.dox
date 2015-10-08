@@ -5,7 +5,6 @@
 @author Jonathan Ong (jonathao)
 @author Evan Palmer (esp)
 
-*/
 
 
 
@@ -26,12 +25,30 @@ That race condition we solve by yielding
 
 Semaphores
 ==========
+Our semaphores were implemented using mutexes and condition variables. Our
+implementation is straightforward and gets its guarantees for fairness from
+our implementations of mutexes and condition variables.
+
 
 Reader Writer Locks
 ===================
+Our reader/writer locks were implemented using condition variables and mutexes.
 
-Fairness
--------
+We prevent the starvation of readers by allowing readers to acquire the lock as
+long as there are no writers waiting, and by ensuring that readers which join
+the queue ahead of writers will get to go in that order. Whenever one reader
+acquires the lock, all readers waiting in line at that point in time will also
+acquire the lock to maximize efficiency. If there are writers waiting, new
+readers will have to wait for those writers to finish before proceeding.
+Readers are guaranteed a finite number of writers to wait for (at most all the
+writers in the queue at the point in time the reader joins).
+
+We prevent the starvation of writers by ensuring that whenever a writer joins
+the waiting queue and the lock is in read mode, all future readers attempting
+to acquire the lock will wait instead of proceeding. Thus the waiting writers
+have a finite number of readers to wait on (all readers in the queue at the
+point in time when the writer joins) before they are guaranteed to acquire
+the lock.
 
 
 Thread Library
@@ -93,3 +110,5 @@ Autostack Handler
 =================
 
 We did it! Grow the required amount, reregister handler
+
+*/
