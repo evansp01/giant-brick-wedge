@@ -18,15 +18,7 @@ struct autostack {
 
 struct autostack stack;
 
-/*
- *
- * If a thread encounters a page fault, the user-space software exception handler has
- * a chance to react; otherwise, the kernel’s default policy will kill the thread. In the case of a page
- * fault, the cause field of the ureg structure will be 14 (SWEXN CAUSE PAGEFAULT), the eip field will
- * contain the address of the faulting instruction, the cr2 field will contain the memory address which
- * resulted in the fault, and the error code field will contain the reason why that memory address
- * was inaccessible (see Intel’s documentation of the page-fault exception for details).
- */
+
 
 void autostack_fault(void* arg, ureg_t* ureg)
 {
