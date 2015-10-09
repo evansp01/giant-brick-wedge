@@ -1,3 +1,11 @@
+/** @file frame_alloc.c
+ *
+ *  @brief Allocator for stack frames
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
 #include <syscall.h>
 #include <stdlib.h>
 #include <simics.h>
@@ -74,7 +82,7 @@ int frame_alloc_init(unsigned int size, void* stack_high, void* stack_low)
  *  @param page The start of the allocated region (lowest address)
  *  @return A pointer to the top of the stack
  **/
-void* page_to_stack(void* page)
+static void* page_to_stack(void* page)
 {
     if (page == frame_info.first_low) {
         return frame_info.first_high;
@@ -87,7 +95,7 @@ void* page_to_stack(void* page)
  *  @param stack The top of the stack
  *  @return A pointer to the lowest allocated address
  **/
-void* stack_to_page(void* stack)
+static void* stack_to_page(void* stack)
 {
     if (stack == frame_info.first_high) {
         return frame_info.first_low;
@@ -100,7 +108,7 @@ void* stack_to_page(void* stack)
  *  @param index The index of the stack frame to retreive
  *  @return A pointer to the stack frame
  **/
-void* frame_ptr(int index)
+static void* frame_ptr(int index)
 {
     return frame_info.first_low - (frame_info.frame_size + PAGE_SIZE) * index;
 }
@@ -147,7 +155,7 @@ enum stack_status get_address_stack(void *addr, void** stack)
  *  @param alloc_page The location to allocate the stack at
  *  @return zero on success less than zero on failure
  **/
-int alloc_address(void* alloc_page)
+static int alloc_address(void* alloc_page)
 {
     int status = new_pages(alloc_page, frame_info.frame_size);
     if (status < 0) {
@@ -159,7 +167,7 @@ int alloc_address(void* alloc_page)
 /** @brief Get an existing unused stack frame if such a frame exists
  *  @return an existing stack frame, or NULL if no such frame exists
  **/
-void* get_existing_frame()
+static void* get_existing_frame()
 {
     frame_t* current;
     int found = 0;
@@ -215,7 +223,7 @@ void* alloc_frame()
  *  @param page The address of the frame to add to the list
  *  @return a pointer to the created entry in the list of stack frames
  **/
-frame_t* create_frame_entry(void* page)
+static frame_t* create_frame_entry(void* page)
 {
     frame_t* node = (frame_t*)malloc(sizeof(frame_t));
     Q_INIT_ELEM(node, link);

@@ -1,3 +1,10 @@
+/** @file exit.c
+ *  @brief An alternative implementation of the exit function
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug Depends on link order
+ **/
+
 #include <syscall.h>
 #include <stdlib.h>
 #include <thread.h>
