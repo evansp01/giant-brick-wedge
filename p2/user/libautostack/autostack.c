@@ -67,7 +67,7 @@ static void autostack_fault(void* arg, ureg_t* ureg)
  **/
 static void threaded_fault(void* arg, ureg_t* ureg)
 {
-    lprintf("Thread %d received an unhandled exception %x exiting",
+    lprintf("Thread %d received an unhandled exception 0x%x exiting",
             gettid(), ureg->cause);
     lprintf("Killing process");
     task_vanish(ureg->cause);
