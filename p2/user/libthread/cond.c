@@ -1,3 +1,10 @@
+/** @file cond.c
+ *  @brief An implementation of condition variables
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
 #include <cond.h>
 #include <thr_internals.h>
 #include <syscall.h>
