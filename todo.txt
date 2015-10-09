@@ -15,8 +15,8 @@ Evan:
   -mutex.c
   -cond.c
   -frame_alloc.c
-  autostack.c
-  thr_internals.h
+  -autostack.c
+  -thr_internals.h
   -exit.c
 
 Jonathan:
