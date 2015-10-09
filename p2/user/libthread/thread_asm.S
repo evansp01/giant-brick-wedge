@@ -1,3 +1,10 @@
+/** @file thread_asm.S
+ *  @brief Assembly implementation of various thread functions
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+ 
 #include <syscall_int.h>
 #include <simics.h>
 
@@ -5,9 +12,9 @@
 thr_create:
     pushl %ebp
     movl %esp, %ebp
-    call alloc_frame
+    call alloc_frame        # get a stack frame
     movl %eax, %edx         # edx is now stack
-    cmp $0, %edx
+    cmp $0, %edx            # check if a frame was allocated
     je alloc_failed         # our frame is a null pointer
     movl 0x8(%ebp), %ecx    # get func
     movl %ecx, -0x8(%edx)   # put func on stack
@@ -15,7 +22,7 @@ thr_create:
     movl %ecx, -0x4(%edx)   # put arg on stack
     int $THREAD_FORK_INT    # call thread fork
     movl %eax, %ecx         # store return value in ecx
-    cmp $0, %ecx
+    cmp $0, %ecx            # find out which thread we are in
     je child
     jg parent
 failure:
@@ -46,13 +53,14 @@ exit:
     pop %ebp
     ret
 
-
+    
 .global free_and_vanish
 free_and_vanish:
     movl 4(%esp), %edx     # move the page address to edx for syscall
     movl $1, (%edx)        # *node->unused = 1
     int $VANISH_INT        # vanish()
 
+    
 .global get_esp
 get_esp:
     movl %esp, %eax

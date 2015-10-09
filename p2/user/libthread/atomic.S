@@ -1,6 +1,7 @@
 /** @file atomic.S
- *  @brief Some atomic operations
- *  @author Evan Palmer (esp)
+ *  @brief Some atomic operations in assembly
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
  **/
 
@@ -22,11 +23,11 @@ atomic_cas:
 .global atomic_inc
 atomic_inc:
         movl 4(%esp), %ecx
-  lock  incl (%ecx)
+  lock  incl (%ecx)                 # increment
         ret
 
 .global atomic_dec
 atomic_dec:
         movl 4(%esp), %ecx
-  lock  decl (%ecx)
+  lock  decl (%ecx)                 # decrement
         ret

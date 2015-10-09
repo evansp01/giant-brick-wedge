@@ -1,12 +1,10 @@
 /** @file thread.c
- *  @brief This file defines thread-management interface.
+ *  @brief Implementation of the thread functions.
  *
- *  It should NOT contain any of the thread library internals.
- *  Therefore, you may NOT modify this file.
- *
- *  However, you MAY modify user/libthread/thr_internals.h.
- *
- */
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+ 
 #include <thr_internals.h>
 #include <stdlib.h>
 #include <syscall.h>
@@ -24,6 +22,7 @@ enum thread_status {
     EXITED
 };
 
+/** @brief tcb struct */
 typedef struct tcb {
     Q_NEW_LINK(tcb) link;
     void* stack;
@@ -44,14 +43,21 @@ typedef struct thread_info_t {
     int base_tid;
 } thread_info_t;
 
-/** @brief Thread info struct */
 static thread_info_t thread_info;
 
 tcb_t* get_tcb_entry(int tid);
 tcb_t* get_locked_tcb_entry(int tid);
 tcb_t* create_tcb_entry(void* stack, int tid);
 
-/* thread library functions */
+/** @brief Initialize the multi-threaded environment
+ *
+ *  Sets future thread stacks to be of the given size and ensures that the
+ *  current thread is at least the same size. Initializes the tcb list and
+ *  its required mutexes.
+ *
+ *  @param size The size of frames
+ *  @return zero on success and less than zero on failure
+ **/
 int thr_init(unsigned int size)
 {
     install_threaded();
@@ -70,6 +76,15 @@ int thr_init(unsigned int size)
     return 0;
 }
 
+/** @brief Main wrapper for new threads
+ *
+ *  Runs the given function with arguments in the new thread.
+ *
+ *  @param func Function pointer for thread to run
+ *  @param arg Arguments to the function
+ *  @param stack_base The address of the stack base
+ *  @return Void
+ **/
 void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
 {
     //must use system call since tid is not yet on stack
@@ -84,6 +99,16 @@ void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
     thr_exit(status);
 }
 
+/** @brief Joins the given thread once it has exited
+ *
+ *  Joins the given thread as long as join has not already been called on it
+ *  by another thread. If the thread has not yet exited the function blocks.
+ *  Returns the exit status once the thread has exited.
+ *
+ *  @param tid Thread id of the thread to join
+ *  @param statusp Pointer to return the exit status of the thread
+ *  @return zero on success and less than zero on failure
+ **/
 int thr_join(int tid, void** statusp)
 {
     tcb_t* entry = get_locked_tcb_entry(tid);
@@ -117,6 +142,11 @@ int thr_join(int tid, void** statusp)
     return 0;
 }
 
+/** @brief Exits the thread and cleans up the thread stack
+ *
+ *  @param status Exit status for the thread
+ *  @return Void
+ **/
 void thr_exit(void* status)
 {
     tcb_t* entry = get_locked_tcb_entry(thr_getid());
@@ -133,6 +163,10 @@ void thr_exit(void* status)
     free_frame_and_vanish(stack);
 }
 
+/** @brief Retrieves the thread id
+ *
+ *  @return Thread id
+ **/
 int thr_getid(void)
 {
     int* stack;
@@ -149,11 +183,24 @@ int thr_getid(void)
     return gettid();
 }
 
+/** @brief Yields to the given thread
+ *
+ *  @param tid Thread id of thread to yield to
+ *  @return zero on success and less than zero on failure
+ **/
 int thr_yield(int tid)
 {
     return yield(tid);
 }
 
+/** @brief Retrieves tcb entry for the given thread
+ *
+ *  This implementation uses mutexes to guarantee the state of the tcb list
+ *  and entries.
+ *
+ *  @param tid Thread id of thread to retrieve
+ *  @return tcb entry if found, null otherwise
+ **/
 tcb_t* get_locked_tcb_entry(int tid)
 {
     tcb_t* entry;
@@ -170,6 +217,11 @@ tcb_t* get_locked_tcb_entry(int tid)
     return NULL;
 }
 
+/** @brief Retrieves tcb entry for the given thread
+ *
+ *  @param tid Thread id of thread to retrieve
+ *  @return tcb entry if found, null otherwise
+ **/
 tcb_t* get_tcb_entry(int tid)
 {
     tcb_t* entry;
@@ -182,6 +234,17 @@ tcb_t* get_tcb_entry(int tid)
     return NULL;
 }
 
+/** @brief Function to check that tcb entry for new thread exists
+ *
+ *  This function is called from both the parent and child thread. If the
+ *  entry does not yet exist, the function will create it and wait for the
+ *  other thread to acknowledge. If the entry already exists the thread will
+ *  signal the other thread.
+ *
+ *  @param stack Address of new thread stack
+ *  @param tid Thread id of created thread
+ *  @return Void
+ **/
 void ensure_tcb_exists(void* stack, int tid)
 {
     // Acquire tcb list mutex
@@ -209,6 +272,12 @@ void ensure_tcb_exists(void* stack, int tid)
     // Release tcb list mutex
 }
 
+/** @brief Function to create a new tcb entry for the current thread
+ *
+ *  @param stack Address of new thread stack
+ *  @param tid Thread id of created thread
+ *  @return pointer to new tcb entry
+ **/
 tcb_t* create_tcb_entry(void* stack, int tid)
 {
     tcb_t* entry = (tcb_t*)malloc(sizeof(tcb_t));

@@ -1,7 +1,15 @@
 /** @file rwlock.c
  *  @brief An implementation of reader/writer locks
  *
- *  TODO: Describe rwlocks in detail
+ *  This implementation attempts to prevent starvation of both readers and
+ *  writers. Queues for both readers and writers are maintained using condition
+ *  variables.
+ *
+ *  Whenever one reader acquires the lock, all readers waiting in line will
+ *  also acquire the lock. If there are writers waiting, new readers will have
+ *  to wait for those writers to finish before proceeding. Whenever a writer
+ *  joins the waiting queue and the lock is in read mode, all future readers
+ *  will have to wait.
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs.

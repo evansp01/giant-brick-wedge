@@ -4,7 +4,7 @@
  *  This implementation of mutexes tracks an owner and the number of threads
  *  waiting to allow for some fairness guarantees.
  *
- *  @author Evan Palmer (esp)
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
  **/
 

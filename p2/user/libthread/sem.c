@@ -1,8 +1,6 @@
 /** @file sem.c
  *  @brief An implementation of semaphores using mutexes and cond variables
  *
- *  TODO: Describe sem in detail
- *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs.
  **/
