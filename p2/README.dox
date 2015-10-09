@@ -23,10 +23,10 @@ while(atomic_xchg(mutex->lock, LOCKED) == LOCKED){
 }
 
 When a thread acquires the lock on a mutex, it sets itself as the owner of that
-mutex. When the owner is set, other threads which fail to get to the lock will
+mutex. If the owner is set, other threads which fail to get to the lock will
 yield to the owner instead of to an arbitrary thread. This helps in the case
-where many threads are waiting on a single mutex, since once the owner is set
-the threads will yield to the thread with the mutex.
+where many threads are waiting on a single mutex, since threads will tend
+to yield to the only thread which can do work.
 
 Additionally we keep an atomic counter of the number of threads waiting on the
 mutex. When threads attempt to lock the mutex, they first optimistically try
@@ -91,10 +91,29 @@ writers in the queue at the point in time the reader joins).
 
 We prevent the starvation of writers by ensuring that whenever a writer joins
 the waiting queue and the lock is in read mode, all future readers attempting
-to acquire the lock will wait instead of proceeding. Thus the waiting writers
-have a finite number of readers to wait on (all readers in the queue at the
-point in time when the writer joins) before they are guaranteed to acquire
-the lock.
+to acquire the lock will wait instead of proceeding. Some readers can be
+reordered to run before writers, but on a finite number.
+
+Example of RWLock Execution Order:
+
+Queue at start
+
+r1 w1 r2 w2 r3 w3
+
+read mode activates, and r1, r2, r3 execute simultaneously
+
+w1 w2 w3 | w4 r4 r5 w5 r6 w6
+
+write mode activates, and w1, w2, w3 execute sequentially
+
+w4 r4 r5 w5 r6 w6 |
+
+read mode activates and r4, r5, r6 execute simultaneously
+
+w4 w5 w6 |
+
+write mode activates and w4, w5, w6 execute sequentially
+
 
 Thread Library
 ==============
