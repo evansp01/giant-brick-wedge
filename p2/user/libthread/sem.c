@@ -4,7 +4,7 @@
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs.
  **/
- 
+
 #include <sem.h>
 #include <sem_type.h>
 #include <mutex.h>
@@ -16,7 +16,7 @@
  *  Effects of using a semaphore before initialization are undefined.
  *
  *  @param sem Semaphore to initialize
- *  @param sem Maximum count for the semaphore
+ *  @param count Maximum count for the semaphore
  *  @return 0 for success, -1 for failure
  **/
 int sem_init(sem_t* sem, int count)

@@ -56,52 +56,52 @@ void rwlock_destroy(rwlock_t *rwlock)
 /** @brief Locks a reader/writer lock for the given mode type
  *
  *  @param rwlock Reader/writer lock to be locked
- *  @param rwlock Type of lock
+ *  @param type Type of lock
  *  @return Void
  **/
 void rwlock_lock (rwlock_t *rwlock, int type)
 {
     mutex_lock(&rwlock->m);
-    
+
     // A reader is attempting to get the lock
     if (type == RWLOCK_READ) {
-        
+
         // If there are writers queued then wait for next reader broadcast
         if (rwlock->writers_waiting > 0 || rwlock->writers_queued > 0) {
             rwlock->readers_waiting++;
             cond_wait(&rwlock->cv_readers, &rwlock->m);
             rwlock->readers_waiting--;
         }
-        
+
         // Carry on with reading
         rwlock->readers_active++;
     }
-    
+
     // A writer is attempting to get the lock
     else if (type == RWLOCK_WRITE) {
-        
+
         // If there is currently anyone active then wait in the queue
         if (rwlock->readers_active > 0 || rwlock->writers_queued > 0 ||
             rwlock->readers_waiting > 0) {
-            
+
             // No readers are waiting, so place writer in active queue
             if (rwlock->readers_waiting == 0)
                 rwlock->writers_queued++;
             else
                 rwlock->writers_waiting++;
-            
+
             cond_wait(&rwlock->cv_writers, &rwlock->m);
         }
-        
+
         // Otherwise carry on writing immediately
         else {
             rwlock->writers_queued++;
         }
-        
+
         // Set writer as owner of the lock
         rwlock->owner = thr_getid();
     }
-    
+
     // Now in possession of the rwlock, so set mode to type
     rwlock->mode = type;
     mutex_unlock(&rwlock->m);
@@ -118,16 +118,16 @@ void rwlock_lock (rwlock_t *rwlock, int type)
 void rwlock_unlock(rwlock_t *rwlock)
 {
     mutex_lock(&rwlock->m);
-    
+
     /* Lock is currently in READ mode
      * State: At least one reader is currently active
      */
     if (rwlock->mode == RWLOCK_READ) {
         rwlock->readers_active--;
-        
+
         // If all the current readers are done
         if (rwlock->readers_active == 0) {
-            
+
             /* Signal the next waiting writers, if any.
              * Note that there are no waiting readers if there are no waiting
              * writers.
@@ -141,29 +141,29 @@ void rwlock_unlock(rwlock_t *rwlock)
                 rwlock->writers_waiting = 0;
                 cond_signal(&rwlock->cv_writers);
             }
-            
+
         }
     }
-    
+
     /* Lock is currently in WRITE mode
      * State: A writer is currently active
      */
     else if (rwlock->mode == RWLOCK_WRITE && rwlock->owner == thr_getid()) {
         rwlock->writers_queued--;
-        
+
         // If there are still queued writers
         if (rwlock->writers_queued > 0) {
             cond_signal(&rwlock->cv_writers);
         }
-        
+
         // If all the current writers queued are done
         else {
-            
+
             // If there are readers waiting, broadcast to let them go
             if (rwlock->readers_waiting > 0) {
                 cond_broadcast(&rwlock->cv_readers);
             }
-            
+
             // If there are no readers waiting, queue the next batch of writers
             else if (rwlock->writers_waiting > 0) {
                 rwlock->writers_queued = rwlock->writers_waiting;
@@ -172,7 +172,7 @@ void rwlock_unlock(rwlock_t *rwlock)
             }
         }
     }
-    
+
     mutex_unlock(&rwlock->m);
 }
 
@@ -187,7 +187,7 @@ void rwlock_unlock(rwlock_t *rwlock)
 void rwlock_downgrade(rwlock_t *rwlock)
 {
     mutex_lock(&rwlock->m);
-    
+
     // If the calling thread already owns the lock in RWLOCK_WRITE mode
     if (rwlock->mode == RWLOCK_WRITE && rwlock->owner == thr_getid()) {
         rwlock->writers_queued--;

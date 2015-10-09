@@ -9,7 +9,7 @@
 #define QUEUE_DEFAULT_SIZE 8
 #define QUEUE_MIN_RESIZE 8
 
-/* @brief A struct for items needed for all queues */
+/** @brief A struct for items needed for all queues */
 struct queue {
     int deq;
     int size;

@@ -238,7 +238,7 @@ static frame_t* create_frame_entry(void* page)
  *
  *  Frees a previously allocated frame, allowing it to be reused
  *
- *  @param frame The frame pointer returned by alloc_frame
+ *  @param stack The frame pointer returned by alloc_frame
  *  @return void
  **/
 void free_frame(void* stack)
@@ -254,7 +254,7 @@ void free_frame(void* stack)
  *
  *  Frees a previously allocated frame, allowing it to be reused
  *
- *  @param frame The frame pointer returned by alloc_frame
+ *  @param stack The frame pointer returned by alloc_frame
  *  @return Does not return
  **/
 void free_frame_and_vanish(void* stack)

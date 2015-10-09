@@ -41,7 +41,7 @@ int thr_create();
 
 /** @brief Free the current stack frame, and vanish the thread
  *
- *  @param free_attempted A pointer to the free flag for the current frame
+ *  @param free A pointer to the free flag for the current frame
  *  @return void
  **/
 void free_and_vanish(volatile int* free);

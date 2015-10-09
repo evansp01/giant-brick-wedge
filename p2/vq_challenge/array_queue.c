@@ -52,7 +52,7 @@ inline int queue_empty_helper(struct queue* q)
 
 /** @brief Get the size of the queue
  *
- *  @param The queue to get the size of
+ *  @param q The queue to get the size of
  *  @return The size
  **/
 inline int queue_size_helper(struct queue* q)
@@ -123,6 +123,7 @@ inline int queue_peek_index(struct queue* q)
  *  should be added
  *
  *  @param q The queue
+ *  @param queue_data The data for the queue
  *  @return The index to add the item at
  **/
 int queue_add_index(struct queue* q, char** queue_data)
@@ -141,6 +142,7 @@ int queue_add_index(struct queue* q, char** queue_data)
  *  the removed item can be found
  *
  *  @param q The queue
+ *  @param queue_data The data for the queue
  *  @return The index of the removed item
  **/
 int queue_remove_index(struct queue* q, char** queue_data)
