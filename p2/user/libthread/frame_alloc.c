@@ -105,7 +105,7 @@ static void* stack_to_page(void* stack)
 
 /** @brief Get a pointer to the stack frame corresponding to index i
  *
- *  @param index The index of the stack frame to retreive
+ *  @param index The index of the stack frame to retrieve
  *  @return A pointer to the stack frame
  **/
 static void* frame_ptr(int index)
@@ -115,7 +115,7 @@ static void* frame_ptr(int index)
 
 /** @brief Gets the address of the stack which addr is on if the stack exists
  *  If the status returned is FIRST_STACK or THREAD_STACK, then *stack will be
- *  the highest address on the releveant stack. If the status is NOT_ON_STACK
+ *  the highest address on the relevant stack. If the status is NOT_ON_STACK
  *  or UNALLOCATED_PAGE then the stack pointer will not be modified.
  *
  *  @param addr The address to determine the stack of

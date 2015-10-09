@@ -29,7 +29,7 @@ int cond_init(cond_t* cv)
 }
 
 /** @brief Destroy a condition variable freeing all associated resources
- *  It is illegel to destroy a condition variable while there are threads
+ *  It is illegal to destroy a condition variable while there are threads
  *  waiting on it
  *
  *  @param cv The condition variable to destroy
@@ -85,7 +85,7 @@ void cond_signal(cond_t* cv)
 
 /** @brief Signal all threads currently waiting on the condition variable
  *
- *  @param cv The condition varaible to broadcast on
+ *  @param cv The condition variable to broadcast on
  *  @return void
  **/
 void cond_broadcast(cond_t* cv)

@@ -70,13 +70,13 @@ int atomic_xchg(volatile int* ptr, int value);
  **/
 int atomic_cas(volatile int* ptr, int newval, int oldval);
 
-/** @brief Atomicallty increment an integer
+/** @brief Atomically increment an integer
  *
  *  @param ptr The integer to atomically increment
  **/
 void atomic_inc(volatile int* ptr);
 
-/** @brief Atomicallty increment an integer
+/** @brief Atomically increment an integer
  *
  *  @param ptr The integer to atomically increment
  **/

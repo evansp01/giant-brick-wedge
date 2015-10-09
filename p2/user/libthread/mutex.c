@@ -35,7 +35,7 @@ int mutex_init(mutex_t* mp)
     return 0;
 }
 
-/** @brief Destory a mutex
+/** @brief Destroy a mutex
  *  Mutexes cannot be operated on after being destroyed unless init is called
  *  again. It is illegal to destroy a locked mutex
  *
@@ -53,7 +53,7 @@ void mutex_destroy(mutex_t* mp)
 }
 
 /** @brief Lock a mutex
- *  Blocks until the lock for this mutex is aquired
+ *  Blocks until the lock for this mutex is acquired
  *
  *  @param mp The mutex to lock
  *  @return void
