@@ -95,6 +95,7 @@ void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
     // Add tcb entry for current entry if it does not already exist
     ensure_tcb_exists(base, tid);
 
+    install_threaded();
     void* status = func(arg);
     thr_exit(status);
 }
