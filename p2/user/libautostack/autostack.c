@@ -1,7 +1,11 @@
-/* If you want to use assembly language instead of C,
- * delete this autostack.c and provide an autostack.S
- * instead.
- */
+/** @file autostack.c
+ *
+ *  @brief Page fault handler for legacy stack growth, and a handler for
+ *  normal threaded execution.
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
 
 #include <syscall.h>
 #include <malloc.h>
@@ -10,17 +14,23 @@
 
 #define EXCEPTION_STACK_SIZE PAGE_SIZE
 
+/** @brief A struct for tracking stack growth */
 struct autostack {
     unsigned int stack_high;
     unsigned int stack_low;
     void* handler_stack;
 };
 
-struct autostack stack;
+static struct autostack stack;
 
 
-
-void autostack_fault(void* arg, ureg_t* ureg)
+/** @brief Fault handler for legacy stack growth
+ *
+ *  @param arg A pointer we don't user
+ *  @param ureg The register state and fault cause
+ *  @return void
+ **/
+static void autostack_fault(void* arg, ureg_t* ureg)
 {
     // If not a pagefault, return and let default handler run
     if (ureg->cause != SWEXN_CAUSE_PAGEFAULT) {
@@ -49,7 +59,13 @@ void autostack_fault(void* arg, ureg_t* ureg)
     swexn(stack.handler_stack, autostack_fault, &stack, ureg);
 }
 
-void threaded_fault(void* arg, ureg_t* ureg)
+/** @brief Fault handler for threaded case. Kills task on exception
+ *
+ *  @param arg A pointer we don't user
+ *  @param ureg The register state and fault cause
+ *  @return void
+ **/
+static void threaded_fault(void* arg, ureg_t* ureg)
 {
     lprintf("Thread %d received an unhandled exception %x exiting",
             gettid(), ureg->cause);
@@ -57,6 +73,12 @@ void threaded_fault(void* arg, ureg_t* ureg)
     task_vanish(ureg->cause);
 }
 
+/** @brief Install the autostack page fault handler for legacy stack growth
+ *
+ *  @param stack_high The high address of main's stack
+ *  @param stack_low The low address of main's stack
+ *  @return void
+ **/
 void install_autostack(void* stack_high, void* stack_low)
 {
     stack.handler_stack = malloc(EXCEPTION_STACK_SIZE);
@@ -66,11 +88,22 @@ void install_autostack(void* stack_high, void* stack_low)
     swexn(stack.handler_stack, autostack_fault, &stack, NULL);
 }
 
+/** @brief Install page fault handler for threaded execution
+ *  @return void
+ **/
 void install_threaded()
 {
     swexn(stack.handler_stack, threaded_fault, &stack, NULL);
 }
 
+/** @brief Get the current bounds on the main thread's stack
+ *
+ *  This is only valid to call before thr_init has been called
+ *
+ *  @param stack_high This will be set to the high address of the main stack
+ *  @param stack_low This will be set to the low address of the main stack
+ *  @return void
+ **/
 void get_stack_bounds(void** stack_high, void** stack_low)
 {
     *stack_high = (void*)stack.stack_high;
