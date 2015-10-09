@@ -6,7 +6,7 @@
 #define _MUTEX_TYPE_H
 
 
-/** Struct for mutexes includes a lock count of waiting threads and owner */
+/** @brief Struct for mutexes */
 typedef struct mutex {
     volatile int lock;
     volatile int waiting;

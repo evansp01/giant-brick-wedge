@@ -8,7 +8,7 @@
 #include <array_queue.h>
 
 
-/** A queue of waiting thread ids for condition variables */
+/** @brief A queue of waiting thread ids for condition variables */
 TYPEDEF_QUEUE(tid_queue_t, int);
 
 /** @brief The structure for condition variables */
