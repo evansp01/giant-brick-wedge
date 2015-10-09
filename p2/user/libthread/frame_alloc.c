@@ -13,6 +13,7 @@
 #include <variable_queue.h>
 #include <thr_internals.h>
 
+/** @brief Struct containing frame node information */
 typedef struct frame_node {
     Q_NEW_LINK(frame_node) link;
     void* frame;
