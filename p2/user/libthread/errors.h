@@ -1,3 +1,10 @@
+/** @file errors.h
+ *
+ *  @brief A few macros for handling errors
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
 #ifndef ERRORS_H
 #define ERRORS_H
 
