@@ -6,8 +6,11 @@
 #define _MUTEX_TYPE_H
 
 
+/** @brief Struct for mutexes */
 typedef struct mutex {
-  /* fill this in */
+    volatile int lock;
+    volatile int waiting;
+    volatile int owner;
 } mutex_t;
 
 #endif /* _MUTEX_TYPE_H */
