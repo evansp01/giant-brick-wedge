@@ -51,4 +51,4 @@ kernel.log
 *.swp
 doc/*
 doxygen.warn
-
+kernel.ps
