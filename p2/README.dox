@@ -118,6 +118,14 @@ write mode activates and w4, w5, w6 execute sequentially
 Thread Library
 ==============
 
+Thread Stack Layout
+===================
+
+Our thread stacks are laid out starting at wherever the main stack originally
+started (as passed into install_autostack), and growing downward. Between
+each stack we have an unallocated page, which should provide some protection
+against threads which grow beyond their stack.
+
 Thread Init
 ===========
 
@@ -127,8 +135,8 @@ than this size, we do not take any space away. Additionally thread_init
 is the location where we inform malloc that it must start using locks, and
 do a few other such things.
 
-tid is system tid and why
--------------------------
+Our choices for thread ids
+--------------------------
 
 We chose our thread ids to match the system thread id. There are cases like
 an M:N system thread to thread implementation, but it works in our case.
@@ -159,15 +167,9 @@ remaining frames in the list of reusable frames.
 Thread Create
 =============
 
-Storing in registers for create
--------------------------------
-
 Our thread create is written in assembly since once we are in the child thread
 we don't want to use the stack until we have set up the stack pointer so we
 are not on our parent's stack.
-
-Making sure tcb is created when function returns
-------------------------------------------------
 
 Thread create is responsible for adding the entry for the created thread to the
 tcb. It is important that when the parent returns, and when the child starts
@@ -208,8 +210,8 @@ variable right before it exits, thus allowing the joining thread to proceed
 in a timely manner.
 
 
-Thread get id
-=============
+Getting the Thread Id
+=====================
 
 As part of thread create, we store the created thread's id at the top of its
 thread stack. This allows us to look up the thread id quickly in normal
@@ -222,8 +224,8 @@ in an exception handler perhaps). It is reasonable to assume that threads
 will not execute on other thread's stacks.
 
 
-Thread exit and exit override
------------------------------
+Arranging for a call to thr_exit
+===============================
 
 We wrote an alternate version of exit which gets linked instead of the
 provided exit function. This version of exit calls thread exit if the thread
