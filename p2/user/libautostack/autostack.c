@@ -89,11 +89,17 @@ void install_autostack(void* stack_high, void* stack_low)
 }
 
 /** @brief Install page fault handler for threaded execution
+ *
+ *  We usually run this handler on the thread's main stack. This will
+ *  corrupt the stack, however after this handler, the thread won't ever
+ *  run again
+ *
+ *  @param thread_stack The stack to run the handler on
  *  @return void
  **/
-void install_threaded()
+void install_threaded(void *thread_stack)
 {
-    swexn(stack.handler_stack, threaded_fault, &stack, NULL);
+    swexn(thread_stack, threaded_fault, &stack, NULL);
 }
 
 /** @brief Get the current bounds on the main thread's stack

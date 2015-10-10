@@ -60,9 +60,9 @@ tcb_t* create_tcb_entry(void* stack, int tid);
  **/
 int thr_init(unsigned int size)
 {
-    install_threaded();
     void* stack_low, *stack_high;
     get_stack_bounds(&stack_high, &stack_low);
+    install_threaded(stack_high);
     if(frame_alloc_init(size, stack_high, stack_low) < 0){
         return -1;
     }
@@ -94,8 +94,8 @@ void thr_wrapper(void* (*func)(void*), void* arg, int* stack_base)
 
     // Add tcb entry for current entry if it does not already exist
     ensure_tcb_exists(base, tid);
-
-    install_threaded();
+    // install default fault handler
+    install_threaded(base);
     void* status = func(arg);
     thr_exit(status);
 }
