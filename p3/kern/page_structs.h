@@ -19,8 +19,8 @@ typedef struct {
 
 typedef struct {
     entry_t tables[TABLES_PER_DIR];
-} directory_t;
+} page_directory_t;
 
 typedef struct {
     entry_t pages[PAGES_PER_TABLE];
-} table_t;
+} page_table_t;

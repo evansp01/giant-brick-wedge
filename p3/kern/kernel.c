@@ -20,9 +20,10 @@
 
 /* x86 specific includes */
 #include <x86/asm.h>                /* enable_interrupts() */
+#include <common.h>
 
 /** @brief Kernel entrypoint.
- *  
+ *
  *  This is the entrypoint for the kernel.
  *
  * @return Does not return
