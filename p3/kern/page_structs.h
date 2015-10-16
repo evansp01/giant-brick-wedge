@@ -1,5 +1,8 @@
 #include <stdint.h>
 
+#define PAGES_PER_TABLE 1024
+#define TABLES_PER_DIR 1024
+
 typedef struct {
     uint32_t present: 1;             /* bit 0 */
     uint32_t read_write: 1;          /* bit 1 */
@@ -13,3 +16,11 @@ typedef struct {
     uint32_t available: 3;           /* bit 9  - 11 */
     uint32_t address: 20;            /* bit 12 - 32 */
 } entry_t;
+
+typedef struct {
+    entry_t tables[TABLES_PER_DIR];
+} directory_t;
+
+typedef struct {
+    entry_t pages[PAGES_PER_TABLE];
+} table_t;
