@@ -1,3 +1,12 @@
+/** @file frame_alloc.c
+ *
+ *  @brief Functions to allocate and free frames
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <stdio.h>
 
 /** @brief Initializes the frame allocator
