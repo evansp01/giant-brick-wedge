@@ -36,6 +36,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      */
 
     lprintf( "Hello from a brand new kernel!" );
+    
+    // 1. Install fault handlers
+    
+    // 2. Setup VM
+    
+    // 3. Enable VM
+    
+    // 4. Enable interrupts
 
     while (1) {
         continue;

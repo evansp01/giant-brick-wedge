@@ -226,6 +226,11 @@ CONSTRUCT_HANDLER_C(protection)
 CONSTRUCT_HANDLER_C(page)
 {
     lprintf("Fault: Page fault handler triggered!");
+    
+    // if (kernel) panic();
+    // else if (write_to_zero_page) get_reserved_page();
+    // else if (page_table_missing) segfault();
+    
     return;
 }
 
