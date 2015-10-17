@@ -2,7 +2,7 @@
 #define COMMON_H_
 
 
-#include <page_structs.h>
+#include <vm.h>
 #include <datastructures/variable_queue.h>
 
 typedef enum thread_state {

@@ -3,7 +3,7 @@
 #include <common_kern.h>
 #include <string.h>
 #include <utilities.h>
-#include <page_structs.h>
+#include <vm.h>
 
 COMPILE_TIME_ASSERT(sizeof(address_t) == sizeof(uint32_t));
 COMPILE_TIME_ASSERT(sizeof(entry_t) == sizeof(uint32_t));
@@ -133,6 +133,17 @@ void copy_frame(void* frame, void* from)
     memcpy(frame, from, PAGE_SIZE);
 }
 
+/** @brief Create a page table with the identiy mapping to the physical pages
+ *
+ *  The table_idx is the index into the page directory. This index is also
+ *  used to determine which physical page we should start at.
+ *
+ *  @param table_idx The index into the page directory
+ *  @param pages The number of pages to create entries for
+ *  @param dir The page directory to add the page table to
+ *  @param init Initial values for flags in the page table and dir entries
+ *  @return void
+ **/
 void map_physical(int table_idx, int pages, page_directory_t* dir, entry_t init)
 {
     int page_idx;
@@ -156,6 +167,9 @@ void map_physical(int table_idx, int pages, page_directory_t* dir, entry_t init)
     set_entry_address(&dir->tables[table_idx], table);
 }
 
+/** @brief Create a page directory for the kernel with the identity mapping
+ *  @return The page directory
+ **/
 page_directory_t* init_kernel_vm()
 {
     int page_tables = DIVIDE_ROUND_UP(machine_phys_frames(), PAGES_PER_TABLE);

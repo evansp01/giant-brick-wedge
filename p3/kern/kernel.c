@@ -21,8 +21,9 @@
 /* x86 specific includes */
 #include <x86/asm.h> /* enable_interrupts() */
 #include <common.h>
-#include <page_structs.h>
+#include <vm.h>
 #include <cr.h>
+#include <utilities.h>
 
 /** @brief Looks up some kinda random addresses to see if the identity map works
  *  @param page_directory The kernel page directory
