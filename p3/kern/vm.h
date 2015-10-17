@@ -46,8 +46,17 @@ entry_t* get_table_entry(void* address, page_table_t* table);
 void* get_address(void* address, void* page);
 void zero_frame(void* frame);
 void copy_frame(void* frame, void* from);
-int virtual_to_physical(void* cr2, void* virtual, void** physical);
-page_directory_t* init_kernel_vm();
+
+int vm_to_physical(void* cr2, void* virtual,
+                   void** physical, entry_t* permissions)
+int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
+                          void** physical, entry_t* permissions)
+
+void init_virtual_memory();
+page_directory_t* create_page_directory();
+page_directory_t* create_kernel_directory();
+int vm_write(void* cr2, void* address, void* buffer, int size);
+int vm_read(void* cr2, void* address, void* buffer, int size);
 
 //headers for frame alloc
 void init_frame_alloc();

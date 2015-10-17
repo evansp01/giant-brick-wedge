@@ -69,7 +69,6 @@ void page_zfod();
 page_directory_t *init_kernel_vm();
 page_directory_t *init_process_vm();
 
-
 //writing to vm from kernel
 int vm_copy_file(void *address, char* filename, int offset, int size);
 int vm_copy_buf(void *address, void *buffer, int size);
