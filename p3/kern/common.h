@@ -1,3 +1,7 @@
+#ifndef COMMON_H_
+#define COMMON_H_
+
+
 #include <page_structs.h>
 #include <datastructures/variable_queue.h>
 
@@ -65,14 +69,11 @@ void page_zfod();
 page_directory_t *init_kernel_vm();
 page_directory_t *init_process_vm();
 
+
 //writing to vm from kernel
 int vm_copy_file(void *address, char* filename, int offset, int size);
 int vm_copy_buf(void *address, void *buffer, int size);
 int vm_zero(void *address, int size);
 
-//page table manipulation
-page_table_t *get_table(void *address, page_directory_t *directory);
-void *get_page(void *address, page_table_t *table);
-void zero_page_table(void *page);
-void zero_frame(void *frame);
-void copy_frame(void *frame, void *from);
+
+#endif // COMMON_H_
