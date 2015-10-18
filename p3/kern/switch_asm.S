@@ -4,12 +4,8 @@
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
  **/
- 
- 
-.global create_context
-create_context:
-    
- 
+
+#include <switch.h>
  
 .global restore_context
 restore_context:
@@ -17,4 +13,9 @@ restore_context:
     movl %eax, %esp         # switch stack pointers
     popa                    # restore general purpose registers
     
-    
+
+.global user_mode_first
+user_mode_first:
+    movl 4(%esp), %eax      # save the stack pointer argument
+    movl %eax, %esp         # switch stack pointers
+    USER_MODE_SWITCH

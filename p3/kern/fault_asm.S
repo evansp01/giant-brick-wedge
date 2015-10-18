@@ -6,20 +6,14 @@
  *  @bug No known bugs.
  */
 
-/** @def CONSTRUCT_HANDLER NAME
- *
- *  @brief Constructs an assembly fault handler wrapper
- *
- *  @param NAME Fault name
- *  @return Void
- **/
+#include <switch.h>
+
 .macro CONSTRUCT_HANDLER NAME
     .global \NAME\()_handler_asm
     \NAME\()_handler_asm:
-        pusha
+        KERNEL_MODE_SWITCH
         call \NAME\()_handler
-        popa
-        iret
+        USER_MODE_SWITCH
 .endm
 
 

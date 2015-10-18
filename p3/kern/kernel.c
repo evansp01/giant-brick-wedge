@@ -148,9 +148,7 @@ int load_program(pcb_t *pcb, tcb_t *tcb, char *filename)
     setup_proc_address(pcb, "idle");
     
     // Craft kernel stack contents
-    //create_context(tcb->kernel_stack);
-    
-    restore_context(tcb->kernel_stack);
+    create_context((uint32_t)tcb->kernel_stack, *USER_ESP*, *USER_EIP*);
     
     return 0;
 }
