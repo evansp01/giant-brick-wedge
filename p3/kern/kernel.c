@@ -20,6 +20,8 @@
 
 /* x86 specific includes */
 #include <x86/asm.h> /* enable_interrupts() */
+#include <control.h>
+#include <switch.h>
 #include <common.h>
 #include <vm.h>
 #include <cr.h>
@@ -101,7 +103,7 @@ void turn_on_vm(page_directory_t* dir)
     set_cr0(get_cr0() | CR0_PG);
 }
 
-int setup_proc_address(char* procname)
+int setup_proc_address(pcb_t *pcb, char* procname)
 {
     if (elf_check_header(procname) < 0) {
         lprintf("%s not a process", procname);
@@ -111,6 +113,7 @@ int setup_proc_address(char* procname)
     elf_load_helper(&elf, procname);
     page_directory_t* dir = create_page_directory();
     set_cr3((uint32_t)dir);
+    pcb->directory = dir;
 
     allocate_pages(dir, (void *)elf.e_txtstart, elf.e_txtlen, e_read_page);
     getbytes(procname, elf.e_txtoff, elf.e_txtlen, (char*)elf.e_txtstart);
@@ -123,6 +126,32 @@ int setup_proc_address(char* procname)
 
     allocate_pages(dir, (void *)elf.e_bssstart, elf.e_bsslen, e_write_page);
     memset((void*)elf.e_bssstart, 0, elf.e_bsslen);
+    return 0;
+}
+
+int create_idle()
+{
+    init_kernel_state();
+    pcb_t *pcb_entry = create_pcb_entry(NULL);
+    
+    void *stack = allocate_kernel_stack();
+    if (stack == NULL)
+        return -1;
+    
+    tcb_t *tcb_entry = create_tcb_entry(pcb_entry, stack);
+    
+    return load_program(pcb_entry, tcb_entry, "idle");
+}
+
+int load_program(pcb_t *pcb, tcb_t *tcb, char *filename)
+{
+    setup_proc_address(pcb, "idle");
+    
+    // Craft kernel stack contents
+    //create_context(tcb->kernel_stack);
+    
+    restore_context(tcb->kernel_stack);
+    
     return 0;
 }
 
@@ -153,7 +182,9 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     test_process_vm();
     char* yolo = (char*)0xf0000000;
     *yolo = 4;
-    setup_proc_address("idle");
+    
+    create_idle();
+    
     while (1) {
         continue;
     }
