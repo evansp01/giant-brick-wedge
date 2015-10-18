@@ -48,9 +48,9 @@ void zero_frame(void* frame);
 void copy_frame(void* frame, void* from);
 
 int vm_to_physical(void* cr2, void* virtual,
-                   void** physical, entry_t* permissions)
+                   void** physical, entry_t* permissions);
 int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
-                          void** physical, entry_t* permissions)
+                          void** physical, entry_t* permissions);
 
 void init_virtual_memory();
 page_directory_t* create_page_directory();

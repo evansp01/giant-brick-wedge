@@ -21,16 +21,6 @@ static struct frame_alloc {
     int next_physical_frame;
 } frames;
 
-/** @brief Zero a frame
- *  @param frame The frame to zero
- *  @return void
- **/
-void zero_frame(void* frame)
-{
-    ASSERT_PAGE_ALIGNED(frame);
-    memset(frame, 0, PAGE_SIZE);
-}
-
 /** @brief Return the next physical frame not yet touched by the frame allocator
  *
  *  @return a frame or NULL if no more physical frames are available
@@ -91,7 +81,6 @@ void* get_reserved_frame()
     }
     frames.reserved_frames--;
     void *frame = next_physical_frame();
-    zero_frame(frame);
     return frame;
 }
 
