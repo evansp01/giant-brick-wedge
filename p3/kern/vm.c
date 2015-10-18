@@ -48,6 +48,7 @@ const entry_t e_write_page = {
     .user = 1
 };
 
+
 struct {
     void* zero_page;
     page_table_t* kernel_pages[KERNEL_TABLES];
@@ -130,35 +131,6 @@ int page_bytes_left(void* address)
     return PAGE_SIZE - offset;
 }
 
-/** @brief Gets the physical mapping of a virtual address
- *  @param cr2 The page table register
- *  @param virtual The virtual address
- *  @param physical The physical address
- *  @param permissions If not null will be set to permissions of this page
- *  @return less than zero on error, otherwise bytes to end of page
- **/
-int vm_to_physical(void* cr2, void* virtual,
-                   void** physical, entry_t* permissions)
-{
-    ASSERT_PAGE_ALIGNED(cr2);
-    page_directory_t* dir = cr2;
-    entry_t* dir_entry = get_dir_entry(virtual, dir);
-    if (!dir_entry->present) {
-        return -1;
-    }
-    page_table_t* table = get_entry_address(*dir_entry);
-    entry_t* table_entry = get_table_entry(virtual, table);
-    if (!table_entry->present) {
-        return -2;
-    }
-    void* address = get_address(virtual, get_entry_address(*table_entry));
-    *physical = address;
-    if (permissions != NULL) {
-        *permissions = combine_permissions(dir_entry, table_entry);
-    }
-    return page_bytes_left(virtual);
-}
-
 /** @brief Create a page table with the identiy mapping to the physical pages
  *
  *  The table_idx is the index into the page directory. This index is also
@@ -211,6 +183,9 @@ void init_virtual_memory()
     }
 }
 
+/** @brief Allocate and initialize a page directory
+ *  @return the page directory
+ **/
 page_directory_t* create_page_directory()
 {
     int i;
@@ -227,6 +202,9 @@ page_directory_t* create_page_directory()
     return dir;
 }
 
+/** @brief Allocate and initialize a page table
+ *  @return the page table
+ **/
 page_table_t* create_page_table()
 {
     page_table_t* table = smemalign(PAGE_SIZE, PAGE_SIZE);
@@ -270,6 +248,52 @@ page_directory_t* create_kernel_directory()
     return dir;
 }
 
+int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
+{
+    page_directory_t* dir = cr2;
+    char* end = ((char*)start) + size;
+    address_t vm_start = AS_TYPE(start, address_t);
+    address_t vm_end = AS_TYPE(end, address_t);
+    int i;
+    // allocate all relevant page tables
+    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
+        entry_t* dir_entry = &dir->tables[i];
+        if (!dir_entry->present) {
+            void* frame = create_page_table();
+            if (frame == NULL) {
+                lprintf("Ran out of kernel memory for page tables");
+                return -1;
+            }
+            *dir_entry = create_entry(frame, e_user_dir);
+        }
+        int j;
+        int start_index = 0;
+        int end_index = PAGES_PER_TABLE - 1;
+        page_table_t* table = get_entry_address(*dir_entry);
+        if (i == vm_start.page_dir_index) {
+            start_index = vm_start.page_table_index;
+        }
+        if (i == vm_end.page_dir_index) {
+            end_index = vm_end.page_table_index;
+        }
+        for (j = start_index; j <= end_index; j++) {
+            entry_t* table_entry = &table->pages[j];
+            if (table_entry->present) {
+                address_t location = { 0, j, i };
+                lprintf("Error: page already allocated at %x",
+                        AS_TYPE(location, int));
+            }
+            void* frame = allocate_frame();
+            if (frame == NULL) {
+                lprintf("Ran out of frames to allocate");
+                return -2;
+            }
+            *table_entry = create_entry(frame, model);
+        }
+    }
+    return 0;
+}
+
 /** @brief Gets or creates the physical mapping of a virtual address
  *  @param cr2 The address of the page table to use
  *  @param virtual The virtual address to write to
@@ -299,6 +323,35 @@ int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
             return -1;
         }
         *table_entry = create_entry(frame, model);
+    }
+    void* address = get_address(virtual, get_entry_address(*table_entry));
+    *physical = address;
+    if (permissions != NULL) {
+        *permissions = combine_permissions(dir_entry, table_entry);
+    }
+    return page_bytes_left(virtual);
+}
+
+/** @brief Gets the physical mapping of a virtual address
+ *  @param cr2 The page table register
+ *  @param virtual The virtual address
+ *  @param physical The physical address
+ *  @param permissions If not null will be set to permissions of this page
+ *  @return less than zero on error, otherwise bytes to end of page
+ **/
+int vm_to_physical(void* cr2, void* virtual,
+                   void** physical, entry_t* permissions)
+{
+    ASSERT_PAGE_ALIGNED(cr2);
+    page_directory_t* dir = cr2;
+    entry_t* dir_entry = get_dir_entry(virtual, dir);
+    if (!dir_entry->present) {
+        return -1;
+    }
+    page_table_t* table = get_entry_address(*dir_entry);
+    entry_t* table_entry = get_table_entry(virtual, table);
+    if (!table_entry->present) {
+        return -2;
     }
     void* address = get_address(virtual, get_entry_address(*table_entry));
     *physical = address;
