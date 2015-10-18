@@ -112,14 +112,14 @@ int setup_proc_address(char* procname)
     page_directory_t* dir = create_page_directory();
     set_cr3((uint32_t)dir);
 
-    allocate_pages(dir, (void *)elf.e_txtstart, elf.e_txtlen, e_write_page);
+    allocate_pages(dir, (void *)elf.e_txtstart, elf.e_txtlen, e_read_page);
     getbytes(procname, elf.e_txtoff, elf.e_txtlen, (char*)elf.e_txtstart);
+
+    allocate_pages(dir, (void *)elf.e_rodatstart, elf.e_rodatlen, e_read_page);
+    getbytes(procname, elf.e_rodatoff, elf.e_rodatlen, (char*)elf.e_rodatstart);
 
     allocate_pages(dir, (void *)elf.e_datstart, elf.e_datlen, e_write_page);
     getbytes(procname, elf.e_datoff, elf.e_datlen, (char*)elf.e_datstart);
-
-    allocate_pages(dir, (void *)elf.e_rodatstart, elf.e_rodatlen, e_write_page);
-    getbytes(procname, elf.e_rodatoff, elf.e_rodatlen, (char*)elf.e_rodatstart);
 
     allocate_pages(dir, (void *)elf.e_bssstart, elf.e_bsslen, e_write_page);
     memset((void*)elf.e_bssstart, 0, elf.e_bsslen);

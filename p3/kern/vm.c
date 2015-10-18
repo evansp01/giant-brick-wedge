@@ -48,7 +48,6 @@ const entry_t e_write_page = {
     .user = 1
 };
 
-
 struct {
     void* zero_page;
     page_table_t* kernel_pages[KERNEL_TABLES];
@@ -254,9 +253,11 @@ int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
     char* end = ((char*)start) + size;
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
+    address_t location = { 0 };
     int i;
     // allocate all relevant page tables
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
+        location.page_dir_index = i;
         entry_t* dir_entry = &dir->tables[i];
         if (!dir_entry->present) {
             void* frame = create_page_table();
@@ -277,9 +278,9 @@ int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
             end_index = vm_end.page_table_index;
         }
         for (j = start_index; j <= end_index; j++) {
+            location.page_table_index = j;
             entry_t* table_entry = &table->pages[j];
             if (table_entry->present) {
-                address_t location = { 0, j, i };
                 lprintf("Error: page already allocated at %x",
                         AS_TYPE(location, int));
             }
@@ -289,6 +290,7 @@ int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
                 return -2;
             }
             *table_entry = create_entry(frame, model);
+            zero_frame(AS_TYPE(location, void*));
         }
     }
     return 0;
