@@ -9,6 +9,7 @@
 #define SET_BIT(var, bit) ((var) | 1 << (bit))
 #define UNSET_BIT(var, bit) ((var) & (~(1 << (bit))))
 #define AS_TYPE(address, type) (*(type*)&(address))
+void print_eflags();
 
 #define DEBUG
 
@@ -34,6 +35,7 @@
 
 #define COMPILE_TIME_ASSERT(x)
 #define ASSERT_ALIGNED(x)
+
 
 #endif
 

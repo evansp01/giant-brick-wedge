@@ -30,6 +30,7 @@
 #include <fault.h>
 #include <elf_410.h>
 #include <string.h>
+#include <eflags.h>
 
 #define PAGE_SIZE_SQUARED PAGE_SIZE* PAGE_SIZE
 #define NUM_INTEGERS 1345
@@ -115,16 +116,16 @@ int setup_proc_address(pcb_t *pcb, char* procname)
     set_cr3((uint32_t)dir);
     pcb->directory = dir;
 
-    allocate_pages(dir, (void *)elf.e_txtstart, elf.e_txtlen, e_read_page);
+    allocate_pages(dir, (void*)elf.e_txtstart, elf.e_txtlen, e_read_page);
     getbytes(procname, elf.e_txtoff, elf.e_txtlen, (char*)elf.e_txtstart);
 
-    allocate_pages(dir, (void *)elf.e_rodatstart, elf.e_rodatlen, e_read_page);
+    allocate_pages(dir, (void*)elf.e_rodatstart, elf.e_rodatlen, e_read_page);
     getbytes(procname, elf.e_rodatoff, elf.e_rodatlen, (char*)elf.e_rodatstart);
 
-    allocate_pages(dir, (void *)elf.e_datstart, elf.e_datlen, e_write_page);
+    allocate_pages(dir, (void*)elf.e_datstart, elf.e_datlen, e_write_page);
     getbytes(procname, elf.e_datoff, elf.e_datlen, (char*)elf.e_datstart);
 
-    allocate_pages(dir, (void *)elf.e_bssstart, elf.e_bsslen, e_write_page);
+    allocate_pages(dir, (void*)elf.e_bssstart, elf.e_bsslen, e_write_page);
     memset((void*)elf.e_bssstart, 0, elf.e_bsslen);
     return 0;
 }
@@ -168,6 +169,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
      */
 
     lprintf("Hello from a brand new kernel!");
+    print_eflags();
     // 1. Install fault handlers
     handler_install();
     init_frame_alloc();
