@@ -13,6 +13,28 @@
 #include <seg.h>
 #include <simics.h>
 
+
+#define GET_LOW(addr)  ((unsigned int)addr & 0xFFFF)
+#define GET_HIGH(addr) ((unsigned int)addr >> 16)
+#define TRAP 0x7
+#define INTERRUPT 0x6
+#define KERNEL 0
+#define USER 3
+/** @brief Struct for Interrupt Descriptor Table (IDT) entries
+ */
+typedef struct {
+  uint16_t offset_low;
+  uint16_t segment;
+  uint8_t reserved;
+  uint8_t gate_type : 3;
+  uint8_t D : 1;
+  uint8_t zero : 1;
+  uint8_t DPL : 2;
+  uint8_t P : 1;
+  uint16_t offset_high;
+} IDT_entry;
+
+
 /** @brief Installs the handlers in the IDT
  *
  *  @return Void
@@ -20,52 +42,26 @@
 int handler_install()
 {
   // Set IDT entry fields and add handlers to IDT
-  set_idt(divide_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_DE);
-  set_idt(debug_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_DB);
-  set_idt(nmi_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_NMI);
-  set_idt(breakpoint_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_BP);
-  set_idt(overflow_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_OF);
-  set_idt(bound_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_BR);
-  set_idt(opcode_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_UD);
-  set_idt(no_math_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_NM);
-  set_idt(double_fault_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_DF);
-  set_idt(cso_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_CSO);
-  set_idt(tss_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_TS);
-  set_idt(not_present_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_NP);
-  set_idt(stack_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_SS);
-  set_idt(protection_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_GP);
-  set_idt(page_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_PF);
-  set_idt(math_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_MF);
-  set_idt(alignment_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_AC);
-  set_idt(machine_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_MC);
-  set_idt(fpu_handler_asm, SEGSEL_KERNEL_CS, 0, IDT_XF);
-  
+  set_idt(divide_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_DE);
+  set_idt(debug_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_DB);
+  set_idt(nmi_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_NMI);
+  set_idt(breakpoint_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_BP);
+  set_idt(overflow_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_OF);
+  set_idt(bound_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_BR);
+  set_idt(opcode_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_UD);
+  set_idt(no_math_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_NM);
+  set_idt(double_fault_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_DF);
+  set_idt(cso_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_CSO);
+  set_idt(tss_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_TS);
+  set_idt(not_present_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_NP);
+  set_idt(stack_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_SS);
+  set_idt(protection_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_GP);
+  set_idt(page_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_PF);
+  set_idt(math_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MF);
+  set_idt(alignment_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_AC);
+  set_idt(machine_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MC);
+  set_idt(fpu_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_XF);
   return 0;
-}
-
-/** @brief Fills in the IDT entry and installs it
- *
- *  @param handler Address of fault handler
- *  @param segment Segment selector for destination code segment
- *  @param privilege Descriptor privilege level
- *  @param index IDT table index
- *  @return Void
- **/
-void set_idt(void *handler, uint16_t segment, uint8_t privilege, int index)
-{
-    IDT_entry entry;
-    
-    entry.offset_low = GET_LOW(handler);
-    entry.segment = segment;
-    entry.reserved = 0;
-    entry.fixed1 = 7;
-    entry.D = 1;
-    entry.fixed2 = 0;
-    entry.DPL = privilege;
-    entry.P = 1;
-    entry.offset_high = GET_HIGH(handler);
-    
-    install_idt(index, &entry);
 }
 
 /** @brief Places the IDT entry in the IDT
@@ -76,9 +72,33 @@ void set_idt(void *handler, uint16_t segment, uint8_t privilege, int index)
  **/
 void install_idt(int index, IDT_entry* entry)
 {
-    *((IDT_entry*)idt_base() + index) = *entry;
+    *(((IDT_entry*)idt_base()) + index) = *entry;
 }
- 
+
+/** @brief Fills in the IDT entry and installs it
+ *
+ *  @param handler Address of fault handler
+ *  @param segment Segment selector for destination code segment
+ *  @param type The type of gate to install
+ *  @param privilege Descriptor privilege level
+ *  @param index IDT table index
+ *  @return Void
+ **/
+void set_idt(void *handler, int segment, int type, int privilege, int index)
+{
+    IDT_entry entry;
+    entry.offset_low = GET_LOW(handler);
+    entry.segment = segment;
+    entry.reserved = 0;
+    entry.gate_type = type;
+    entry.D = 1;                     // double word size
+    entry.zero = 0;
+    entry.DPL = privilege;
+    entry.P = 1;                     // entry is preent
+    entry.offset_high = GET_HIGH(handler);
+    install_idt(index, &entry);
+}
+
 /** @brief Handler function for divide error exceptions (FAULT)
  *
  *  @return Void
@@ -225,12 +245,14 @@ CONSTRUCT_HANDLER_C(protection)
  */
 CONSTRUCT_HANDLER_C(page)
 {
+    MAGIC_BREAK;
     lprintf("Fault: Page fault handler triggered!");
-    
+    while(1) {
+        continue;
+    }
     // if (kernel) panic();
     // else if (write_to_zero_page) get_reserved_page();
     // else if (page_table_missing) segfault();
-    
     return;
 }
 

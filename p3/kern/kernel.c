@@ -122,6 +122,8 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     lprintf("virtual memory is enabled, and we haven't crashed");
     vm_diagnose(dir);
     test_process_vm();
+    char *yolo = (char *) 0xf0000000;
+    *yolo = 4;
     while (1) {
         continue;
     }

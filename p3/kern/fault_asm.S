@@ -6,13 +6,11 @@
  *  @bug No known bugs.
  */
 
- 
-/** @def CONSTRUCT_HANDLER NAME, HANDLER
+/** @def CONSTRUCT_HANDLER NAME
  *
  *  @brief Constructs an assembly fault handler wrapper
  *
  *  @param NAME Fault name
- *  @param HANDLER Pointer to the C handler function for the fault
  *  @return Void
  **/
 .macro CONSTRUCT_HANDLER NAME
