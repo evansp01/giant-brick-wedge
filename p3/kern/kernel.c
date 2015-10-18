@@ -104,53 +104,69 @@ void turn_on_vm(page_directory_t* dir)
     set_cr0(get_cr0() | CR0_PG);
 }
 
-int setup_proc_address(pcb_t *pcb, char* procname)
+page_directory_t*
+create_proc_pagedir(simple_elf_t* elf, uint32_t stack_high, uint32_t stack_low)
 {
-    if (elf_check_header(procname) < 0) {
-        lprintf("%s not a process", procname);
-        return -1;
-    }
-    simple_elf_t elf;
-    elf_load_helper(&elf, procname);
     page_directory_t* dir = create_page_directory();
+    if (dir == NULL) {
+        return NULL;
+    }
     set_cr3((uint32_t)dir);
-    pcb->directory = dir;
+    uint32_t stack_size = stack_high - stack_low;
 
-    allocate_pages(dir, (void*)elf.e_txtstart, elf.e_txtlen, e_read_page);
-    getbytes(procname, elf.e_txtoff, elf.e_txtlen, (char*)elf.e_txtstart);
+    allocate_pages(dir, (void*)elf->e_txtstart, elf->e_txtlen, e_read_page);
+    getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
 
-    allocate_pages(dir, (void*)elf.e_rodatstart, elf.e_rodatlen, e_read_page);
-    getbytes(procname, elf.e_rodatoff, elf.e_rodatlen, (char*)elf.e_rodatstart);
+    allocate_pages(dir, (void*)elf->e_rodatstart, elf->e_rodatlen, e_read_page);
+    getbytes(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen, (char*)elf->e_rodatstart);
 
-    allocate_pages(dir, (void*)elf.e_datstart, elf.e_datlen, e_write_page);
-    getbytes(procname, elf.e_datoff, elf.e_datlen, (char*)elf.e_datstart);
+    allocate_pages(dir, (void*)elf->e_datstart, elf->e_datlen, e_write_page);
+    getbytes(elf->e_fname, elf->e_datoff, elf->e_datlen, (char*)elf->e_datstart);
 
-    allocate_pages(dir, (void*)elf.e_bssstart, elf.e_bsslen, e_write_page);
-    memset((void*)elf.e_bssstart, 0, elf.e_bsslen);
-    return 0;
+    allocate_pages(dir, (void*)elf->e_bssstart, elf->e_bsslen, e_write_page);
+    memset((void*)elf->e_bssstart, 0, elf->e_bsslen);
+
+    allocate_pages(dir, (void*)stack_low, stack_size, e_write_page);
+    memset((void*)stack_low, 0, stack_size);
+    return dir;
 }
 
 int create_idle()
 {
     init_kernel_state();
-    pcb_t *pcb_entry = create_pcb_entry(NULL);
-    
-    void *stack = allocate_kernel_stack();
+    pcb_t* pcb_entry = create_pcb_entry(NULL);
+
+    void* stack = allocate_kernel_stack();
     if (stack == NULL)
         return -1;
-    
-    tcb_t *tcb_entry = create_tcb_entry(pcb_entry, stack);
-    
+
+    tcb_t* tcb_entry = create_tcb_entry(pcb_entry, stack);
+
     return load_program(pcb_entry, tcb_entry, "idle");
 }
 
-int load_program(pcb_t *pcb, tcb_t *tcb, char *filename)
+
+#define STACK_ALIGN 0xFFFFFFF0
+
+int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 {
-    setup_proc_address(pcb, "idle");
-    
+    uint32_t stack_high = 0xFFFFFFFF;
+    uint32_t stack_low = 0xFFFF000;
+    simple_elf_t elf;
+    if (elf_check_header(filename) < 0) {
+        lprintf("%s not a process", filename);
+        return -1;
+    }
+    elf_load_helper(&elf, filename);
+    pcb->directory = create_proc_pagedir(&elf, stack_high, stack_low);
+    if (pcb->directory == NULL) {
+        return -2;
+    }
     // Craft kernel stack contents
-    create_context((uint32_t)tcb->kernel_stack, *USER_ESP*, *USER_EIP*);
-    
+    uint32_t stack_entry = stack_high & STACK_ALIGN;
+    create_context((uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
+
+    user_mode_first((void *)stack_entry);
     return 0;
 }
 
@@ -178,13 +194,13 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     turn_on_vm(dir);
     // 4. Enable interrupts
     lprintf("virtual memory is enabled, and we haven't crashed");
-    vm_diagnose(dir);
-    test_process_vm();
-    char* yolo = (char*)0xf0000000;
-    *yolo = 4;
-    
-    create_idle();
-    
+    //vm_diagnose(dir);
+    //test_process_vm();
+
+    if (create_idle() < 0) {
+        panic("Cannot create first process. Kernel is sad");
+    }
+
     while (1) {
         continue;
     }

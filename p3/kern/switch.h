@@ -9,6 +9,7 @@
 #define SWITCH_H_
 
 #include <seg.h>
+#include <stdint.h>
 
 #ifdef ASSEMBLER
 
@@ -20,10 +21,11 @@
     pushl %es
     pushl %fs
     pushl %gs
-    movl $SEGSEL_KERNEL_DS, %ds
-    movl $SEGSEL_KERNEL_DS, %es
-    movl $SEGSEL_KERNEL_DS, %fs
-    movl $SEGSEL_KERNEL_DS, %gs
+    mov $SEGSEL_KERNEL_DS, %eax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
 .endm
 
 /**  @brief Restores state to user mode
@@ -38,10 +40,10 @@
 .endm
 
 #else
-    
+
 void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
 
-/** @brief Restores the context to 
+/** @brief Restores the context to
  *
  *  @param stack Stack pointer for the thread to be restored
  *  @return Void
