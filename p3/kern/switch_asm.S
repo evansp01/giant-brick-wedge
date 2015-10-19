@@ -6,13 +6,12 @@
  **/
 
 #include <switch.h>
- 
+
 .global restore_context
 restore_context:
     movl 4(%esp), %eax      # save the stack pointer argument
     movl %eax, %esp         # switch stack pointers
     popa                    # restore general purpose registers
-    
 
 .global user_mode_first
 user_mode_first:

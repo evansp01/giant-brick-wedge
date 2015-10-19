@@ -11,6 +11,8 @@
 #define _FAULT_H
 
 #include <stdint.h>
+#include <idt.h>
+#include <ureg.h>
 
 #define TRAP 0x7
 #define INTERRUPT 0x6
@@ -18,12 +20,36 @@
 #define USER 3
 
 int handler_install();
-void set_idt(void *handler, int segment, int privilege, int type, int index);
-
-
-
-void timer_interrupt_asm();
+void set_idt(void* handler, int segment, int privilege, int type, int index);
 void keyboard_interrupt_asm();
+void fault_handler(ureg_t state);
+void timer_interrupt_asm();
+
+
+#define _INT_ASM(number) interrupt##number##_asm
+#define INT_ASM(number) _INT_ASM(number)
+#define INT_ASM_H(number) void _INT_ASM(number)()
+
+INT_ASM_H(IDT_DE);
+INT_ASM_H(IDT_DB);
+INT_ASM_H(IDT_NMI);
+INT_ASM_H(IDT_BP);
+INT_ASM_H(IDT_OF);
+INT_ASM_H(IDT_BR);
+INT_ASM_H(IDT_UD);
+INT_ASM_H(IDT_NM);
+INT_ASM_H(IDT_DF);
+INT_ASM_H(IDT_CSO);
+INT_ASM_H(IDT_TS);
+INT_ASM_H(IDT_NP);
+INT_ASM_H(IDT_SS);
+INT_ASM_H(IDT_GP);
+INT_ASM_H(IDT_PF);
+INT_ASM_H(IDT_MF);
+INT_ASM_H(IDT_AC);
+INT_ASM_H(IDT_MC);
+INT_ASM_H(IDT_XF);
+
 
 /** @def CONSTRUCT_HANDLER_H(NAME)
  *
@@ -33,7 +59,7 @@ void keyboard_interrupt_asm();
  *  @return Void
  **/
 #define CONSTRUCT_HANDLER_H(NAME) \
-    void NAME ##_handler_asm()
+    void NAME##_handler_asm()
 
 /** @def CONSTRUCT_HANDLER_C(NAME)
  *
@@ -43,8 +69,7 @@ void keyboard_interrupt_asm();
  *  @return Void
  **/
 #define CONSTRUCT_HANDLER_C(NAME) \
-    void NAME ##_handler()
-
+    void NAME##_handler()
 
 // fault_asm.S headers
 /** @brief Wrapper for the divide error handler
@@ -148,16 +173,6 @@ CONSTRUCT_HANDLER_H(fpu);
 CONSTRUCT_HANDLER_H(gettid);
 
 // fault.c headers
-
-CONSTRUCT_HANDLER_C(divide);
-CONSTRUCT_HANDLER_C(debug);
-CONSTRUCT_HANDLER_C(nmi);
-CONSTRUCT_HANDLER_C(breakpoint);
-CONSTRUCT_HANDLER_C(overflow);
-CONSTRUCT_HANDLER_C(bound);
-CONSTRUCT_HANDLER_C(opcode);
-CONSTRUCT_HANDLER_C(no_math);
-CONSTRUCT_HANDLER_C(double_fault);
 
 CONSTRUCT_HANDLER_C(gettid);
 
