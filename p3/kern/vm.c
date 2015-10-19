@@ -188,7 +188,7 @@ void init_virtual_memory()
 page_directory_t* create_page_directory()
 {
     int i;
-    page_directory_t* dir = smemalign(PAGE_SIZE, PAGE_SIZE);
+    page_directory_t* dir = (page_directory_t*)smemalign(PAGE_SIZE, PAGE_SIZE);
     if (dir == NULL) {
         return NULL;
     }
@@ -206,7 +206,7 @@ page_directory_t* create_page_directory()
  **/
 page_table_t* create_page_table()
 {
-    page_table_t* table = smemalign(PAGE_SIZE, PAGE_SIZE);
+    page_table_t* table = (page_table_t*)smemalign(PAGE_SIZE, PAGE_SIZE);
     if (table == NULL) {
         return NULL;
     }
