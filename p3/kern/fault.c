@@ -12,6 +12,7 @@
 #include <idt.h>
 #include <seg.h>
 #include <simics.h>
+#include <syscall_int.h>
 
 
 #define GET_LOW(addr)  ((unsigned int)addr & 0xFFFF)
@@ -61,6 +62,9 @@ int handler_install()
   set_idt(alignment_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_AC);
   set_idt(machine_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MC);
   set_idt(fpu_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_XF);
+  
+  set_idt(gettid_handler_asm, SEGSEL_KERNEL_CS, TRAP, USER, GETTID_INT);
+  
   return 0;
 }
 
@@ -296,5 +300,14 @@ CONSTRUCT_HANDLER_C(fpu)
     return;
 }
 
+/** @brief Handler function for gettid()
+ *
+ *  @return Void
+ */
+CONSTRUCT_HANDLER_C(gettid)
+{
+    lprintf("Running gettid() handler");
+    return;
+}
 
 

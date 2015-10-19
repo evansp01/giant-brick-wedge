@@ -36,7 +36,6 @@
     popl %es
     popl %ds
     popa
-    iret
 .endm
 
 #else

@@ -18,4 +18,5 @@ restore_context:
 user_mode_first:
     movl 4(%esp), %eax      # save the stack pointer argument
     movl %eax, %esp         # switch stack pointers
-    USER_MODE_SWITCH
+    USER_MODE_SWITCH        # save data segments and general purpose registers
+    iret                    # switch to user mode

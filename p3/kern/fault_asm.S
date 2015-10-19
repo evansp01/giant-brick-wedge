@@ -14,6 +14,17 @@
         KERNEL_MODE_SWITCH
         call \NAME\()_handler
         USER_MODE_SWITCH
+        iret
+.endm
+
+.macro SYSCALL_HANDLER NAME
+    .global \NAME\()_handler_asm
+    \NAME\()_handler_asm:
+        KERNEL_MODE_SWITCH
+        call \NAME\()_handler
+        USER_MODE_SWITCH
+        movl $1, %eax
+        iret
 .endm
 
 
@@ -39,4 +50,4 @@ CONSTRUCT_HANDLER alignment
 CONSTRUCT_HANDLER machine
 CONSTRUCT_HANDLER fpu
 
-
+SYSCALL_HANDLER gettid

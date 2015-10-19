@@ -129,6 +129,11 @@ CONSTRUCT_HANDLER_H(machine);
  */
 CONSTRUCT_HANDLER_H(fpu);
 
+/** @brief Wrapper for the gettid handler
+ *  @return Void
+ */
+CONSTRUCT_HANDLER_H(gettid);
+
 // fault.c headers
 int handler_install();
 void set_idt(void *handler, int segment, int privilege, int type, int index);
@@ -142,5 +147,7 @@ CONSTRUCT_HANDLER_C(bound);
 CONSTRUCT_HANDLER_C(opcode);
 CONSTRUCT_HANDLER_C(no_math);
 CONSTRUCT_HANDLER_C(double_fault);
+
+CONSTRUCT_HANDLER_C(gettid);
 
 #endif /* _FAULT_H */
