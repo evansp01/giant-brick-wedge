@@ -30,7 +30,7 @@ static struct autostack stack;
  *  @param ureg The register state and fault cause
  *  @return void
  **/
-static void autostack_fault(void* arg, ureg_t* ureg)
+void autostack_fault(void* arg, ureg_t* ureg)
 {
     // If not a pagefault, return and let default handler run
     if (ureg->cause != SWEXN_CAUSE_PAGEFAULT) {
@@ -81,11 +81,13 @@ static void threaded_fault(void* arg, ureg_t* ureg)
  **/
 void install_autostack(void* stack_high, void* stack_low)
 {
+    /*
     stack.handler_stack = malloc(EXCEPTION_STACK_SIZE);
     stack.handler_stack = ((char*)stack.handler_stack) + EXCEPTION_STACK_SIZE;
     stack.stack_low = (unsigned int)stack_low;
     stack.stack_high = (unsigned int)stack_high;
     swexn(stack.handler_stack, autostack_fault, &stack, NULL);
+    */
 }
 
 /** @brief Install page fault handler for threaded execution
