@@ -23,7 +23,7 @@
         KERNEL_MODE_SWITCH
         call \NAME\()_handler
         USER_MODE_SWITCH
-        movl $1, %eax
+        movl $5, %eax
         iret
 .endm
 

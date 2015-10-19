@@ -307,6 +307,9 @@ CONSTRUCT_HANDLER_C(fpu)
 CONSTRUCT_HANDLER_C(gettid)
 {
     lprintf("Running gettid() handler");
+    
+    //MAGIC_BREAK;
+    
     return;
 }
 

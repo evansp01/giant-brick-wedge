@@ -133,6 +133,7 @@ int create_idle()
     pcb_t* pcb_entry = create_pcb_entry(NULL);
 
     void* stack = allocate_kernel_stack();
+    set_esp0((uint32_t)stack);
     if (stack == NULL)
         return -1;
 
