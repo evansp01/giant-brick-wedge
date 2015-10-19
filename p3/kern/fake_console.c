@@ -21,7 +21,7 @@ putbyte( char ch )
   return ch;
 }
 
-void 
+void
 putbytes( const char *s, int len )
 {
 }
@@ -58,7 +58,7 @@ show_cursor()
 {
 }
 
-void 
+void
 clear_console()
 {
 }
