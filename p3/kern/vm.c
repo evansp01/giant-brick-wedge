@@ -247,6 +247,13 @@ page_directory_t* create_kernel_directory()
     return dir;
 }
 
+/** @brief Allocates all pages in page table from start address to start+size
+ *  @param cr2 The address of the page table
+ *  @param start The virtual address to begin allocation at
+ *  @param size The amount of virtual memory to allocate pages for
+ *  @param model The permissions to use for created page table entries
+ *  @return zero on success less than zero on failure
+ **/
 int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
 {
     page_directory_t* dir = cr2;

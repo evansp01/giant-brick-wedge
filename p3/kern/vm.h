@@ -47,8 +47,6 @@ extern const entry_t e_write_page;
 //page table manipulation
 void* get_entry_address(entry_t entry);
 void set_entry_address(entry_t* entry, void* address);
-page_table_t* page_table(void* address);
-page_directory_t* page_directory(void* address);
 entry_t* get_dir_entry(void* address, page_directory_t* directory);
 entry_t* get_table_entry(void* address, page_table_t* table);
 void* get_address(void* address, void* page);
