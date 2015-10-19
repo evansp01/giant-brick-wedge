@@ -113,7 +113,7 @@ create_proc_pagedir(simple_elf_t* elf, uint32_t stack_high, uint32_t stack_low)
     }
     set_cr3((uint32_t)dir);
     uint32_t stack_size = stack_high - stack_low;
-
+    
     allocate_pages(dir, (void*)elf->e_txtstart, elf->e_txtlen, e_read_page);
     getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
 
@@ -151,7 +151,7 @@ int create_idle()
 int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 {
     uint32_t stack_high = 0xFFFFFFFF;
-    uint32_t stack_low = 0xFFFF000;
+    uint32_t stack_low = 0xFFFFF000;
     simple_elf_t elf;
     if (elf_check_header(filename) < 0) {
         lprintf("%s not a process", filename);
@@ -162,11 +162,11 @@ int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
     if (pcb->directory == NULL) {
         return -2;
     }
+    
     // Craft kernel stack contents
     uint32_t stack_entry = stack_high & STACK_ALIGN;
     create_context((uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
-
-    user_mode_first((void *)stack_entry);
+    
     return 0;
 }
 
@@ -194,8 +194,8 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     turn_on_vm(dir);
     // 4. Enable interrupts
     lprintf("virtual memory is enabled, and we haven't crashed");
-    //vm_diagnose(dir);
-    //test_process_vm();
+    vm_diagnose(dir);
+    test_process_vm();
 
     if (create_idle() < 0) {
         panic("Cannot create first process. Kernel is sad");

@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <seg.h>
 #include <eflags.h>
+#include <simics.h>
 
 /** @brief Crafts the kernel stack for the initial program
  *
@@ -23,7 +24,8 @@ void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
     kernel_stack[-2] = EFL_IOPL_RING0|EFL_IF|EFL_RESV1;
     kernel_stack[-3] = SEGSEL_USER_CS;
     kernel_stack[-4] = user_eip;
-    kernel_stack[-5] = 0;
+    //kernel_stack[-5] = 55;   // error
+    kernel_stack++;
     // POPA
     kernel_stack[-6] = 0;   // EAX
     kernel_stack[-7] = 0;   // ECX
@@ -38,6 +40,8 @@ void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
     kernel_stack[-15] = SEGSEL_USER_DS;  // ES
     kernel_stack[-16] = SEGSEL_USER_DS;  // FS
     kernel_stack[-17] = SEGSEL_USER_DS;  // GS
+    
+    MAGIC_BREAK;
     
     user_mode_first(kernel_stack-17);
 }

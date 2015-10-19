@@ -12,6 +12,7 @@
 #include <datastructures/variable_queue.h>
 #include <lmm/lmm.h>
 #include <malloc/malloc_internal.h>
+#include <page.h>
 
 
 // Global kernel state with process and thread info
@@ -109,9 +110,8 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
 void *allocate_kernel_stack()
 {
     // TODO: Change if lmm region flags are used
-    char *mem = (char *)lmm_alloc_page(&malloc_lmm, 0);
+    uint32_t mem = (uint32_t)smemalign((size_t)8, PAGE_SIZE);
     
-    // TODO: Is the pointer math correct?
-    return (void *)(mem + PAGE_SIZE - 1);
+    return (void *)(mem + PAGE_SIZE - (2*sizeof(int)));
 }
 
