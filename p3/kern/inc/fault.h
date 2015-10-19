@@ -12,6 +12,19 @@
 
 #include <stdint.h>
 
+#define TRAP 0x7
+#define INTERRUPT 0x6
+#define KERNEL 0
+#define USER 3
+
+int handler_install();
+void set_idt(void *handler, int segment, int privilege, int type, int index);
+
+
+
+void timer_interrupt_asm();
+void keyboard_interrupt_asm();
+
 /** @def CONSTRUCT_HANDLER_H(NAME)
  *
  *  @brief Constructs the assembly wrapper function declaration
@@ -135,8 +148,6 @@ CONSTRUCT_HANDLER_H(fpu);
 CONSTRUCT_HANDLER_H(gettid);
 
 // fault.c headers
-int handler_install();
-void set_idt(void *handler, int segment, int privilege, int type, int index);
 
 CONSTRUCT_HANDLER_C(divide);
 CONSTRUCT_HANDLER_C(debug);

@@ -35,6 +35,11 @@
 #define PAGE_SIZE_SQUARED PAGE_SIZE* PAGE_SIZE
 #define NUM_INTEGERS 1345
 
+
+void timer(unsigned int a) {
+
+}
+
 void test_process_vm()
 {
     int i, j;
@@ -202,6 +207,9 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     print_eflags();
     // 1. Install fault handlers
     handler_install();
+    device_handler_install(timer);
+    MAGIC_BREAK;
+    enable_interrupts();
     init_frame_alloc();
     init_virtual_memory();
     page_directory_t* dir = create_kernel_directory();

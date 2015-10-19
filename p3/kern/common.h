@@ -12,5 +12,6 @@ void handle_user_fault();
 void page_nonexistant();
 void page_permissions();
 void page_zfod();
+int device_handler_install(void (*tickback)(unsigned int));
 
 #endif // COMMON_H_

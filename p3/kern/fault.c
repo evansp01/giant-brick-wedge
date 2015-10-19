@@ -15,12 +15,6 @@
 #include <syscall_int.h>
 
 
-#define GET_LOW(addr)  ((unsigned int)addr & 0xFFFF)
-#define GET_HIGH(addr) ((unsigned int)addr >> 16)
-#define TRAP 0x7
-#define INTERRUPT 0x6
-#define KERNEL 0
-#define USER 3
 /** @brief Struct for Interrupt Descriptor Table (IDT) entries
  */
 typedef struct {
@@ -28,10 +22,10 @@ typedef struct {
   uint16_t segment;
   uint8_t reserved;
   uint8_t gate_type : 3;
-  uint8_t D : 1;
+  uint8_t double_word : 1;
   uint8_t zero : 1;
-  uint8_t DPL : 2;
-  uint8_t P : 1;
+  uint8_t privilege_level : 2;
+  uint8_t present : 1;
   uint16_t offset_high;
 } IDT_entry;
 
@@ -62,9 +56,9 @@ int handler_install()
   set_idt(alignment_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_AC);
   set_idt(machine_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MC);
   set_idt(fpu_handler_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_XF);
-  
+
   set_idt(gettid_handler_asm, SEGSEL_KERNEL_CS, TRAP, USER, GETTID_INT);
-  
+
   return 0;
 }
 
@@ -91,15 +85,15 @@ void install_idt(int index, IDT_entry* entry)
 void set_idt(void *handler, int segment, int type, int privilege, int index)
 {
     IDT_entry entry;
-    entry.offset_low = GET_LOW(handler);
+    entry.offset_low = (uint16_t)((uint32_t)handler);
     entry.segment = segment;
     entry.reserved = 0;
     entry.gate_type = type;
-    entry.D = 1;                     // double word size
+    entry.double_word = 1;                     // double word size
     entry.zero = 0;
-    entry.DPL = privilege;
-    entry.P = 1;                     // entry is preent
-    entry.offset_high = GET_HIGH(handler);
+    entry.privilege_level = privilege;
+    entry.present = 1;                     // entry is preent
+    entry.offset_high = (uint16_t) (((uint32_t) handler) >> 16);
     install_idt(index, &entry);
 }
 
@@ -307,9 +301,9 @@ CONSTRUCT_HANDLER_C(fpu)
 CONSTRUCT_HANDLER_C(gettid)
 {
     lprintf("Running gettid() handler");
-    
+
     //MAGIC_BREAK;
-    
+
     return;
 }
 

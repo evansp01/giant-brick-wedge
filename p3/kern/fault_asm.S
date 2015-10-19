@@ -27,6 +27,19 @@
         iret
 .endm
 
+.macro INTERRUPT_WRAPPER_ASM NAME
+    .global \NAME\()_asm
+    \NAME\()_asm:
+        KERNEL_MODE_SWITCH
+        call \NAME\()
+        USER_MODE_SWITCH
+        iret
+.endm
+
+
+INTERRUPT_WRAPPER_ASM timer_interrupt
+INTERRUPT_WRAPPER_ASM keyboard_interrupt
+
 
 // Assembly fault handler wrapper functions
 
