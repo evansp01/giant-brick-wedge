@@ -281,8 +281,9 @@ int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
             location.page_table_index = j;
             entry_t* table_entry = &table->pages[j];
             if (table_entry->present) {
-                lprintf("Error: page already allocated at %x",
+                lprintf("WARN: page already allocated at %x",
                         AS_TYPE(location, int));
+                continue;
             }
             void* frame = allocate_frame();
             if (frame == NULL) {

@@ -104,16 +104,14 @@ void turn_on_vm(page_directory_t* dir)
     set_cr0(get_cr0() | CR0_PG);
 }
 
-page_directory_t*
-create_proc_pagedir(simple_elf_t* elf, uint32_t stack_high, uint32_t stack_low)
+page_directory_t* create_proc_pagedir(simple_elf_t* elf)
 {
     page_directory_t* dir = create_page_directory();
     if (dir == NULL) {
         return NULL;
     }
     set_cr3((uint32_t)dir);
-    uint32_t stack_size = stack_high - stack_low;
-    
+
     allocate_pages(dir, (void*)elf->e_txtstart, elf->e_txtlen, e_read_page);
     getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
 
@@ -126,8 +124,6 @@ create_proc_pagedir(simple_elf_t* elf, uint32_t stack_high, uint32_t stack_low)
     allocate_pages(dir, (void*)elf->e_bssstart, elf->e_bsslen, e_write_page);
     memset((void*)elf->e_bssstart, 0, elf->e_bsslen);
 
-    allocate_pages(dir, (void*)stack_low, stack_size, e_write_page);
-    memset((void*)stack_low, 0, stack_size);
     return dir;
 }
 
@@ -145,28 +141,45 @@ int create_idle()
     return load_program(pcb_entry, tcb_entry, "idle");
 }
 
+uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv)
+{
+    uint32_t stack_low = 0xFFFFF000;
+    uint32_t stack_size = stack_high - stack_low;
+    allocate_pages(cr2, (void *)stack_low, stack_size, e_write_page);
+    memset((void*)stack_low, 0, stack_size);
+    return stack_high;
+}
 
 #define STACK_ALIGN 0xFFFFFFF0
+uint32_t setup_main_stack(void *cr2, int argc, char** argv)
+{
+    uint32_t stack_high = 0xFFFFFFFFF & STACK_ALIGN;
+    uint32_t *stack_current = (uint32_t *)setup_argv(cr2, stack_high, argc, argv);
+    uint32_t stack_low = 0xFFFFF000;
+    stack_current[-1] = stack_low;
+    stack_current[-2] = stack_high;
+    stack_current[-3] = (uint32_t) stack_current;
+    stack_current[-4] = argc;
+    stack_current[-5] = 0xDEAD1337;
+    return (uint32_t) (stack_current - 6);
+}
 
 int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 {
-    uint32_t stack_high = 0xFFFFFFFF;
-    uint32_t stack_low = 0xFFFFF000;
     simple_elf_t elf;
     if (elf_check_header(filename) < 0) {
         lprintf("%s not a process", filename);
         return -1;
     }
     elf_load_helper(&elf, filename);
-    pcb->directory = create_proc_pagedir(&elf, stack_high, stack_low);
+    pcb->directory = create_proc_pagedir(&elf);
     if (pcb->directory == NULL) {
         return -2;
     }
-    
+    uint32_t stack_entry = setup_main_stack(pcb->directory, 0, NULL);
     // Craft kernel stack contents
-    uint32_t stack_entry = stack_high & STACK_ALIGN;
     create_context((uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
-    
+
     return 0;
 }
 
