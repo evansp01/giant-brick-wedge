@@ -6,48 +6,57 @@
  *  @bug No known bugs.
  */
 
-#include <switch.h>
 #include <idt.h>
+#include <seg.h>
 
-.macro SYSCALL_HANDLER NAME
-    .global \NAME\()_handler_asm
-    \NAME\()_handler_asm:
-        KERNEL_MODE_SWITCH
-        call \NAME\()_handler
-        USER_MODE_SWITCH
-        iret
+/** @brief Save user mode state and switch to kernel mode */
+.macro KERNEL_MODE_SWITCH
+    pusha
+    pushl %gs
+    pushl %fs
+    pushl %es
+    pushl %ds
+    mov $SEGSEL_KERNEL_DS, %eax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
 .endm
 
-.macro INTERRUPT_WRAPPER_ASM NAME
+/**  @brief Restores state to user mode */
+.macro USER_MODE_SWITCH
+    add $8, %esp
+    popl %ds
+    popl %es
+    popl %fs
+    popl %gs
+    popa
+    add $4, %esp
+    iret
+.endm
+
+.macro INTERRUPT_ASM_WRAPPER NAME
     .global \NAME\()_asm
     \NAME\()_asm:
+        pushl $0
         KERNEL_MODE_SWITCH
+        pushl $0
+        pushl $0
         call \NAME\()
         USER_MODE_SWITCH
-        iret
 .endm
 
-INTERRUPT_WRAPPER_ASM timer_interrupt
-INTERRUPT_WRAPPER_ASM keyboard_interrupt
-
-SYSCALL_HANDLER gettid
-
-
-
-.macro INTERRUPT_ASM_ERROR INT
+.macro EXCEPTION_ASM_WRAPPER_ERROR INT
     .global interrupt\INT\()_asm
     interrupt\INT\()_asm:
         KERNEL_MODE_SWITCH
         pushl $0
         pushl $\INT\()
         call fault_handler
-        add $8, %esp
         USER_MODE_SWITCH
-        add $4, %esp
-        iret
 .endm
 
-.macro INTERRUPT_ASM INT
+.macro EXCEPTION_ASM_WRAPPER INT
     .global interrupt\INT\()_asm
     interrupt\INT\()_asm:
         pushl $0
@@ -55,30 +64,42 @@ SYSCALL_HANDLER gettid
         pushl $0
         pushl $\INT\()
         call fault_handler
-        add $8, %esp
         USER_MODE_SWITCH
-        add $4, %esp
-        iret
 .endm
 
-INTERRUPT_ASM IDT_DE
-INTERRUPT_ASM IDT_DB
-INTERRUPT_ASM IDT_NMI
-INTERRUPT_ASM IDT_BP
-INTERRUPT_ASM IDT_OF
-INTERRUPT_ASM IDT_BR
-INTERRUPT_ASM IDT_UD
-INTERRUPT_ASM IDT_NM
-INTERRUPT_ASM_ERROR IDT_DF
-INTERRUPT_ASM IDT_CSO
-INTERRUPT_ASM_ERROR IDT_TS
-INTERRUPT_ASM_ERROR IDT_NP
-INTERRUPT_ASM_ERROR IDT_SS
-INTERRUPT_ASM_ERROR IDT_GP
-INTERRUPT_ASM_ERROR IDT_PF
-INTERRUPT_ASM IDT_MF
-INTERRUPT_ASM_ERROR IDT_AC
-INTERRUPT_ASM IDT_MC
-INTERRUPT_ASM IDT_XF
+/* Assembly function for entering user mode for the first time */
+.global user_mode_switch
+user_mode_switch:
+    movl 4(%esp), %eax      # save the stack pointer argument
+    movl %eax, %esp         # switch stack pointers
+    USER_MODE_SWITCH        # perform the mode switch
+
+/* Assembly wrappers for device interrupts */
+INTERRUPT_ASM_WRAPPER timer_interrupt
+INTERRUPT_ASM_WRAPPER keyboard_interrupt
 
 
+/* Assembly wrappers for system call interrupts */
+INTERRUPT_ASM_WRAPPER gettid_syscall
+
+
+/* Assembly wrappers for various system interrutps */
+EXCEPTION_ASM_WRAPPER IDT_DE
+EXCEPTION_ASM_WRAPPER IDT_DB
+EXCEPTION_ASM_WRAPPER IDT_NMI
+EXCEPTION_ASM_WRAPPER IDT_BP
+EXCEPTION_ASM_WRAPPER IDT_OF
+EXCEPTION_ASM_WRAPPER IDT_BR
+EXCEPTION_ASM_WRAPPER IDT_UD
+EXCEPTION_ASM_WRAPPER IDT_NM
+EXCEPTION_ASM_WRAPPER_ERROR IDT_DF
+EXCEPTION_ASM_WRAPPER IDT_CSO
+EXCEPTION_ASM_WRAPPER_ERROR IDT_TS
+EXCEPTION_ASM_WRAPPER_ERROR IDT_NP
+EXCEPTION_ASM_WRAPPER_ERROR IDT_SS
+EXCEPTION_ASM_WRAPPER_ERROR IDT_GP
+EXCEPTION_ASM_WRAPPER_ERROR IDT_PF
+EXCEPTION_ASM_WRAPPER IDT_MF
+EXCEPTION_ASM_WRAPPER_ERROR IDT_AC
+EXCEPTION_ASM_WRAPPER IDT_MC
+EXCEPTION_ASM_WRAPPER IDT_XF

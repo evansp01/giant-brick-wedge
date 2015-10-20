@@ -31,7 +31,7 @@ typedef struct {
 
 /** @brief Installs the handlers in the IDT
  *
- *  @return Void
+ *  @return void
  */
 int handler_install()
 {
@@ -56,7 +56,7 @@ int handler_install()
     set_idt(INT_ASM(IDT_MC), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MC);
     set_idt(INT_ASM(IDT_XF), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_XF);
 
-    set_idt(gettid_handler_asm, SEGSEL_KERNEL_CS, TRAP, USER, GETTID_INT);
+    set_idt(NAME_ASM(gettid_syscall), SEGSEL_KERNEL_CS, TRAP, USER, GETTID_INT);
 
     return 0;
 }
@@ -65,7 +65,7 @@ int handler_install()
  *
  *  @param index IDT entry index
  *  @param entry Struct to be installed in the IDT
- *  @return Void
+ *  @return void
  **/
 void install_idt(int index, IDT_entry* entry)
 {
@@ -79,7 +79,7 @@ void install_idt(int index, IDT_entry* entry)
  *  @param type The type of gate to install
  *  @param privilege Descriptor privilege level
  *  @param index IDT table index
- *  @return Void
+ *  @return void
  **/
 void set_idt(void* handler, int segment, int type, int privilege, int index)
 {
@@ -207,12 +207,13 @@ void fault_handler(ureg_t state)
 
 /** @brief Handler function for gettid()
  *
- *  @return Void
+ *  @return void
  */
-CONSTRUCT_HANDLER_C(gettid)
+void gettid_syscall(ureg_t state)
 {
     lprintf("Running gettid() handler");
 
+    state.eax = 1;
     //MAGIC_BREAK;
 
     return;

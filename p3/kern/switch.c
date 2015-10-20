@@ -12,47 +12,38 @@
 #include <simics.h>
 #include <cr.h>
 #include <fault.h>
+#include <ureg.h>
 
 #define PUT_STACK(stack, value, type) \
     *((type*)(stack)) = (type)(value)
 
-#define PUSH_STACK(stack, value, type)          \
-    do {                                        \
-        stack = (void *)(((type*)(stack)) - 1); \
-        PUT_STACK(stack, value, type);          \
+#define PUSH_STACK(stack, value, type)         \
+    do {                                       \
+        stack = (void*)(((type*)(stack)) - 1); \
+        PUT_STACK(stack, value, type);         \
     } while (0)
 
 /** @brief Crafts the kernel stack for the initial program
  *
  *  @param stack Stack pointer for the thread stack to be crafted
- *  @return Void
+ *  @return void
  **/
 void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
 {
     //set_esp-1(stack);
-    void *kernel_stack = (void *)stack;
-    PUSH_STACK(kernel_stack, SEGSEL_USER_DS, uint32_t);
-    //PUSH_STACK(kernel_stack, SEGSEL_USER_DS, uint32_t);
-    PUSH_STACK(kernel_stack, user_esp, uint32_t);
-    PUSH_STACK(kernel_stack, EFL_RESV1, uint32_t);
-    PUSH_STACK(kernel_stack, SEGSEL_USER_CS, uint32_t);
-    PUSH_STACK(kernel_stack, user_eip, uint32_t);
-    // POPA
-    PUSH_STACK(kernel_stack, 0, uint32_t); // EAX
-    PUSH_STACK(kernel_stack, 0, uint32_t); // ECX
-    PUSH_STACK(kernel_stack, 0, uint32_t); // EDX
-    PUSH_STACK(kernel_stack, 0, uint32_t); // EBX
-    PUSH_STACK(kernel_stack, 0, uint32_t); // ignored
-    PUSH_STACK(kernel_stack, 0, uint32_t); // EBP
-    PUSH_STACK(kernel_stack, 0, uint32_t); // ESI
-    PUSH_STACK(kernel_stack, 0, uint32_t); // EDI
-    // data segments
-    PUSH_STACK(kernel_stack, SEGSEL_USER_DS, uint32_t); // DS
-    PUSH_STACK(kernel_stack, SEGSEL_USER_DS, uint32_t); // ES
-    PUSH_STACK(kernel_stack, SEGSEL_USER_DS, uint32_t); // FS
-    PUSH_STACK(kernel_stack, SEGSEL_USER_DS, uint32_t); // GS
-
-    MAGIC_BREAK;
-
-    user_mode_first(kernel_stack);
+    uint32_t eflags_start = EFL_RESV1 | EFL_IF;
+    ureg_t ureg = {
+        .ss = SEGSEL_USER_DS,
+        .esp = user_esp,
+        .eflags = eflags_start,
+        .cs = SEGSEL_USER_CS,
+        .eip = user_eip,
+        .gs = SEGSEL_USER_DS,
+        .fs = SEGSEL_USER_DS,
+        .es = SEGSEL_USER_DS,
+        .ds = SEGSEL_USER_DS
+    };
+    void* kernel_stack = (void*)stack;
+    PUSH_STACK(kernel_stack, ureg, ureg_t);
+    user_mode_switch(kernel_stack);
 }
