@@ -8,10 +8,10 @@
 
 #ifndef _LOADER_H
 #define _LOADER_H
-     
 
 /* --- Prototypes --- */
 
+int create_idle();
 int getbytes( const char *filename, int offset, int size, char *buf );
 
 /*
