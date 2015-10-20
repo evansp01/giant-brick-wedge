@@ -1,4 +1,5 @@
 Stuff to do:
+
     move stuff out of kernel.c
     generalize fault and system call handlers
         iret & popa structs
@@ -6,8 +7,43 @@ Stuff to do:
         handler error codes
         fix gettid
     access tcbs/pcbs through an interface
+        save tid, &tcb on thread stack
+        need to save kernel stack pointer for threads in tcb (for switch)
+        make sure interface is compatible with a hash table
     doxygen for everything
     use write_vm
     fix how argc, argv works (work towards exec system call)
     void * to uint32_t where we might do math
+    
+    
+Stuff to do for checkpoint 2:
+    
+    kernel level yield (context switch)
+    disable interrupts vs disable context switching
+    mutexes
+    cond vars without malloc (linked lists using sleeping threads' memory)
+    validity check for given values from user for system calls
+    basic scheduler (context switch based on keyboard interrupt)
+    
+    context switch
+        save current kernel stack esp into data structure
+        retrieve new thread's esp
+        perform context switch
+        once switched, must also adjust VM stuff
+    
+    locking
+        process locks
+        thread locks
+        scheduler lock (flag)
+        frame alloc lock
+        process lock for page fault handler / lock the page table & set lock bit
+        
+    exec system call
+        copy user input into kernel space
+        validate user input
+        replace the currently running program (similar to loader code)
+    
+    fork system call
+        assume only a single thread in the process
+        copy page tables
     
