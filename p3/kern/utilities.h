@@ -2,6 +2,7 @@
 #define UTILITIES_H_
 #include <simics.h>
 #include <page.h>
+#include <ureg.h>
 
 #define LEA(address, size, index) \
     (((char*)(address)) + ((unsigned int)(size) * (unsigned int)(index)))
@@ -9,7 +10,7 @@
 #define SET_BIT(var, bit) ((var) | 1 << (bit))
 #define UNSET_BIT(var, bit) ((var) & (~(1 << (bit))))
 #define AS_TYPE(address, type) (*(type*)&(address))
-void print_eflags();
+void dump_registers(ureg_t* ureg);
 
 #define DEBUG
 
