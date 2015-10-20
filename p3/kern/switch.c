@@ -11,8 +11,8 @@
 #include <eflags.h>
 #include <simics.h>
 #include <cr.h>
-#include <fault.h>
 #include <ureg.h>
+#include <mode_switch.h>
 
 #define PUT_STACK(stack, value, type) \
     *((type*)(stack)) = (type)(value)

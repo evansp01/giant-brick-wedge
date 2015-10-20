@@ -27,10 +27,11 @@
 #include <cr.h>
 #include <utilities.h>
 #include <malloc.h>
-#include <fault.h>
 #include <elf_410.h>
 #include <string.h>
 #include <eflags.h>
+#include <setup_idt.h>
+
 
 #define PAGE_SIZE_SQUARED PAGE_SIZE* PAGE_SIZE
 #define NUM_INTEGERS 1345
@@ -204,14 +205,14 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
      */
 
     lprintf("Hello from a brand new kernel!");
-    print_eflags();
     // 1. Install fault handlers
-    handler_install();
-    device_handler_install(timer);
-    MAGIC_BREAK;
-    enable_interrupts();
+    install_exceptions();
+    initialize_devices(timer);
+    install_syscalls();
     init_frame_alloc();
     init_virtual_memory();
+    enable_interrupts();
+    MAGIC_BREAK;
     page_directory_t* dir = create_kernel_directory();
     turn_on_vm(dir);
     // 4. Enable interrupts

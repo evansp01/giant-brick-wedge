@@ -7,94 +7,11 @@
  *  @bug No known bugs.
  **/
 
-#include <fault.h>
-#include <asm.h>
 #include <idt.h>
-#include <seg.h>
 #include <simics.h>
-#include <syscall_int.h>
 #include <ureg.h>
-
-/** @brief Struct for Interrupt Descriptor Table (IDT) entries
- */
-typedef struct {
-    uint16_t offset_low;
-    uint16_t segment;
-    uint8_t reserved;
-    uint8_t gate_type : 3;
-    uint8_t double_word : 1;
-    uint8_t zero : 1;
-    uint8_t privilege_level : 2;
-    uint8_t present : 1;
-    uint16_t offset_high;
-} IDT_entry;
-
-/** @brief Installs the handlers in the IDT
- *
- *  @return void
- */
-int handler_install()
-{
-    // Set IDT entry fields and add handlers to IDT
-    set_idt(INT_ASM(IDT_DE), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_DE);
-    set_idt(INT_ASM(IDT_DB), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_DB);
-    set_idt(INT_ASM(IDT_NMI), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_NMI);
-    set_idt(INT_ASM(IDT_BP), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_BP);
-    set_idt(INT_ASM(IDT_OF), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_OF);
-    set_idt(INT_ASM(IDT_BR), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_BR);
-    set_idt(INT_ASM(IDT_UD), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_UD);
-    set_idt(INT_ASM(IDT_NM), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_NM);
-    set_idt(INT_ASM(IDT_DF), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_DF);
-    set_idt(INT_ASM(IDT_CSO), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_CSO);
-    set_idt(INT_ASM(IDT_TS), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_TS);
-    set_idt(INT_ASM(IDT_NP), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_NP);
-    set_idt(INT_ASM(IDT_SS), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_SS);
-    set_idt(INT_ASM(IDT_GP), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_GP);
-    set_idt(INT_ASM(IDT_PF), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_PF);
-    set_idt(INT_ASM(IDT_MF), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MF);
-    set_idt(INT_ASM(IDT_AC), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_AC);
-    set_idt(INT_ASM(IDT_MC), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_MC);
-    set_idt(INT_ASM(IDT_XF), SEGSEL_KERNEL_CS, TRAP, KERNEL, IDT_XF);
-
-    set_idt(NAME_ASM(gettid_syscall), SEGSEL_KERNEL_CS, TRAP, USER, GETTID_INT);
-
-    return 0;
-}
-
-/** @brief Places the IDT entry in the IDT
- *
- *  @param index IDT entry index
- *  @param entry Struct to be installed in the IDT
- *  @return void
- **/
-void install_idt(int index, IDT_entry* entry)
-{
-    *(((IDT_entry*)idt_base()) + index) = *entry;
-}
-
-/** @brief Fills in the IDT entry and installs it
- *
- *  @param handler Address of fault handler
- *  @param segment Segment selector for destination code segment
- *  @param type The type of gate to install
- *  @param privilege Descriptor privilege level
- *  @param index IDT table index
- *  @return void
- **/
-void set_idt(void* handler, int segment, int type, int privilege, int index)
-{
-    IDT_entry entry;
-    entry.offset_low = (uint16_t)((uint32_t)handler);
-    entry.segment = segment;
-    entry.reserved = 0;
-    entry.gate_type = type;
-    entry.double_word = 1; // double word size
-    entry.zero = 0;
-    entry.privilege_level = privilege;
-    entry.present = 1; // entry is preent
-    entry.offset_high = (uint16_t)(((uint32_t)handler) >> 16);
-    install_idt(index, &entry);
-}
+#include <stdint.h>
+#include <common_kern.h>
 
 #define GET_BIT(bit, value) (((value) >> (bit)) & 1)
 #define DUMP_SEGS(name1, value1, name2, value2) \
@@ -158,7 +75,9 @@ void dump_registers(ureg_t* ureg)
     lprintf("%s (Exception %d)", exception_name(ureg->cause), ureg->cause);
     lprintf("Error code: %d", ureg->error_code);
     DUMP_SEGR("cs", ureg->cs, "eip", ureg->eip);
-    DUMP_SEGR("ss", ureg->ss, "esp", ureg->esp);
+    if (ureg->eip > USER_MEM_START) {
+        DUMP_SEGR("ss", ureg->ss, "esp", ureg->esp);
+    }
     DUMP_SEGS("ds", ureg->ds, "es", ureg->es);
     DUMP_SEGS("fs", ureg->fs, "gs", ureg->gs);
     DUMP_REG("eax", "ax", ureg->eax);
@@ -203,18 +122,4 @@ void dump_registers(ureg_t* ureg)
 void fault_handler(ureg_t state)
 {
     dump_registers(&state);
-}
-
-/** @brief Handler function for gettid()
- *
- *  @return void
- */
-void gettid_syscall(ureg_t state)
-{
-    lprintf("Running gettid() handler");
-
-    state.eax = 1;
-    //MAGIC_BREAK;
-
-    return;
 }

@@ -28,13 +28,11 @@
 
 #include <stdio.h>
 #include <asm.h>
-#include <seg.h>
-#include <timer_defines.h>
 #include <interrupt_defines.h>
+#include <timer_defines.h>
 #include <keyhelp.h>
 #include <ctype.h>
-#include <fault.h>
-#include <seg.h>
+#include <setup_idt.h>
 
 #define TIMER_INTERRUPT_FREQUENCY 1000
 #define KEYBOARD_BUFFER_SIZE 2048
@@ -66,32 +64,14 @@ static unsigned int ticks_so_far;
  *
  *  @return void
  *  */
-static void setup_timer_handler()
+int initialize_devices(void (*tickback)(unsigned int))
 {
-    //Add one because .86 rounds up
+    tick_handler = tickback;
     uint16_t frequency = 1 + (TIMER_RATE / TIMER_INTERRUPT_FREQUENCY);
     outb(TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)frequency);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)(frequency >> 8));
-    set_idt(timer_interrupt_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, TIMER_IDT_ENTRY);
-}
-
-/** @brief Setup the keyboard interrupt handler.
- *
- *  Note that the offset used is for the assembly wrapper.
- *
- *  @return void
- *  */
-static void setup_keyboard_handler()
-{
-    set_idt(keyboard_interrupt_asm, SEGSEL_KERNEL_CS, TRAP, KERNEL, TIMER_IDT_ENTRY);
-}
-
-int device_handler_install(void (*tickback)(unsigned int))
-{
-    tick_handler = tickback;
-    setup_keyboard_handler();
-    setup_timer_handler();
+    install_devices();
     return 0;
 }
 

@@ -12,22 +12,36 @@
 
 #include <stdint.h>
 #include <idt.h>
-#include <ureg.h>
 
-#define TRAP 0x7
-#define INTERRUPT 0x6
-#define KERNEL 0
-#define USER 3
+#define _NAME_ASM(name) name##_asm
+/** @def CONSTRUCT_HANDLER_H(NAME)
+ *
+ *  @brief Constructs the assembly wrapper function declaration
+ *
+ *  @param NAME Fault name
+ *  @return void
+ **/
+#define NAME_ASM_H(name) void _NAME_ASM(name)()
 
-int handler_install();
-void set_idt(void* handler, int segment, int privilege, int type, int index);
-void keyboard_interrupt_asm();
-void timer_interrupt_asm();
+/** @def CONSTRUCT_HANDLER_C(NAME)
+ *
+ *  @brief Constructs the C handler function name
+ *
+ *  @param NAME Fault name
+ *  @return void
+ **/
+#define NAME_ASM(name) _NAME_ASM(name)
 
 
 #define _INT_ASM(number) interrupt##number##_asm
 #define INT_ASM(number) _INT_ASM(number)
 #define INT_ASM_H(number) void _INT_ASM(number)()
+
+void user_mode_switch(void *esp);
+
+NAME_ASM_H(gettid_syscall);
+NAME_ASM_H(timer_interrupt);
+NAME_ASM_H(keyboard_interrupt);
 
 INT_ASM_H(IDT_DE);
 INT_ASM_H(IDT_DB);
@@ -50,27 +64,7 @@ INT_ASM_H(IDT_MC);
 INT_ASM_H(IDT_XF);
 
 
-#define _NAME_ASM(name) name##_asm
-/** @def CONSTRUCT_HANDLER_H(NAME)
- *
- *  @brief Constructs the assembly wrapper function declaration
- *
- *  @param NAME Fault name
- *  @return void
- **/
-#define NAME_ASM_H(name) void _NAME_ASM(name)()
 
-/** @def CONSTRUCT_HANDLER_C(NAME)
- *
- *  @brief Constructs the C handler function name
- *
- *  @param NAME Fault name
- *  @return void
- **/
-#define NAME_ASM(name) _NAME_ASM(name)
-
-
-NAME_ASM_H(gettid_syscall);
 
 // fault_asm.S headers
 /** @brief Wrapper for the divide error handler
