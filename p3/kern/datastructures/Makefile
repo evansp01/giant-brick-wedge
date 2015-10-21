@@ -2,20 +2,23 @@
 # Once everything works there, you probably want to move
 # variable_queue.h into kern/inc and/or user/inc.
 
-TEST=vqtest
-TEST2=test_queue
+VQTEST=vqtest
+VHTEST=vhtest
+AQTEST=aqtest
 CC=gcc
 CFLAGS = -g -fno-strict-aliasing -Wall -gdwarf-2 -Werror -m32
 
-all: $(TEST) $(TEST2)
+all: $(VQTEST) $(VHTEST) $(AQTEST)
 
-$(TEST): $(TEST).c
+$(VQTEST): $(VQTEST).c variable_queue.h
 	$(CC) $(CFLAGS) $< -o $@
 
-$(TEST2): $(TEST2).c array_queue.c
+$(AQTEST): $(AQTEST).c array_queue.c array_queue.h
 	$(CC) $(CFLAGS) $^ -o $@
 
+$(VHTEST): $(VHTEST).c int_hash.c variable_queue.h variable_htable.h
+	$(CC) $(CFLAGS) $^ -o $@
 .PHONY: clean
 
 clean:
-	rm -f $(TEST) $(TEST2)
+	rm -f $(VQTEST) $(VHTEST) $(AQTEST)
