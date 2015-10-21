@@ -171,8 +171,37 @@ uint32_t hash_int(uint32_t x);
         _H_BUCKET_GET(_bucket, key, key_field, link_name);        \
     })
 
+/** @def H_DEBUG_BUCKETS(table, key_field, link, info)
+ *
+ *  @brief A debugging function that allows the user some access to the hash
+ *         tables internals
+ *
+ *  @param table The table to get information about
+ *  @param key_field The field where the key is stored in the element
+ *  @param link The name of the link used to organize the bucket lists
+ *  @param info A funciton accepting two integers which will be called with the
+ *         index and size of every bucket
+ *  @return void
+ **/
+#define H_DEBUG_BUCKETS(table, key_field, link, info)   \
+    do {                                                \
+        int _i;                                         \
+        int _count;                                     \
+        typeof(*_H_TABLE(table))* _bucket;              \
+        typeof(*Q_GET_FRONT(_bucket)) *_search;         \
+        for (_i = 0; _i < _H_CAP(table); _i++) {        \
+            _bucket = _H_BUCKET(table, _i);             \
+            _count = 0;                                 \
+            Q_FOREACH(_search, _bucket, link) {         \
+                _count++;                               \
+            }                                           \
+            info(_i, _count);                           \
+        }                                               \
+    } while(0)
 
-// PRIVATE HELPER MACROS
+/****************************************************************
+ ***************** PRIVATE HELPER MACROS ************************
+ ****************************************************************/
 
 /** @brief Access table field safely */
 #define _H_TABLE(table) \
@@ -204,6 +233,8 @@ uint32_t hash_int(uint32_t x);
  *
  *  @param bucket The bucket
  *  @param key The key of the element
+ *  @param key_field The field where the key is stored in the element
+ *  @param link_name The name of the link used to organize the bucket lists
  *  @return The element or null
  **/
 #define _H_BUCKET_GET(bucket, key, key_field, link_name) \
@@ -225,6 +256,8 @@ uint32_t hash_int(uint32_t x);
  *  @brief Insert an element into a bucket
  *
  *  @param bucket The bucket to add to
+ *  @param key_field The field where the key is stored in the element
+ *  @param link_name The name of the link used to organize the bucket lists
  *  @param elem The element to insert
  *  @return void
  **/
@@ -237,6 +270,8 @@ uint32_t hash_int(uint32_t x);
  *
  *  @param bucket The bucket to remove from
  *  @param key The key of the element to remove
+ *  @param key_field The field where the key is stored in the element
+ *  @param link_name The name of the link used to organize the bucket lists
  *  @return The removed element
  **/
 #define _H_BUCKET_REMOVE(bucket, key, key_field, link_name)     \
@@ -256,6 +291,12 @@ uint32_t hash_int(uint32_t x);
 
 
 /** @def _H_ALLOC_TABLE(table, cap)
+ *
+ *  @brief Allocate space for a hash table
+ *
+ *  @param table The table to allocate space for
+ *  @param cap The amount of space to allocate
+ *  @return The allocated space
  **/
 #define _H_ALLOC_TABLE(table, cap)                           \
     ({                                                       \
@@ -270,28 +311,48 @@ uint32_t hash_int(uint32_t x);
         _tmp;                                                \
     })
 
-#define _H_RESIZE_TABLE(table, key_field, link, new_size)                   \
-    do {                                                                    \
-        int _new_cap = new_size;                                            \
-        int _hash, _i;                                                      \
-        typeof(*_H_TABLE(table))* _bucket;                                  \
-        typeof(*Q_GET_FRONT(_bucket)) *_search;                             \
-        typeof(*_H_TABLE(table)) *_tmp = _H_ALLOC_TABLE(table, _new_cap);   \
-        if (_tmp != NULL) {                                                 \
-            for (_i = 0; _i < _H_CAP(table); _i++) {                        \
-                _bucket = _H_BUCKET(table, _i);                             \
-                while((_search = Q_GET_FRONT(_bucket)) != NULL){            \
-                    Q_REMOVE(_bucket, _search, link);                       \
-                    _hash = hash_int(_H_KEY(_search, key_field)) % _new_cap;    \
-                    _H_BUCKET_INSERT((_tmp + _hash), _search, link);        \
-                }                                                           \
-            }                                                               \
-            free(_H_TABLE(table));                                          \
-            _H_TABLE(table) = _tmp;                                         \
-            _H_CAP(table) = _new_cap;                                       \
-        }                                                                   \
+/** @def _H_RESIZE_TABLE(table, key_field, link, new_size)
+ *
+ *  @brief Attempt to change the tables size to new size
+ *
+ *  On failure to allocate memory, this function simply keeps the table the
+ *  same size instead of failing.
+ *
+ *  @param table The table to resize
+ *  @param key_field The field where the key is stored in the element
+ *  @param link The name of the link used to organize the bucket lists
+ *  @param new_size The new size for the table
+ *  @return void
+ **/
+#define _H_RESIZE_TABLE(table, key_field, link, new_size)                     \
+    do {                                                                      \
+        int _new_cap = new_size;                                              \
+        int _hash, _i;                                                        \
+        typeof(*_H_TABLE(table))* _bucket;                                    \
+        typeof(*Q_GET_FRONT(_bucket)) *_search;                               \
+        typeof(*_H_TABLE(table)) *_tmp = _H_ALLOC_TABLE(table, _new_cap);     \
+        if (_tmp != NULL) {                                                   \
+            for (_i = 0; _i < _H_CAP(table); _i++) {                          \
+                _bucket = _H_BUCKET(table, _i);                               \
+                while((_search = Q_GET_FRONT(_bucket)) != NULL){              \
+                    Q_REMOVE(_bucket, _search, link);                         \
+                    _hash = hash_int(_H_KEY(_search, key_field)) % _new_cap;  \
+                    _H_BUCKET_INSERT((_tmp + _hash), _search, link);          \
+                }                                                             \
+            }                                                                 \
+            free(_H_TABLE(table));                                            \
+            _H_TABLE(table) = _tmp;                                           \
+            _H_CAP(table) = _new_cap;                                         \
+        }                                                                     \
     } while (0)
 
+/** @def _H_GROW(table, key_field, link)
+ *
+ *  @brief Grow the give table if neccessary
+ *  @param key_field The field where the key is stored in the element
+ *  @param link The name of the link used to organize the bucket lists
+ *  @return void
+ **/
 #define _H_GROW(table, key_field, link)                                 \
     do {                                                                \
         if (_H_SIZE(table) > MAX_LOAD_FACTOR * _H_CAP(table)) {         \
@@ -300,6 +361,13 @@ uint32_t hash_int(uint32_t x);
     } while (0)
 
 
+/** @def _H_SHRINK(table, key_field, link)
+ *
+ *  @brief Shrink the give table if neccessary
+ *  @param key_field The field where the key is stored in the element
+ *  @param link The name of the link used to organize the bucket lists
+ *  @return void
+ **/
 #define _H_SHRINK(table, key_field, link)                               \
     do {                                                                \
         if (_H_CAP(table) > MIN_LOAD_FACTOR * _H_SIZE(table)            \
@@ -307,19 +375,3 @@ uint32_t hash_int(uint32_t x);
             _H_RESIZE_TABLE(table, key_field, link, _H_CAP(table) / 2); \
         }                                                               \
     } while (0)
-
-#define H_DEBUG_BUCKETS(table, key_field, link, info)   \
-    do {                                                \
-        int _i;                                         \
-        int _count;                                     \
-        typeof(*_H_TABLE(table))* _bucket;              \
-        typeof(*Q_GET_FRONT(_bucket)) *_search;         \
-        for (_i = 0; _i < _H_CAP(table); _i++) {        \
-            _bucket = _H_BUCKET(table, _i);             \
-            _count = 0;                                 \
-            Q_FOREACH(_search, _bucket, link) {         \
-                _count++;                               \
-            }                                           \
-            info(_i, _count);                           \
-        }                                               \
-    } while(0)
