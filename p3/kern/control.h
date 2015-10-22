@@ -9,7 +9,7 @@
 #define CONTROL_H_
 
 #include <vm.h>
-#include <datastructures/variable_queue.h>
+#include <datastructures/interface.h>
 
 typedef enum state {
     NOTYET,
@@ -17,16 +17,19 @@ typedef enum state {
     EXITED
 } state_t;
 
-Q_NEW_HEAD(pcb_list_t, pcb);
-Q_NEW_HEAD(tcb_list_t, tcb);
+// Declare the data structure
+NEW_STRUCT(pcb_ds_t, pcb);
+NEW_STRUCT(tcb_ds_t, tcb);
 
 /** @brief Structure for a process control block */
 typedef struct pcb {
-   Q_NEW_LINK(pcb) all_processes;
-   Q_NEW_LINK(pcb) siblings;
+   // Links for linked list macros
+   NEW_LINK(pcb) all_processes;
+   NEW_LINK(pcb) siblings;
+   
    /* scheduler lists */
-   pcb_list_t children;
-   tcb_list_t threads;
+   pcb_ds_t children;
+   tcb_ds_t threads;
    int id;
    int parent_id;
    int reserved_pages;
@@ -37,8 +40,10 @@ typedef struct pcb {
 
 /** @brief Structure for a thread control block */
 typedef struct tcb {
-    Q_NEW_LINK(tcb) all_threads;
-    Q_NEW_LINK(tcb) pcb_threads;
+    // Links for linked list macros
+    NEW_LINK(tcb) all_threads;
+    NEW_LINK(tcb) pcb_threads;
+    
     /* scheduler lists */
     int id;
     int pid;
@@ -48,8 +53,8 @@ typedef struct tcb {
 
 /** @brief Structure for the overall kernel state */
 typedef struct kernel_state {
-    pcb_list_t processes;
-    tcb_list_t threads;
+    pcb_ds_t processes;
+    tcb_ds_t threads;
     int next_id;
 } kernel_state_t;
 

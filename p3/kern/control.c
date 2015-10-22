@@ -9,7 +9,6 @@
 
 #include <control.h>
 #include <malloc.h>
-#include <datastructures/variable_queue.h>
 #include <lmm/lmm.h>
 #include <malloc/malloc_internal.h>
 #include <page.h>
@@ -25,8 +24,8 @@ static kernel_state_t kernel_state;
  **/
 int init_kernel_state()
 {
-    Q_INIT_HEAD(&kernel_state.processes);
-    Q_INIT_HEAD(&kernel_state.threads);
+    INIT_STRUCT(&kernel_state.processes);
+    INIT_STRUCT(&kernel_state.threads);
     kernel_state.next_id = 1;
     return 0;
 }
@@ -51,17 +50,17 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
 {
     pcb_t *entry = (pcb_t *)malloc(sizeof(pcb_t));
 
-    Q_INIT_ELEM(entry, all_processes);
-    Q_INSERT_FRONT(&kernel_state.processes, entry, all_processes);
+    INIT_ELEM(entry, all_processes);
+    INSERT(&kernel_state.processes, entry, all_processes);
 
     if (parent_pcb != NULL) {
-        Q_INIT_ELEM(entry, siblings);
-        Q_INSERT_FRONT(&parent_pcb->children, entry, siblings);
+        INIT_ELEM(entry, siblings);
+        INSERT(&parent_pcb->children, entry, siblings);
     }
 
     /* scheduler lists */
-    Q_INIT_HEAD(&entry->children);
-    Q_INIT_HEAD(&entry->threads);
+    INIT_STRUCT(&entry->children);
+    INIT_STRUCT(&entry->threads);
 
     entry->id = get_next_process_id();
     entry->exit_status = 0;
@@ -92,8 +91,8 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
     Q_INIT_ELEM(entry, pcb_threads);
 
     /* scheduler lists */
-    Q_INSERT_FRONT(&kernel_state.threads, entry, all_threads);
-    Q_INSERT_FRONT(&parent_pcb->threads, entry, pcb_threads);
+    INSERT(&kernel_state.threads, entry, all_threads);
+    INSERT(&parent_pcb->threads, entry, pcb_threads);
 
     entry->id = 0;
     entry->pid = parent_pcb->id;
