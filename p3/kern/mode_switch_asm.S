@@ -1,5 +1,5 @@
-/** @file fault_asm.S
- *  @brief Fault handler wrappers written in assembly
+/** @file mode_switch_asm.S
+ *  @brief Fault handler wrappers and mode switching code
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)

@@ -22,7 +22,6 @@ void gettid_syscall(ureg_t state)
     lprintf("Running gettid() handler");
 
     state.eax = 1;
-    //MAGIC_BREAK;
 
     return;
 }

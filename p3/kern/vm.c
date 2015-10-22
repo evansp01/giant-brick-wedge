@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <vm.h>
 #include <malloc.h>
+#include <cr.h>
 
 COMPILE_TIME_ASSERT(sizeof(address_t) == sizeof(uint32_t));
 COMPILE_TIME_ASSERT(sizeof(entry_t) == sizeof(uint32_t));
@@ -52,6 +53,17 @@ struct {
     void* zero_page;
     page_table_t* kernel_pages[KERNEL_TABLES];
 } virtual_memory = { 0 };
+
+/** @brief Turns on virtual memory on the kernel
+ *  @param dir Page directory base
+ *  @return void
+ **/
+void turn_on_vm(page_directory_t* dir)
+{
+    set_cr3((uint32_t)dir);
+    set_cr4(get_cr4() | CR4_PGE);
+    set_cr0(get_cr0() | CR0_PG);
+}
 
 /** @brief Zero a frame
  *  @param frame The frame to zero

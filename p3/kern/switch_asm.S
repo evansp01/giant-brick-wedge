@@ -5,8 +5,6 @@
  *  @bug No known bugs
  **/
 
-#include <switch.h>
-
 .global restore_context
 restore_context:
     movl 4(%esp), %eax      # save the stack pointer argument

@@ -1,3 +1,12 @@
+/** @file utilities.h
+ *
+ *  @brief Useful utilities which can remain for now
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #ifndef UTILITIES_H_
 #define UTILITIES_H_
 #include <simics.h>

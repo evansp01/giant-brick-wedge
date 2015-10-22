@@ -1,15 +1,10 @@
-/**
- * The 15-410 kernel project.
- * @name loader.c
+/** @file loader.c
+ *  @brief Implementation of functions to load programs
  *
- * Functions for the loading
- * of user programs from binary
- * files should be written in
- * this file. The function
- * elf_load_helper() is provided
- * for your use.
- */
-/*@{*/
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
 
 /* --- Includes --- */
 #include <string.h>
@@ -19,27 +14,13 @@
 #include <loader.h>
 #include <elf_410.h>
 #include <simics.h>
-#include <vm.h>
-#include <elf_410.h>
-#include <control.h>
 #include <cr.h>
 #include <switch.h>
 #include <stdint.h>
 #include <seg.h>
 #include <eflags.h>
-#include <simics.h>
-#include <cr.h>
 #include <ureg.h>
 #include <mode_switch.h>
-
-#define PUT_STACK(stack, value, type) \
-    *((type*)(stack)) = (type)(value)
-
-#define PUSH_STACK(stack, value, type)         \
-    do {                                       \
-        stack = (void*)(((type*)(stack)) - 1); \
-        PUT_STACK(stack, value, type);         \
-    } while (0)
 
 /** @brief Crafts the kernel stack for the initial program
  *
@@ -65,9 +46,6 @@ void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
     PUSH_STACK(kernel_stack, ureg, ureg_t);
     user_mode_switch(kernel_stack);
 }
-
-/* --- Local function prototypes --- */
-
 
 /**
  * Copies data from a file into a buffer.
@@ -104,7 +82,11 @@ int getbytes( const char *filename, int offset, int size, char *buf )
     return byte_index;
 }
 
-/*@}*/
+/** @brief Creates page directory and copies process data into memory
+ *
+ *  @param elf Struct containing elf file information
+ *  @return page directory of new process
+ **/
 page_directory_t* create_proc_pagedir(simple_elf_t* elf)
 {
     page_directory_t* dir = create_page_directory();
@@ -128,6 +110,10 @@ page_directory_t* create_proc_pagedir(simple_elf_t* elf)
     return dir;
 }
 
+/** @brief Creates a new idle process
+ *
+ *  @return Zero on success, an integer less than zero on failure
+ **/
 int create_idle()
 {
     init_kernel_state();
@@ -143,6 +129,14 @@ int create_idle()
     return load_program(pcb_entry, tcb_entry, "idle");
 }
 
+/** @brief Allocates the stack for the new process
+ *
+ *  @param cr2 Address of the page table
+ *  @param stack_high Highest address for the new stack
+ *  @param argc Number of user arguments
+ *  @param argv Pointer to user arguments
+ *  @return Pointer to the top of the new stack
+ **/
 uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv)
 {
     uint32_t stack_low = 0xFFFFF000;
@@ -152,7 +146,13 @@ uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv)
     return stack_high;
 }
 
-#define STACK_ALIGN 0xFFFFFFF0
+/** @brief Sets up the stack for the new process
+ *
+ *  @param cr2 Address of the page table
+ *  @param argc Number of user arguments
+ *  @param argv Pointer to user arguments
+ *  @return Pointer to esp for the new stack
+ **/
 uint32_t setup_main_stack(void *cr2, int argc, char** argv)
 {
     uint32_t stack_high = 0xFFFFFFFFF & STACK_ALIGN;
@@ -166,6 +166,13 @@ uint32_t setup_main_stack(void *cr2, int argc, char** argv)
     return (uint32_t) (stack_current - 6);
 }
 
+/** @brief Loads the given program file
+ *
+ *  @param pcb Process to load program on
+ *  @param tcb Thread to load program on
+ *  @param filename Name of the program to be loaded
+ *  @return Zero on success, an integer less than zero on failure
+ **/
 int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 {
     simple_elf_t elf;

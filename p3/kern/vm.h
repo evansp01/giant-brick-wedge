@@ -50,6 +50,7 @@ void set_entry_address(entry_t* entry, void* address);
 entry_t* get_dir_entry(void* address, page_directory_t* directory);
 entry_t* get_table_entry(void* address, page_table_t* table);
 void* get_address(void* address, void* page);
+void turn_on_vm(page_directory_t* dir);
 void zero_frame(void* frame);
 void copy_frame(void* frame, void* from);
 void init_virtual_memory();

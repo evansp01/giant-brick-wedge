@@ -13,7 +13,11 @@
 #include <stdint.h>
 #include <utilities.h>
 
-
+/** @brief Generic fault handler
+ *
+ *  @param state Struct containing saved register state before exception
+ *  @return void
+ **/
 void fault_handler(ureg_t state)
 {
     dump_registers(&state);

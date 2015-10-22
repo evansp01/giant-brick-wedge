@@ -59,31 +59,60 @@ void install_exceptions()
     set_idt_exception(INT_ASM(IDT_XF), TRAP, IDT_XF);
 }
 
+/** @brief Installs the system call handlers
+ *
+ *  @return void
+ */
 void install_syscalls()
 {
     set_idt_syscall(NAME_ASM(gettid_syscall), GETTID_INT);
 }
 
+/** @brief Installs the device driver handlers
+ *
+ *  @return void
+ */
 void install_devices()
 {
     set_idt_device(NAME_ASM(timer_interrupt), TRAP, TIMER_IDT_ENTRY);
     set_idt_device(NAME_ASM(keyboard_interrupt), TRAP, KEY_IDT_ENTRY);
 }
 
+/** @brief Installs a handler into the IDT
+ *
+ *  @param handler Pointer to the handler function
+ *  @param type Type of exception
+ *  @param index IDT index at which to install handler
+ *  @return void
+ */
 void set_idt_exception(void* handler, int type, int index)
 {
     set_idt(handler, SEGSEL_KERNEL_CS, type, KERNEL, index);
 }
 
+/** @brief Installs a syscall handler into the IDT
+ *
+ *  @param handler Pointer to the handler function
+ *  @param index IDT index at which to install handler
+ *  @return void
+ */
 void set_idt_syscall(void* handler, int index)
 {
     set_idt(handler, SEGSEL_KERNEL_CS, TRAP, USER, index);
 }
 
+/** @brief Installs a device interrupt handler into the IDT
+ *
+ *  @param handler Pointer to the handler function
+ *  @param type Type of exception
+ *  @param index IDT index at which to install handler
+ *  @return void
+ */
 void set_idt_device(void* handler, int type, int index)
 {
     set_idt(handler, SEGSEL_KERNEL_CS, type, KERNEL, index);
 }
+
 /** @brief Places the IDT entry in the IDT
  *
  *  @param index IDT entry index

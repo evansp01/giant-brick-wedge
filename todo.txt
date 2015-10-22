@@ -1,19 +1,15 @@
 Stuff to do:
 
-    move stuff out of kernel.c
-    generalize fault and system call handlers
-        iret & popa structs
-        single exception handlers for useless faults
-        handler error codes
-        fix gettid
+    fault handler error codes on stack
     access tcbs/pcbs through an interface
         save tid, &tcb on thread stack
         need to save kernel stack pointer for threads in tcb (for switch)
         make sure interface is compatible with a hash table
-    doxygen for everything
+        fix gettid to actually return a tid
     use write_vm
     fix how argc, argv works (work towards exec system call)
     void * to uint32_t where we might do math
+    doxygen for everything
     
     
 Stuff to do for checkpoint 2:

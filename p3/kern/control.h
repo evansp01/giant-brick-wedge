@@ -1,3 +1,9 @@
+/** @file control.h
+ *  @brief Interface for process and thread control blocks
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
 
 #ifndef CONTROL_H_
 #define CONTROL_H_
@@ -14,6 +20,7 @@ typedef enum state {
 Q_NEW_HEAD(pcb_list_t, pcb);
 Q_NEW_HEAD(tcb_list_t, tcb);
 
+/** @brief Structure for a process control block */
 typedef struct pcb {
    Q_NEW_LINK(pcb) all_processes;
    Q_NEW_LINK(pcb) siblings;
@@ -28,6 +35,7 @@ typedef struct pcb {
    state_t state;
 } pcb_t;
 
+/** @brief Structure for a thread control block */
 typedef struct tcb {
     Q_NEW_LINK(tcb) all_threads;
     Q_NEW_LINK(tcb) pcb_threads;
@@ -38,19 +46,17 @@ typedef struct tcb {
     state_t state;
 } tcb_t;
 
+/** @brief Structure for the overall kernel state */
 typedef struct kernel_state {
     pcb_list_t processes;
     tcb_list_t threads;
     int next_id;
 } kernel_state_t;
 
-//headers regarding create process
+// Headers regarding create process
 int init_kernel_state();
 pcb_t *create_pcb_entry(pcb_t *parent_pcb);
 tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack);
 void *allocate_kernel_stack();
-
-int create_idle();
-int load_program(pcb_t *pcb, tcb_t *tcb, char *filename);
 
 #endif // CONTROL_H_

@@ -1,3 +1,11 @@
+/** @file setup_idt.h
+ *  @brief Interface for functions to set up the IDT
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
 #ifndef IDT_H_
 #define IDT_H_
 

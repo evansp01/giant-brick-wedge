@@ -1,3 +1,10 @@
+/** @file debug.c
+ *  @brief Implementation of functions to print debug messages for faults
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
 #include <idt.h>
 #include <simics.h>
 #include <ureg.h>
@@ -16,6 +23,11 @@
     lprintf("%s = 0x%04x, %s = 0x%08lx", name1, \
             (uint16_t)value1, name2, (uint32_t)value2)
 
+/** @brief Identifies exceptions based on IDT indexes
+ *
+ *  @param code IDT index of exception
+ *  @return String containing type of exception
+ **/
 char* exception_name(int code)
 {
     switch (code) {
@@ -62,6 +74,11 @@ char* exception_name(int code)
     }
 }
 
+/** @brief Prints out the given register state
+ *
+ *  @param ureg Struct containing saved register values
+ *  @return void
+ **/
 void dump_registers(ureg_t* ureg)
 {
     lprintf("%s (Exception %d)", exception_name(ureg->cause), ureg->cause);
