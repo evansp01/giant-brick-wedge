@@ -11,17 +11,16 @@
 #include <ureg.h>
 #include <stdint.h>
 #include <common_kern.h>
+#include <control.h>
 
 
 /** @brief Handler function for gettid()
  *
  *  @return void
  */
-void gettid_syscall(ureg_t state)
+void gettid_syscall(tcb_t *p_tcb, ureg_t state)
 {
-    lprintf("Running gettid() handler");
-
-    state.eax = 1;
-
+    // return the tid
+    state.eax = p_tcb->id;
     return;
 }

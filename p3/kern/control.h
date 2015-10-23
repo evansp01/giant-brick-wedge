@@ -23,30 +23,30 @@ NEW_STRUCT(tcb_ds_t, tcb);
 
 /** @brief Structure for a process control block */
 typedef struct pcb {
-   // Links for linked list macros
-   NEW_LINK(pcb) all_processes;
-   NEW_LINK(pcb) siblings;
+    // Links for linked list macros
+    NEW_LINK(pcb) all_processes;
+    NEW_LINK(pcb) siblings;
    
    /* scheduler lists */
-   pcb_ds_t children;
-   tcb_ds_t threads;
-   int id;
-   int parent_id;
-   int reserved_pages;
-   int exit_status;
-   page_directory_t *directory;
-   state_t state;
+    pcb_ds_t children;
+    tcb_ds_t threads;
+    int id;
+    int parent_id;
+    int reserved_pages;
+    int exit_status;
+    int next_tid;
+    page_directory_t *directory;
+    state_t state;
 } pcb_t;
 
 /** @brief Structure for a thread control block */
 typedef struct tcb {
-    // Links for linked list macros
+    /* scheduler lists */
     NEW_LINK(tcb) all_threads;
     NEW_LINK(tcb) pcb_threads;
     
-    /* scheduler lists */
     int id;
-    int pid;
+    pcb_t *parent;
     void *kernel_stack;
     state_t state;
 } tcb_t;
@@ -55,7 +55,7 @@ typedef struct tcb {
 typedef struct kernel_state {
     pcb_ds_t processes;
     tcb_ds_t threads;
-    int next_id;
+    int next_pid;
 } kernel_state_t;
 
 // Headers regarding create process

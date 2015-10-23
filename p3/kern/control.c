@@ -26,7 +26,7 @@ int init_kernel_state()
 {
     INIT_STRUCT(&kernel_state.processes);
     INIT_STRUCT(&kernel_state.threads);
-    kernel_state.next_id = 1;
+    kernel_state.next_pid = 1;
     return 0;
 }
 
@@ -34,10 +34,24 @@ int init_kernel_state()
  *
  *  @return Next sequential process id
  **/
-int get_next_process_id()
+int get_next_pid()
 {
-    int id = kernel_state.next_id;
-    kernel_state.next_id++;
+    int id = kernel_state.next_pid;
+    kernel_state.next_pid++;
+    return id;
+}
+
+/** @brief Gives the next available thread id for a particular process
+ *
+ *  @param parent_pcb Pointer to the pcb of the thread's parent process
+ *  @return Thread id on success, an integer less than zero on failure
+ **/
+int get_next_tid(pcb_t *parent_pcb)
+{
+    if (parent_pcb == NULL)
+        return -1;
+    int id = parent_pcb->next_tid;
+    parent_pcb->next_tid++;
     return id;
 }
 
@@ -62,9 +76,10 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
     INIT_STRUCT(&entry->children);
     INIT_STRUCT(&entry->threads);
 
-    entry->id = get_next_process_id();
+    entry->id = get_next_pid();
     entry->exit_status = 0;
     entry->state = NOTYET;
+    entry->next_tid = 1;
 
     if (parent_pcb != NULL)
         entry->parent_id = parent_pcb->id;
@@ -90,15 +105,18 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
 
-    /* scheduler lists */
+    // Scheduler lists
     INSERT(&kernel_state.threads, entry, all_threads);
     INSERT(&parent_pcb->threads, entry, pcb_threads);
 
-    entry->id = 0;
-    entry->pid = parent_pcb->id;
-    entry->kernel_stack = stack;
+    entry->id = get_next_tid(parent_pcb);
+    entry->parent = parent_pcb;
+    entry->kernel_stack = stack - 1; // leave space for &tcb
     entry->state = NOTYET;
 
+    // Store pointer to tcb at the top of the kernel stack
+    *((tcb_t **)stack) = entry;
+    
     return entry;
 }
 

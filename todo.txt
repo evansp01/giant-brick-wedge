@@ -1,11 +1,6 @@
 Stuff to do:
 
     fault handler error codes on stack
-    access tcbs/pcbs through an interface
-        save tid, &tcb on thread stack
-        need to save kernel stack pointer for threads in tcb (for switch)
-        make sure interface is compatible with a hash table
-        fix gettid to actually return a tid
     use write_vm
     fix how argc, argv works (work towards exec system call)
     void * to uint32_t where we might do math
@@ -20,6 +15,7 @@ Stuff to do for checkpoint 2:
     cond vars without malloc (linked lists using sleeping threads' memory)
     validity check for given values from user for system calls
     basic scheduler (context switch based on keyboard interrupt)
+    kernel versions of system calls (yield, etc)
     
     context switch
         save current kernel stack esp into data structure

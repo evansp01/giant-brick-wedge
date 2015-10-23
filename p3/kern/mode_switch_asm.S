@@ -25,7 +25,7 @@
 
 /**  @brief Restores state to user mode */
 .macro USER_MODE_SWITCH
-    add $8, %esp
+    add $12, %esp
     popl %ds
     popl %es
     popl %fs
@@ -38,10 +38,11 @@
 .macro INTERRUPT_ASM_WRAPPER NAME
     .global \NAME\()_asm
     \NAME\()_asm:
-        pushl $0
+        pushl $0                        # set ureg.error_code = 0
         KERNEL_MODE_SWITCH
-        pushl $0
-        pushl $0
+        pushl $0                        # set ureg.cr2 = 0
+        pushl $0                        # set ureg.cause = 0
+        pushl 0x50(%esp)                # set pointer to &tcb at top of stack
         call \NAME\()
         USER_MODE_SWITCH
 .endm
@@ -52,6 +53,7 @@
         KERNEL_MODE_SWITCH
         pushl $0
         pushl $\INT\()
+        pushl $0                        # set pointer to tcb
         call fault_handler
         USER_MODE_SWITCH
 .endm
@@ -63,6 +65,7 @@
         KERNEL_MODE_SWITCH
         pushl $0
         pushl $\INT\()
+        pushl $0                        # set pointer to tcb
         call fault_handler
         USER_MODE_SWITCH
 .endm
@@ -103,3 +106,8 @@ EXCEPTION_ASM_WRAPPER IDT_MF
 EXCEPTION_ASM_WRAPPER_ERROR IDT_AC
 EXCEPTION_ASM_WRAPPER IDT_MC
 EXCEPTION_ASM_WRAPPER IDT_XF
+
+// Get pointer to tcb. Should be called immediately upon entry to handler
+.global get_tcb
+get_tcb:
+    
