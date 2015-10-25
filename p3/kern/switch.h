@@ -1,5 +1,5 @@
 /** @file switch.h
- *  @brief Interface for context and mode switching functions
+ *  @brief Interface for context switching functions
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
@@ -10,12 +10,14 @@
 
 #include <seg.h>
 #include <stdint.h>
+#include <control.h>
 
-/** @brief Restores the context to
+/** @brief Restores the context to another kernel stack
  *
  *  @param stack Stack pointer for the thread to be restored
+ *  @param tcb TCB of current thread to save esp
  *  @return Void
  **/
-void restore_context(void *stack);
+void switch_context(void *stack, tcb_t *tcb);
 
 #endif // SWITCH_H_

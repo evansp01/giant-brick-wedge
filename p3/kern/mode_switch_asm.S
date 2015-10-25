@@ -25,7 +25,10 @@
 
 /**  @brief Restores state to user mode */
 .macro USER_MODE_SWITCH
-    add $12, %esp
+    pushl %esp                          # provide a stack address to get tcb
+    call set_esp0_wrapper               # set esp0 before mode switching
+    add $4, %esp                        # clean up function call stack
+    add $12, %esp                       # clean up ureg arguments
     popl %ds
     popl %es
     popl %fs
@@ -42,7 +45,8 @@
         KERNEL_MODE_SWITCH
         pushl $0                        # set ureg.cr2 = 0
         pushl $0                        # set ureg.cause = 0
-        pushl 0x50(%esp)                # set pointer to &tcb at top of stack
+        //call sim_breakpoint
+        pushl %esp                      # set pointer to &tcb at top of stack
         call \NAME\()
         USER_MODE_SWITCH
 .endm
@@ -71,10 +75,9 @@
 .endm
 
 /* Assembly function for entering user mode for the first time */
-.global user_mode_switch
-user_mode_switch:
-    movl 4(%esp), %eax      # save the stack pointer argument
-    movl %eax, %esp         # switch stack pointers
+.global first_entry_user_mode
+first_entry_user_mode:
+    movl 4(%esp), %esp      # switch stack pointers
     USER_MODE_SWITCH        # perform the mode switch
 
 /* Assembly wrappers for device interrupts */
@@ -106,8 +109,4 @@ EXCEPTION_ASM_WRAPPER IDT_MF
 EXCEPTION_ASM_WRAPPER_ERROR IDT_AC
 EXCEPTION_ASM_WRAPPER IDT_MC
 EXCEPTION_ASM_WRAPPER IDT_XF
-
-// Get pointer to tcb. Should be called immediately upon entry to handler
-.global get_tcb
-get_tcb:
     

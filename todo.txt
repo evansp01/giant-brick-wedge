@@ -6,6 +6,7 @@ Stuff to do:
     void * to uint32_t where we might do math
     doxygen for everything
     
+    pid/tid numbering scheme
     
 Stuff to do for checkpoint 2:
     

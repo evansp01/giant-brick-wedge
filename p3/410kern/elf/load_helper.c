@@ -151,6 +151,7 @@ elf_load_helper(simple_elf_t *se_hdr, const char *fname)
                  strcmp(".stabstr", section_name) != 0 &&
                  strcmp(".comment", section_name) != 0 &&
                  strcmp(".note", section_name) != 0 &&
+                 strcmp(".eh_frame", section_name) != 0 &&
 		         strncmp(".debug", section_name, sizeof(".debug")-1) != 0) {
             lprintf("Loader: unknown header: \"%s\"",
                     section_name);

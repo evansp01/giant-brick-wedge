@@ -27,7 +27,7 @@
  *  @param stack Stack pointer for the thread stack to be crafted
  *  @return void
  **/
-void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
+void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
 {
     //set_esp-1(stack);
     uint32_t eflags_start = EFL_RESV1 | EFL_IF;
@@ -46,7 +46,8 @@ void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
     void *kernel_stack = (void*)stack;
     PUSH_STACK(kernel_stack, ureg, ureg_t);
     PUSH_STACK(kernel_stack, tcb, void*);
-    user_mode_switch(kernel_stack);
+    
+    return kernel_stack;
 }
 
 /**
@@ -114,17 +115,17 @@ page_directory_t* create_proc_pagedir(simple_elf_t* elf)
 
 /** @brief Creates a new idle process
  *
- *  @return Zero on success, an integer less than zero on failure
+ *  @return Pointer to tcb on success, null on failure
  **/
-int create_idle()
+tcb_t *create_idle()
 {
-    init_kernel_state();
     pcb_t* pcb_entry = create_pcb_entry(NULL);
 
     void* stack = allocate_kernel_stack();
-    set_esp0((uint32_t)stack);
-    if (stack == NULL)
-        return -1;
+    if (stack == NULL) {
+        panic("Cannot allocate kernel stack");
+        return 0;
+    }
 
     tcb_t* tcb_entry = create_tcb_entry(pcb_entry, stack);
 
@@ -173,23 +174,56 @@ uint32_t setup_main_stack(void *cr2, int argc, char** argv)
  *  @param pcb Process to load program on
  *  @param tcb Thread to load program on
  *  @param filename Name of the program to be loaded
- *  @return Zero on success, an integer less than zero on failure
+ *  @return Pointer to tcb on success, null on failure
  **/
-int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
+tcb_t *load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 {
     simple_elf_t elf;
     if (elf_check_header(filename) < 0) {
         lprintf("%s not a process", filename);
-        return -1;
+        return 0;
     }
     elf_load_helper(&elf, filename);
     pcb->directory = (page_directory_t *)create_proc_pagedir(&elf);
     if (pcb->directory == NULL) {
-        return -2;
+        panic("directory is empty");
+        return 0;
     }
     uint32_t stack_entry = setup_main_stack(pcb->directory, 0, NULL);
+    
     // Craft kernel stack contents
-    create_context((uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
-
-    return 0;
+    tcb->user_esp = create_context((uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
+    tcb->saved_esp = tcb->user_esp;
+    
+    return tcb;
 }
+
+/** @brief Sets up a given thread stack for entry via context switch
+ *
+ *  @param tcb Thread whose stack is to be set up for context switch entry
+ *  @return void
+ **/
+void setup_for_switch(tcb_t *tcb)
+{
+    void *saved_esp = tcb->saved_esp;
+    
+    // Entry esp argument for first_entry_user_mode()
+    PUSH_STACK(tcb->saved_esp, saved_esp, void*);
+    
+    // Dummy value
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    
+    // Ret address to first_entry_user_mode()
+    PUSH_STACK(tcb->saved_esp, first_entry_user_mode, void*);
+    
+    // POPA arguments
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, 0, void*);
+}
+

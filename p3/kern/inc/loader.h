@@ -27,12 +27,13 @@
 
 /* --- Prototypes --- */
 
-int create_idle();
+tcb_t *create_idle();
 int getbytes( const char *filename, int offset, int size, char *buf );
-void create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
+void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
 page_directory_t* create_proc_pagedir(simple_elf_t* elf);
-int load_program(pcb_t *pcb, tcb_t *tcb, char *filename);
+tcb_t *load_program(pcb_t *pcb, tcb_t *tcb, char *filename);
 uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv);
 uint32_t setup_main_stack(void *cr2, int argc, char** argv);
+void setup_for_switch(tcb_t *tcb);
 
 #endif /* _LOADER_H */

@@ -23,11 +23,8 @@ NEW_STRUCT(tcb_ds_t, tcb);
 
 /** @brief Structure for a process control block */
 typedef struct pcb {
-    // Links for linked list macros
     NEW_LINK(pcb) all_processes;
     NEW_LINK(pcb) siblings;
-   
-   /* scheduler lists */
     pcb_ds_t children;
     tcb_ds_t threads;
     int id;
@@ -41,13 +38,13 @@ typedef struct pcb {
 
 /** @brief Structure for a thread control block */
 typedef struct tcb {
-    /* scheduler lists */
     NEW_LINK(tcb) all_threads;
     NEW_LINK(tcb) pcb_threads;
-    
     int id;
     pcb_t *parent;
     void *kernel_stack;
+    void *saved_esp;
+    void *user_esp;
     state_t state;
 } tcb_t;
 
@@ -59,9 +56,11 @@ typedef struct kernel_state {
 } kernel_state_t;
 
 // Headers regarding create process
-int init_kernel_state();
+kernel_state_t *get_kernel_state();
+void init_kernel_state();
 pcb_t *create_pcb_entry(pcb_t *parent_pcb);
 tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack);
 void *allocate_kernel_stack();
+tcb_t *get_tcb_from_addr(void *addr);
 
 #endif // CONTROL_H_

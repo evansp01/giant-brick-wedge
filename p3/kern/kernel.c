@@ -33,6 +33,8 @@
 #include <setup_idt.h>
 #include <kernel_tests.h>
 #include <loader.h>
+#include <mode_switch.h>
+#include <cr.h>
 
 /** @brief Tick function, to be called by the timer interrupt handler
  * 
@@ -64,16 +66,28 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     turn_on_vm(dir);
     init_kernel_state();
     
-    // Run kernel tests
+    // Run kernel tests (TODO: Free/reallocate frames)
     vm_diagnose(dir);
     test_process_vm();
-
-    if (create_idle() < 0) {
+    
+    // create 1st idle process
+    tcb_t *tcb1 = create_idle();
+    if (tcb1 == NULL)
         panic("Cannot create first process. Kernel is sad");
-    }
-
+    
+    // create 2nd idle process
+    tcb_t *tcb2 = create_idle();
+    if (tcb2 == NULL)
+        panic("Cannot create second process. Kernel is mad");
+    
+    // Prepare 2nd idle thread for entry via context switch
+    setup_for_switch(tcb2);
+    
+    // Switch to 1st idle thread
+    first_entry_user_mode(tcb1->saved_esp);
+    
     while (1) {
-        continue;
+        panic("Kernel has wandered into limbo.");
     }
     return 0;
 }

@@ -1,17 +1,18 @@
-/** @file fault.h
+/** @file mode_switch.h
  *
- *  @brief Function header for fault handlers
+ *  @brief Interface for mode switching
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
  *  @bug No known bugs.
  **/
 
-#ifndef _FAULT_H
-#define _FAULT_H
+#ifndef _MODE_SWITCH_H
+#define _MODE_SWITCH_H
 
 #include <stdint.h>
 #include <idt.h>
+#include <control.h>
 
 #define _NAME_ASM(name) name##_asm
 /** @def CONSTRUCT_HANDLER_H(NAME)
@@ -41,7 +42,12 @@
  *  @param esp Stack pointer with values to be restored
  *  @return Void
  **/
-void user_mode_switch(void *esp);
+void first_entry_user_mode(void *esp);
+
+
+// C headers
+void set_esp0_wrapper(void *addr);
+
 
 // Fault handlers
 /** @brief Wrapper for the divide error handler
@@ -156,4 +162,4 @@ NAME_ASM_H(timer_interrupt);
  */
 NAME_ASM_H(keyboard_interrupt);
 
-#endif /* _FAULT_H */
+#endif /* _MODE_SWITCH_H */

@@ -12,46 +12,28 @@
 #include <lmm/lmm.h>
 #include <malloc/malloc_internal.h>
 #include <page.h>
-
+#include <simics.h>
 
 // Global kernel state with process and thread info
-static kernel_state_t kernel_state;
-
+kernel_state_t kernel_state;
 
 /** @brief Initializes the global lists of processes and threads
- *
- *  @return Zero on success, an integer less than zero on failure
+ *  @return void
  **/
-int init_kernel_state()
+void init_kernel_state()
 {
     INIT_STRUCT(&kernel_state.processes);
     INIT_STRUCT(&kernel_state.threads);
     kernel_state.next_pid = 1;
-    return 0;
 }
 
-/** @brief Gives the next available process id number
- *
+/** @brief Gives the next available process/thread id number
  *  @return Next sequential process id
  **/
 int get_next_pid()
 {
     int id = kernel_state.next_pid;
     kernel_state.next_pid++;
-    return id;
-}
-
-/** @brief Gives the next available thread id for a particular process
- *
- *  @param parent_pcb Pointer to the pcb of the thread's parent process
- *  @return Thread id on success, an integer less than zero on failure
- **/
-int get_next_tid(pcb_t *parent_pcb)
-{
-    if (parent_pcb == NULL)
-        return -1;
-    int id = parent_pcb->next_tid;
-    parent_pcb->next_tid++;
     return id;
 }
 
@@ -79,7 +61,6 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
     entry->id = get_next_pid();
     entry->exit_status = 0;
     entry->state = NOTYET;
-    entry->next_tid = 1;
 
     if (parent_pcb != NULL)
         entry->parent_id = parent_pcb->id;
@@ -100,7 +81,7 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
  **/
 tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
 {
-    tcb_t *entry = (tcb_t *)malloc(sizeof(tcb_t));
+    tcb_t *entry = (tcb_t *)smalloc(sizeof(tcb_t));
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
@@ -109,9 +90,9 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
     INSERT(&kernel_state.threads, entry, all_threads);
     INSERT(&parent_pcb->threads, entry, pcb_threads);
 
-    entry->id = get_next_tid(parent_pcb);
+    entry->id = get_next_pid();
     entry->parent = parent_pcb;
-    entry->kernel_stack = stack - 1; // leave space for &tcb
+    entry->kernel_stack = stack;
     entry->state = NOTYET;
 
     // Store pointer to tcb at the top of the kernel stack
@@ -126,9 +107,17 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
  **/
 void *allocate_kernel_stack()
 {
-    // TODO: Change if lmm region flags are used
-    uint32_t mem = (uint32_t)smemalign((size_t)8, PAGE_SIZE);
-
+    uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
     return (void *)(mem + PAGE_SIZE - (2*sizeof(int)));
 }
 
+/** @brief Gets the tcb from the top of the kernel stack
+ *
+ *  @param An address on the current kernel stack
+ *  @return Pointer to the tcb for the current kernel thread
+ **/
+tcb_t *get_tcb_from_addr(void *addr)
+{
+    uint32_t tcb_addr = (((uint32_t)addr)&0xFFFFF000)|0xFF8;
+    return *(tcb_t **)tcb_addr;
+}

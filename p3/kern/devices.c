@@ -33,6 +33,13 @@
 #include <keyhelp.h>
 #include <ctype.h>
 #include <setup_idt.h>
+#include <simics.h>
+
+#include <loader.h>
+#include <stdlib.h>
+#include <ureg.h>
+#include <control.h>
+#include <switch.h>
 
 #define TIMER_INTERRUPT_FREQUENCY 1000
 #define KEYBOARD_BUFFER_SIZE 2048
@@ -97,6 +104,9 @@ static int next_index(int index)
     return (index + 1) % KEYBOARD_BUFFER_SIZE;
 }
 
+// TODO: Remove once testing is complete
+int keyboard_count = 0;
+
 /** @brief Handle a ketboard interrupt, read the scancode and store in buffer
  *
  *  Reads the scancode from the keyboard and stores it in the keyboard buffer
@@ -105,8 +115,33 @@ static int next_index(int index)
  *
  *  @return void
  *  */
-void keyboard_interrupt()
+void keyboard_interrupt(void *addr, ureg_t state)
 {
+    // Temporarily use keyboard interrupts to trigger context switchers
+    inb(KEYBOARD_PORT);
+    outb(INT_CTL_PORT, INT_ACK_CURRENT);
+    
+    if (keyboard_count % 2) {
+        
+        extern kernel_state_t kernel_state;
+        tcb_t *p_tcb = get_tcb_from_addr(addr);
+        
+        lprintf("Keyboard interrupt received");
+        lprintf("Current thread: %d", p_tcb->id);
+       
+        tcb_t *tcb;
+        Q_FOREACH(tcb, &kernel_state.threads, all_threads) {
+            if (tcb->id != p_tcb->id) {
+                lprintf("Other thread: %d", tcb->id);
+                switch_context(tcb->saved_esp, p_tcb);
+                break;
+            }
+        }
+    }
+    keyboard_count++;
+    
+    
+    /*
     //if we aren't about to run into the consumer
     if (next_index(keyboard.producer) != keyboard.consumer) {
         keyboard.buffer[keyboard.producer] = inb(KEYBOARD_PORT);
@@ -116,8 +151,10 @@ void keyboard_interrupt()
         //the program is more than KEYBOARD_BUFFER_SIZE characters behind
         //so it's probably okay.
     }
+    
     //ack interrupt
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
+    */
 }
 
 int readchar(void)

@@ -18,8 +18,9 @@
  *
  *  @return void
  */
-void gettid_syscall(tcb_t *p_tcb, ureg_t state)
+void gettid_syscall(void *addr, ureg_t state)
 {
+    tcb_t *p_tcb = get_tcb_from_addr(addr);
     // return the tid
     state.eax = p_tcb->id;
     return;
