@@ -2,7 +2,6 @@ Stuff to do:
 
     doxygen cleanup
 
-    fault handler error codes on stack
     use write_vm
     void * to uint32_t where we might do math
     
