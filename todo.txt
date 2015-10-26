@@ -10,19 +10,14 @@ Stuff to do:
     
 Stuff to do for checkpoint 2:
     
-    kernel level yield (context switch)
     disable interrupts vs disable context switching
     mutexes
     cond vars without malloc (linked lists using sleeping threads' memory)
     validity check for given values from user for system calls
-    basic scheduler (context switch based on keyboard interrupt)
     kernel versions of system calls (yield, etc)
     
     context switch
-        save current kernel stack esp into data structure
-        retrieve new thread's esp
-        perform context switch
-        once switched, must also adjust VM stuff
+        adjust VM stuff after switching
     
     locking
         process locks

@@ -122,21 +122,8 @@ void keyboard_interrupt(void *addr, ureg_t state)
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
     
     if (keyboard_count % 2) {
-        
-        extern kernel_state_t kernel_state;
-        tcb_t *p_tcb = get_tcb_from_addr(addr);
-        
         lprintf("Keyboard interrupt received");
-        lprintf("Current thread: %d", p_tcb->id);
-       
-        tcb_t *tcb;
-        Q_FOREACH(tcb, &kernel_state.threads, all_threads) {
-            if (tcb->id != p_tcb->id) {
-                lprintf("Other thread: %d", tcb->id);
-                switch_context(tcb->saved_esp, p_tcb);
-                break;
-            }
-        }
+        yield(addr, -1);
     }
     keyboard_count++;
     
