@@ -7,10 +7,14 @@
  
 .global switch_context
 switch_context:
-    pusha
+    pusha                   # save registers
     mov 40(%esp), %eax      # get pointer to tcb
-    mov %esp, 28(%eax)      # store saved esp into tcb
+    mov %esp, %ecx          # save stack pointer
+    pushl %eax              # set &tcb (arg1)
+    pushl %ecx              # set saved_esp (arg0)
+    call store_esp          # save esp into tcb
+    add $8, %esp            # clean up stack
     mov 36(%esp), %esp      # switch esp to other kernel stack
-    popa                    # restore general purpose registers
-    ret
+    popa                    # restore registers     (different thread)
+    ret                     # return                (different thread)
     

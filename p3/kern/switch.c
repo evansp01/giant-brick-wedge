@@ -13,7 +13,7 @@
 
 /** @brief Retrieves the stack address of the thread to yield to
  *
- *  @param addr Stack address of 
+ *  @param addr Stack address on current kernel thread
  *  @param yield_tid Thread id of thread to yield to
  *  @return Zero on success, an integer less than zero on failure
  **/
@@ -43,4 +43,15 @@ int yield(void *addr, int yield_tid)
         }
     }
     return -1;
+}
+
+/** @brief Stores the saved_esp into the tcb
+ *
+ *  @param addr Stack address of 
+ *  @param tcb Pointer to tcb
+ *  @return void
+ **/
+void store_esp(void *saved_esp, tcb_t *tcb)
+{
+    tcb->saved_esp = saved_esp;
 }

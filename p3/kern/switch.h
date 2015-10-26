@@ -20,11 +20,8 @@
  **/
 void switch_context(void *stack, tcb_t *tcb);
 
-/** @brief Switches context to another thread
- *
- *  @param tid Thread id of thread to yield to, if -1 then yield to any thread
- *  @return Void
- **/
+// C functions
 int yield(void *addr, int yield_tid);
+void store_esp(void *saved_esp, tcb_t *tcb);
 
 #endif // SWITCH_H_
