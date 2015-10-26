@@ -83,7 +83,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
         panic("Cannot create second process. Kernel is mad");
     
     // Prepare 2nd idle thread for entry via context switch
-    setup_for_switch(tcb2);
+    setup_for_switch(tcb2, first_entry_user_mode);
     
     // Switch to 1st idle thread
     first_entry_user_mode(tcb1->saved_esp);

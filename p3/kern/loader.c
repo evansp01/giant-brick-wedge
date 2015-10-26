@@ -201,29 +201,18 @@ tcb_t *load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 /** @brief Sets up a given thread stack for entry via context switch
  *
  *  @param tcb Thread whose stack is to be set up for context switch entry
+ *  @param func Address of function to return to upon entry
  *  @return void
  **/
-void setup_for_switch(tcb_t *tcb)
+void setup_for_switch(tcb_t *tcb, void *func)
 {
     void *saved_esp = tcb->saved_esp;
     
-    // Entry esp argument for first_entry_user_mode()
-    PUSH_STACK(tcb->saved_esp, saved_esp, void*);
+    context_stack_t context_stack = {
+        .func_addr = func,
+        .saved_esp = saved_esp
+    };
     
-    // Dummy value
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    
-    // Ret address to first_entry_user_mode()
-    PUSH_STACK(tcb->saved_esp, first_entry_user_mode, void*);
-    
-    // POPA arguments
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
-    PUSH_STACK(tcb->saved_esp, 0, void*);
+    PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);
 }
 
