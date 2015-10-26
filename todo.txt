@@ -1,32 +1,32 @@
 Stuff to do:
 
+    doxygen cleanup
+
     fault handler error codes on stack
     use write_vm
-    fix how argc, argv works (work towards exec system call)
     void * to uint32_t where we might do math
-    doxygen for everything
     
     pid/tid numbering scheme
+    MODE_SWITCH being invoked when interrupted in kernel mode
+    
+    make struct for switch
     
 Stuff to do for checkpoint 2:
     
     disable interrupts vs disable context switching
-    mutexes
-    cond vars without malloc (linked lists using sleeping threads' memory)
-    validity check for given values from user for system calls
-    kernel versions of system calls (yield, etc)
-    
-    context switch
-        adjust VM stuff after switching
     
     locking
+        mutexes
         process locks
         thread locks
         scheduler lock (flag)
         frame alloc lock
         process lock for page fault handler / lock the page table & set lock bit
+        cond vars without malloc (linked lists using sleeping threads' memory)
         
     exec system call
+        fix how argc, argv works (work towards exec system call)
+        validity check for given values from user for system calls
         copy user input into kernel space
         validate user input
         replace the currently running program (similar to loader code)

@@ -13,13 +13,15 @@
 #include <cr.h>
 #include <simics.h>
 
-/** @brief Sets esp0 to the top of current kernel stack
+/** @brief Sets esp0 and cr3 before transitioning to user mode
  *
  *  @param addr Any address on the current kernel stack
  *  @return void
  */
-void set_esp0_wrapper(void *addr)
+void set_regs(void *addr)
 {
     tcb_t *tcb = get_tcb_from_addr(addr);
+    pcb_t *pcb = tcb->parent;
     set_esp0((uint32_t)tcb->kernel_stack);
+    set_cr3((uint32_t)pcb->directory);
 }

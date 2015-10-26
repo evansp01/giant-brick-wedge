@@ -46,7 +46,7 @@ void first_entry_user_mode(void *esp);
 
 
 // C headers
-void set_esp0_wrapper(void *addr);
+void set_regs(void *addr);
 
 
 // Fault handlers

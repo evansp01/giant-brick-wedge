@@ -26,7 +26,7 @@
 /**  @brief Restores state to user mode */
 .macro USER_MODE_SWITCH
     pushl %esp                          # provide a stack address to get tcb
-    call set_esp0_wrapper               # set esp0 before mode switching
+    call set_regs                       # set esp0 and cr3
     add $4, %esp                        # clean up function call stack
     add $12, %esp                       # clean up ureg arguments
     popl %ds
@@ -45,7 +45,6 @@
         KERNEL_MODE_SWITCH
         pushl $0                        # set ureg.cr2 = 0
         pushl $0                        # set ureg.cause = 0
-        //call sim_breakpoint
         pushl %esp                      # set pointer to &tcb at top of stack
         call \NAME\()
         USER_MODE_SWITCH

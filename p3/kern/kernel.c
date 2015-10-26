@@ -60,15 +60,17 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     init_frame_alloc();
     init_virtual_memory();
     
-    enable_interrupts();
+    // TODO: Fix mode switching to not trigger on interrupt in kernel mode,
+    //       then re-enable interrupts
+    //enable_interrupts();
     
     page_directory_t* dir = create_kernel_directory();
     turn_on_vm(dir);
     init_kernel_state();
     
     // Run kernel tests (TODO: Free/reallocate frames)
-    vm_diagnose(dir);
-    test_process_vm();
+    //vm_diagnose(dir);
+    //test_process_vm();
     
     // create 1st idle process
     tcb_t *tcb1 = create_idle();

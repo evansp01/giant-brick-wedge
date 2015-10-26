@@ -22,7 +22,9 @@ int yield(void *addr, int yield_tid)
     extern kernel_state_t kernel_state;
     tcb_t *p_tcb = get_tcb_from_addr(addr);
     
-    lprintf("Current thread: %d", p_tcb->id);
+    lprintf("Current tid: %d", p_tcb->id);
+    lprintf("Current kernel stack: 0x%x", (int)p_tcb->kernel_stack);
+    lprintf("Current page dir: 0x%x", (int)(p_tcb->parent)->directory);
     
     // TODO: The code to decide which thread to run if yield_tid == -1 should
     //       be moved to a scheduler once it has been written
@@ -34,7 +36,7 @@ int yield(void *addr, int yield_tid)
         
         else {
             if ((yield_tid == -1)||(tcb->id == yield_tid)) {
-                lprintf("Other thread: %d", tcb->id);
+                lprintf("Other tid: %d", tcb->id);
                 switch_context(tcb->saved_esp, p_tcb);
                 return 0;
             }
