@@ -7,8 +7,6 @@ Stuff to do:
     
     pid/tid numbering scheme
     
-    get rid of user_esp
-    
 Stuff to do for checkpoint 2:
     
     disable interrupts vs disable context switching

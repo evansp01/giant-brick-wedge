@@ -44,7 +44,6 @@ typedef struct tcb {
     pcb_t *parent;
     void *kernel_stack;
     void *saved_esp;
-    void *user_esp;
     state_t state;
 } tcb_t;
 

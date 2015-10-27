@@ -171,7 +171,6 @@ tcb_t *create_copy(tcb_t *tcb_parent)
 
     // Copy tcb data
     calc_saved_esp(tcb_parent, tcb_child);
-    tcb_child->user_esp = tcb_parent->user_esp;
     
     // Copy memory regions
     if (copy_program(pcb_parent, pcb_child) < 0) {
@@ -255,9 +254,8 @@ int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
     uint32_t stack_entry = setup_main_stack(pcb->directory, 0, NULL);
     
     // Craft kernel stack contents
-    tcb->user_esp = create_context((uint32_t)tcb->kernel_stack, stack_entry,
+    tcb->saved_esp = create_context((uint32_t)tcb->kernel_stack, stack_entry,
                                    elf.e_entry);
-    tcb->saved_esp = tcb->user_esp;
     
     return 0;
 }
