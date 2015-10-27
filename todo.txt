@@ -5,8 +5,6 @@ Stuff to do:
     use write_vm
     void * to uint32_t where we might do math
     
-    pid/tid numbering scheme
-    
 Stuff to do for checkpoint 2:
     
     disable interrupts vs disable context switching

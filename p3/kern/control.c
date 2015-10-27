@@ -25,26 +25,26 @@ void init_kernel_state(page_directory_t* dir)
 {
     INIT_STRUCT(&kernel_state.processes);
     INIT_STRUCT(&kernel_state.threads);
-    kernel_state.next_pid = 1;
+    kernel_state.next_id = 1;
     kernel_state.dir = dir;
 }
 
 /** @brief Gives the next available process/thread id number
- *  @return Next sequential process id
+ *  @return Next sequential id
  **/
-int get_next_pid()
+int get_next_id()
 {
-    int id = kernel_state.next_pid;
-    kernel_state.next_pid++;
+    int id = kernel_state.next_id;
+    kernel_state.next_id++;
     return id;
 }
 
 /** @brief Creates a new pcb entry for the current process
  *
  *  @param parent_pcb PCB entry for the parent process
- *  @return Pointer to the new pcb entry
+ *  @return Pointer to the new tcb entry for the process thread
  **/
-pcb_t *create_pcb_entry(pcb_t *parent_pcb)
+tcb_t *create_pcb_entry(pcb_t *parent_pcb)
 {
     pcb_t *entry = (pcb_t *)malloc(sizeof(pcb_t));
 
@@ -60,7 +60,7 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
     INIT_STRUCT(&entry->children);
     INIT_STRUCT(&entry->threads);
 
-    entry->id = get_next_pid();
+    entry->id = get_next_id();
     entry->exit_status = 0;
     entry->state = NOTYET;
     entry->num_threads = 0;
@@ -72,8 +72,11 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
 
     entry->reserved_pages = 0;
     entry->directory = NULL;
+    
+    // create first process
+    tcb_t *tcb = create_tcb_entry(entry);
 
-    return entry;
+    return tcb;
 }
 
 /** @brief Creates a new pcb entry for the current process
@@ -82,9 +85,14 @@ pcb_t *create_pcb_entry(pcb_t *parent_pcb)
  *  @param stack Pointer to the kernel stack for the thread
  *  @return Pointer to the new pcb entry
  **/
-tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
+tcb_t *create_tcb_entry(pcb_t *parent_pcb)
 {
     tcb_t *entry = (tcb_t *)smalloc(sizeof(tcb_t));
+    
+    void* stack = allocate_kernel_stack();
+    if (stack == NULL) {
+        panic("Cannot allocate kernel stack");
+    }
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
@@ -93,7 +101,10 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb, void *stack)
     INSERT(&kernel_state.threads, entry, all_threads);
     INSERT(&parent_pcb->threads, entry, pcb_threads);
 
-    entry->id = get_next_pid();
+    if (parent_pcb->num_threads == 0)
+        entry->id = parent_pcb->id;
+    else
+        entry->id = get_next_id();
     entry->parent = parent_pcb;
     entry->kernel_stack = stack;
     entry->state = NOTYET;

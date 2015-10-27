@@ -48,7 +48,7 @@ tcb_t *create_copy(tcb_t *tcb_parent);
 int getbytes( const char *filename, int offset, int size, char *buf );
 void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
 page_directory_t* create_proc_pagedir(simple_elf_t* elf);
-int load_program(pcb_t* pcb, tcb_t* tcb, char* filename);
+int load_program(tcb_t* tcb, char* filename);
 int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child);
 void calc_saved_esp(tcb_t* tcb_parent, tcb_t *tcb_child);
 uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv);

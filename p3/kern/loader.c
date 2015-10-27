@@ -101,8 +101,6 @@ page_directory_t* create_proc_pagedir(simple_elf_t* elf)
         return NULL;
     }
     set_cr3((uint32_t)dir);
-    
-    lprintf("cr3: %d", (int)dir);
 
     allocate_pages(dir,(void*)elf->e_txtstart,elf->e_txtlen,e_read_page);
     getbytes(elf->e_fname,elf->e_txtoff,elf->e_txtlen,(char*)elf->e_txtstart);
@@ -126,17 +124,9 @@ page_directory_t* create_proc_pagedir(simple_elf_t* elf)
  **/
 tcb_t *create_idle()
 {
-    pcb_t* pcb_entry = create_pcb_entry(NULL);
-
-    void* stack = allocate_kernel_stack();
-    if (stack == NULL) {
-        lprintf("Cannot allocate kernel stack");
-        return 0;
-    }
-
-    tcb_t* tcb_entry = create_tcb_entry(pcb_entry, stack);
+    tcb_t* tcb_entry = create_pcb_entry(NULL);
     
-    if (load_program(pcb_entry, tcb_entry, "idle") < 0) {
+    if (load_program(tcb_entry, "idle") < 0) {
         lprintf("cannot load program");
         return 0;
     }
@@ -157,23 +147,14 @@ tcb_t *create_copy(tcb_t *tcb_parent)
         return NULL;
     }
     
-    // Create copy of pcb
-    pcb_t* pcb_child = create_pcb_entry(pcb_parent);
-    
-    void* stack = allocate_kernel_stack();
-    if (stack == NULL) {
-        panic("Cannot allocate kernel stack");
-        return 0;
-    }
-
-    // Create copy of tcb
-    tcb_t* tcb_child = create_tcb_entry(pcb_child, stack);
+    // Create copy of pcb & tcb
+    tcb_t* tcb_child = create_pcb_entry(pcb_parent);
 
     // Copy tcb data
     calc_saved_esp(tcb_parent, tcb_child);
     
     // Copy memory regions
-    if (copy_program(pcb_parent, pcb_child) < 0) {
+    if (copy_program(pcb_parent, tcb_child->parent) < 0) {
         lprintf("cannot copy program");
         return 0;
     }
@@ -238,8 +219,10 @@ uint32_t setup_main_stack(void *cr2, int argc, char** argv)
  *  @param filename Name of the program to be loaded
  *  @return Pointer to tcb on success, null on failure
  **/
-int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
+int load_program(tcb_t* tcb, char* filename)
 {
+    pcb_t* pcb = tcb->parent;
+    
     simple_elf_t elf;
     if (elf_check_header(filename) < 0) {
         lprintf("%s not a process", filename);
