@@ -276,7 +276,7 @@ int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
     return 0;
 }
 
-/** @brief Copies the page directory tables into a new process
+/** @brief Copies the page tables into a new process
  *
  *  @param dir_parent PCB of parent process
  *  @param dir_child PCB of child process
@@ -313,7 +313,7 @@ int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child)
     return 0;
 }
 
-/** @brief Copies the page directory tables into a new process
+/** @brief Copies the page frames into a new process
  *
  *  @param table_parent PCB of parent process
  *  @param table_child PCB of child process
