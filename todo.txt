@@ -27,4 +27,3 @@ Stuff to do for checkpoint 2:
     
     fork system call
         copy software exception handler
-        clean up copy_program() code (split into functions)

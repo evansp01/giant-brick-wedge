@@ -50,6 +50,8 @@ void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
 page_directory_t* create_proc_pagedir(simple_elf_t* elf);
 int load_program(tcb_t* tcb, char* filename);
 int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child);
+int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child);
+int copy_frames(page_table_t *table_parent, page_table_t *table_child);
 void calc_saved_esp(tcb_t* tcb_parent, tcb_t *tcb_child);
 uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv);
 uint32_t setup_main_stack(void *cr2, int argc, char** argv);

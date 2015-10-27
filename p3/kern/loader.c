@@ -265,6 +265,25 @@ int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
     set_cr3((uint32_t)kernel_state.dir);
     pcb_parent->directory = kernel_state.dir;
     
+    // Copy page tables from parent to child
+    if (copy_page_tables(dir_parent, dir_child) < 0)
+        return -2;
+    
+    // Return to process page directory mapping
+    set_cr3((uint32_t)dir_parent);
+    pcb_parent->directory = dir_parent;
+    
+    return 0;
+}
+
+/** @brief Copies the page directory tables into a new process
+ *
+ *  @param dir_parent PCB of parent process
+ *  @param dir_child PCB of child process
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child)
+{
     // Copy memory regions
     int i_dir;
     for (i_dir = 0; i_dir < TABLES_PER_DIR; i_dir++) {
@@ -286,34 +305,43 @@ int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
             page_table_t *table_parent = get_entry_address(*dir_entry_parent);
             page_table_t *table_child = get_entry_address(*dir_entry_child);
             
-            int i_page;
-            for (i_page = 0; i_page < PAGES_PER_TABLE; i_page++) {
-                
-                // Check if it is a present user page table entry
-                entry_t *table_entry_parent = &table_parent->pages[i_page];
-                if ((table_entry_parent->present)&&(table_entry_parent->user)) {
-                    
-                    // Create copy of page
-                    entry_t *table_entry_child = &table_child->pages[i_page];
-                    void* frame = allocate_frame();
-                    if (frame == NULL) {
-                        lprintf("Ran out of frames to allocate");
-                        return -2;
-                    }
-                    *table_entry_child = create_entry(frame, *table_entry_parent);
-                    
-                    // Copy frame data
-                    memcpy(get_entry_address(*table_entry_child),
-                           get_entry_address(*table_entry_parent), PAGE_SIZE); 
-                }
-            }
+            // Copy page frames from parent to child
+            if (copy_frames(table_parent, table_child) < 0)
+                return -2;
         }
     }
-    
-    // Return to process page directory mapping
-    set_cr3((uint32_t)dir_parent);
-    pcb_parent->directory = dir_parent;
-    
+    return 0;
+}
+
+/** @brief Copies the page directory tables into a new process
+ *
+ *  @param table_parent PCB of parent process
+ *  @param table_child PCB of child process
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int copy_frames(page_table_t *table_parent, page_table_t *table_child)
+{
+    int i_page;
+    for (i_page = 0; i_page < PAGES_PER_TABLE; i_page++) {
+        
+        // Check if it is a present user page table entry
+        entry_t *table_entry_parent = &table_parent->pages[i_page];
+        if ((table_entry_parent->present)&&(table_entry_parent->user)) {
+            
+            // Create copy of page
+            entry_t *table_entry_child = &table_child->pages[i_page];
+            void* frame = allocate_frame();
+            if (frame == NULL) {
+                lprintf("Ran out of frames to allocate");
+                return -2;
+            }
+            *table_entry_child = create_entry(frame, *table_entry_parent);
+            
+            // Copy frame data
+            memcpy(get_entry_address(*table_entry_child),
+                   get_entry_address(*table_entry_parent), PAGE_SIZE); 
+        }
+    }
     return 0;
 }
 
