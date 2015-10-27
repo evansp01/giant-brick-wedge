@@ -21,6 +21,10 @@
 #include <eflags.h>
 #include <ureg.h>
 #include <mode_switch.h>
+#include <utilities.h>
+#include <vm.h>
+
+#include <asm.h> //temp
 
 /** @brief Crafts the kernel stack for the initial program
  *
@@ -97,15 +101,18 @@ page_directory_t* create_proc_pagedir(simple_elf_t* elf)
         return NULL;
     }
     set_cr3((uint32_t)dir);
+    
+    lprintf("cr3: %d", (int)dir);
 
-    allocate_pages(dir, (void*)elf->e_txtstart, elf->e_txtlen, e_read_page);
-    getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
+    allocate_pages(dir,(void*)elf->e_txtstart,elf->e_txtlen,e_read_page);
+    getbytes(elf->e_fname,elf->e_txtoff,elf->e_txtlen,(char*)elf->e_txtstart);
 
-    allocate_pages(dir, (void*)elf->e_rodatstart, elf->e_rodatlen, e_read_page);
-    getbytes(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen, (char*)elf->e_rodatstart);
+    allocate_pages(dir,(void*)elf->e_rodatstart,elf->e_rodatlen,e_read_page);
+    getbytes(elf->e_fname,elf->e_rodatoff,elf->e_rodatlen,
+             (char*)elf->e_rodatstart);
 
     allocate_pages(dir, (void*)elf->e_datstart, elf->e_datlen, e_write_page);
-    getbytes(elf->e_fname, elf->e_datoff, elf->e_datlen, (char*)elf->e_datstart);
+    getbytes(elf->e_fname,elf->e_datoff,elf->e_datlen,(char*)elf->e_datstart);
 
     allocate_pages(dir, (void*)elf->e_bssstart, elf->e_bsslen, e_write_page);
     memset((void*)elf->e_bssstart, 0, elf->e_bsslen);
@@ -123,13 +130,69 @@ tcb_t *create_idle()
 
     void* stack = allocate_kernel_stack();
     if (stack == NULL) {
-        panic("Cannot allocate kernel stack");
+        lprintf("Cannot allocate kernel stack");
         return 0;
     }
 
     tcb_t* tcb_entry = create_tcb_entry(pcb_entry, stack);
+    
+    if (load_program(pcb_entry, tcb_entry, "idle") < 0) {
+        lprintf("cannot load program");
+        return 0;
+    }
+    return tcb_entry;
+}
 
-    return load_program(pcb_entry, tcb_entry, "idle");
+/** @brief Creates a copy of the given process
+ *
+ *  @return Pointer to tcb on success, null on failure
+ **/
+tcb_t *create_copy(tcb_t *tcb_parent)
+{
+    pcb_t* pcb_parent = tcb_parent->parent;
+    
+    // Reject calls to fork for processes with more than one thread
+    if (pcb_parent->num_threads > 1) {
+        lprintf("Fork called on task with multiple threads");
+        return NULL;
+    }
+    
+    // Create copy of pcb
+    pcb_t* pcb_child = create_pcb_entry(pcb_parent);
+    
+    void* stack = allocate_kernel_stack();
+    if (stack == NULL) {
+        panic("Cannot allocate kernel stack");
+        return 0;
+    }
+
+    // Create copy of tcb
+    tcb_t* tcb_child = create_tcb_entry(pcb_child, stack);
+
+    // Copy tcb data
+    calc_saved_esp(tcb_parent, tcb_child);
+    tcb_child->user_esp = tcb_parent->user_esp;
+    
+    // Copy memory regions
+    if (copy_program(pcb_parent, pcb_child) < 0) {
+        lprintf("cannot copy program");
+        return 0;
+    }
+    
+    return tcb_child;
+}
+
+/** @brief Calculates the saved esp for the new thread stack
+ *
+ *  @param tcb_parent Pointer to parent tcb
+ *  @param tcb_child Pointer to child tcb
+ *  @return void
+ **/
+void calc_saved_esp(tcb_t* tcb_parent, tcb_t *tcb_child)
+{
+    uint32_t child_mask = (uint32_t)tcb_child->kernel_stack & 0xFFFFF000;
+    uint32_t parent_mask = (uint32_t)tcb_parent->saved_esp & 0x00000FFF;
+    tcb_child->saved_esp = (void *)(parent_mask | child_mask);
 }
 
 /** @brief Allocates the stack for the new process
@@ -159,7 +222,7 @@ uint32_t setup_argv(void *cr2, uint32_t stack_high, int argc, char** argv)
 uint32_t setup_main_stack(void *cr2, int argc, char** argv)
 {
     uint32_t stack_high = 0xFFFFFFFFF & STACK_ALIGN;
-    uint32_t *stack_current = (uint32_t *)setup_argv(cr2, stack_high, argc, argv);
+    uint32_t *stack_current = (uint32_t *)setup_argv(cr2,stack_high,argc,argv);
     uint32_t stack_low = 0xFFFFF000;
     stack_current[-1] = stack_low;
     stack_current[-2] = stack_high;
@@ -176,41 +239,115 @@ uint32_t setup_main_stack(void *cr2, int argc, char** argv)
  *  @param filename Name of the program to be loaded
  *  @return Pointer to tcb on success, null on failure
  **/
-tcb_t *load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
+int load_program(pcb_t* pcb, tcb_t* tcb, char* filename)
 {
     simple_elf_t elf;
     if (elf_check_header(filename) < 0) {
         lprintf("%s not a process", filename);
-        return 0;
+        return -1;
     }
     elf_load_helper(&elf, filename);
     pcb->directory = (page_directory_t *)create_proc_pagedir(&elf);
     if (pcb->directory == NULL) {
         panic("directory is empty");
-        return 0;
+        return -1;
     }
     uint32_t stack_entry = setup_main_stack(pcb->directory, 0, NULL);
     
     // Craft kernel stack contents
-    tcb->user_esp = create_context((uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
+    tcb->user_esp = create_context((uint32_t)tcb->kernel_stack, stack_entry,
+                                   elf.e_entry);
     tcb->saved_esp = tcb->user_esp;
     
-    return tcb;
+    return 0;
+}
+
+/** @brief Copies the page directory tables into a new process
+ *
+ *  @param pcb_parent PCB of parent process
+ *  @param pcb_child PCB of child process
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
+{
+    extern kernel_state_t kernel_state;
+    page_directory_t* dir_parent = pcb_parent->directory;
+    
+    // Create page directory for child process
+    page_directory_t* dir_child = create_page_directory();
+    if (dir_child == NULL) {
+        return -1;
+    }
+    pcb_child->directory = dir_child;
+    
+    // Temporarily set to kernel identity mapping
+    set_cr3((uint32_t)kernel_state.dir);
+    pcb_parent->directory = kernel_state.dir;
+    
+    // Copy memory regions
+    int i_dir;
+    for (i_dir = 0; i_dir < TABLES_PER_DIR; i_dir++) {
+        
+        // Check if it is a present user directory entry
+        entry_t *dir_entry_parent = &dir_parent->tables[i_dir];
+        if ((dir_entry_parent->present)&&(dir_entry_parent->user)) {
+            
+            // Create copy of page table
+            entry_t *dir_entry_child = &dir_child->tables[i_dir];
+            void* table = create_page_table();
+            if (table == NULL) {
+                lprintf("Ran out of kernel memory for page tables");
+                return -1;
+            }
+            *dir_entry_child = create_entry(table, *dir_entry_parent);
+            
+            // Get page table
+            page_table_t *table_parent = get_entry_address(*dir_entry_parent);
+            page_table_t *table_child = get_entry_address(*dir_entry_child);
+            
+            int i_page;
+            for (i_page = 0; i_page < PAGES_PER_TABLE; i_page++) {
+                
+                // Check if it is a present user page table entry
+                entry_t *table_entry_parent = &table_parent->pages[i_page];
+                if ((table_entry_parent->present)&&(table_entry_parent->user)) {
+                    
+                    // Create copy of page
+                    entry_t *table_entry_child = &table_child->pages[i_page];
+                    void* frame = allocate_frame();
+                    if (frame == NULL) {
+                        lprintf("Ran out of frames to allocate");
+                        return -2;
+                    }
+                    *table_entry_child = create_entry(frame, *table_entry_parent);
+                    
+                    // Copy frame data
+                    memcpy(get_entry_address(*table_entry_child),
+                           get_entry_address(*table_entry_parent), PAGE_SIZE); 
+                }
+            }
+        }
+    }
+    
+    // Return to process page directory mapping
+    set_cr3((uint32_t)dir_parent);
+    pcb_parent->directory = dir_parent;
+    
+    return 0;
 }
 
 /** @brief Sets up a given thread stack for entry via context switch
  *
  *  @param tcb Thread whose stack is to be set up for context switch entry
- *  @param func Address of function to return to upon entry
  *  @return void
  **/
-void setup_for_switch(tcb_t *tcb, void *func)
+void setup_for_switch(tcb_t *tcb)
 {
     void *saved_esp = tcb->saved_esp;
     
     context_stack_t context_stack = {
-        .func_addr = func,
-        .saved_esp = saved_esp
+        .func_addr = first_entry_user_mode,
+        .saved_esp = saved_esp,
     };
     
     PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);

@@ -66,6 +66,7 @@ void install_exceptions()
 void install_syscalls()
 {
     set_idt_syscall(NAME_ASM(gettid_syscall), GETTID_INT);
+    set_idt_syscall(NAME_ASM(fork_syscall), FORK_INT);
 }
 
 /** @brief Installs the device driver handlers

@@ -151,6 +151,11 @@ INT_ASM_H(IDT_XF);
  */
 NAME_ASM_H(gettid_syscall);
 
+/** @brief Wrapper for the fork handler
+ *  @return void
+ */
+NAME_ASM_H(fork_syscall);
+
 // Device interrupt handlers
 /** @brief Wrapper for the timer interrupt handler
  *  @return void

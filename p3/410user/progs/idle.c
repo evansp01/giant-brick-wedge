@@ -15,6 +15,9 @@ int main()
     int pid = gettid();
     lprintf("my pid is: %d", pid);
     
+    int ret = fork();
+    lprintf("fork: %d", ret);
+    
     while (1) {
     }
 }

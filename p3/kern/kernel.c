@@ -60,30 +60,23 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     init_frame_alloc();
     init_virtual_memory();
     
-    // TODO: Fix mode switching to not trigger on interrupt in kernel mode,
-    //       then re-enable interrupts
+    // TODO: Is it ok not to have interrupts yet here?
+    //       Interrupts trigger a fault since there is no pcb entry yet
+    //       and set_regs() needs to reference the pcb
     //enable_interrupts();
     
     page_directory_t* dir = create_kernel_directory();
     turn_on_vm(dir);
-    init_kernel_state();
+    init_kernel_state(dir);
     
     // Run kernel tests (TODO: Free/reallocate frames)
     //vm_diagnose(dir);
     //test_process_vm();
     
-    // create 1st idle process
+    // Create 1st idle process
     tcb_t *tcb1 = create_idle();
     if (tcb1 == NULL)
         panic("Cannot create first process. Kernel is sad");
-    
-    // create 2nd idle process
-    tcb_t *tcb2 = create_idle();
-    if (tcb2 == NULL)
-        panic("Cannot create second process. Kernel is mad");
-    
-    // Prepare 2nd idle thread for entry via context switch
-    setup_for_switch(tcb2, first_entry_user_mode);
     
     // Switch to 1st idle thread
     first_entry_user_mode(tcb1->saved_esp);

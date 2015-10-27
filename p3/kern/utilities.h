@@ -12,6 +12,7 @@
 #include <simics.h>
 #include <page.h>
 #include <ureg.h>
+#include <vm.h>
 
 #define LEA(address, size, index) \
     (((char*)(address)) + ((unsigned int)(size) * (unsigned int)(index)))
@@ -20,6 +21,7 @@
 #define UNSET_BIT(var, bit) ((var) & (~(1 << (bit))))
 #define AS_TYPE(address, type) (*(type*)&(address))
 void dump_registers(ureg_t* ureg);
+void print_entry(entry_t *entry);
 
 #define DEBUG
 

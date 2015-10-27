@@ -45,6 +45,7 @@ extern const entry_t e_read_page;
 extern const entry_t e_write_page;
 
 //page table manipulation
+entry_t create_entry(void* address, entry_t model);
 void* get_entry_address(entry_t entry);
 void set_entry_address(entry_t* entry, void* address);
 entry_t* get_dir_entry(void* address, page_directory_t* directory);
@@ -55,6 +56,7 @@ void zero_frame(void* frame);
 void copy_frame(void* frame, void* from);
 void init_virtual_memory();
 page_directory_t* create_page_directory();
+page_table_t* create_page_table();
 page_directory_t* create_kernel_directory();
 int allocate_pages(void* cr2, void* start, size_t size, entry_t model);
 int vm_to_physical(void* cr2, void* virtual,

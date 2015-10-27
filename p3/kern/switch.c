@@ -22,6 +22,7 @@ int yield(void *addr, int yield_tid)
     extern kernel_state_t kernel_state;
     tcb_t *p_tcb = get_tcb_from_addr(addr);
     
+    lprintf("------------Yield------------");
     lprintf("Current tid: %d", p_tcb->id);
     lprintf("Current kernel stack: 0x%x", (int)p_tcb->kernel_stack);
     lprintf("Current page dir: 0x%x", (int)(p_tcb->parent)->directory);
@@ -37,6 +38,9 @@ int yield(void *addr, int yield_tid)
         else {
             if ((yield_tid == -1)||(tcb->id == yield_tid)) {
                 lprintf("Other tid: %d", tcb->id);
+                lprintf("Other saved esp: 0x%x", (int)tcb->saved_esp);
+                lprintf("Other page dir: 0x%x", (int)(tcb->parent)->directory);
+                lprintf("-----------------------------");
                 switch_context(tcb->saved_esp, p_tcb);
                 return 0;
             }

@@ -6,7 +6,8 @@ Stuff to do:
     void * to uint32_t where we might do math
     
     pid/tid numbering scheme
-    MODE_SWITCH being invoked when interrupted in kernel mode
+    
+    get rid of user_esp
     
 Stuff to do for checkpoint 2:
     
@@ -29,6 +30,5 @@ Stuff to do for checkpoint 2:
         replace the currently running program (similar to loader code)
     
     fork system call
-        assume only a single thread in the process
-        copy page tables
-    
+        copy software exception handler
+        clean up copy_program() code (split into functions)
