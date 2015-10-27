@@ -17,13 +17,13 @@ typedef enum state {
     EXITED
 } state_t;
 
-// Declare the data structure
+/** @brief Structure for a list of processes */
 NEW_STRUCT(pcb_ds_t, pcb);
+/** @brief Structure for a list of threads */
 NEW_STRUCT(tcb_ds_t, tcb);
 
 /** @brief Structure for a process control block */
 typedef struct pcb {
-    NEW_LINK(pcb) all_processes;
     NEW_LINK(pcb) siblings;
     pcb_ds_t children;
     tcb_ds_t threads;
@@ -49,7 +49,6 @@ typedef struct tcb {
 
 /** @brief Structure for the overall kernel state */
 typedef struct kernel_state {
-    pcb_ds_t processes;
     tcb_ds_t threads;
     int next_id;
     page_directory_t* dir;

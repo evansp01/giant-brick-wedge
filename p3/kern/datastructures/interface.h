@@ -4,6 +4,9 @@
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  **/
+ 
+#ifndef INTERFACE_H_
+#define INTERFACE_H_
 
 #include <datastructures/variable_queue.h>
 
@@ -73,4 +76,5 @@
 #define REMOVE(STRUCT, ELEM, LINK_NAME) \
     Q_REMOVE(STRUCT, ELEM, LINK_NAME)
 
+#endif // INTERFACE_H_
     

@@ -24,7 +24,6 @@ kernel_state_t kernel_state;
  **/
 void init_kernel_state(page_directory_t* dir)
 {
-    INIT_STRUCT(&kernel_state.processes);
     INIT_STRUCT(&kernel_state.threads);
     kernel_state.next_id = 1;
     kernel_state.dir = dir;
@@ -48,9 +47,6 @@ int get_next_id()
 tcb_t *create_pcb_entry(pcb_t *parent_pcb)
 {
     pcb_t *entry = (pcb_t *)malloc(sizeof(pcb_t));
-
-    INIT_ELEM(entry, all_processes);
-    INSERT(&kernel_state.processes, entry, all_processes);
 
     if (parent_pcb != NULL) {
         INIT_ELEM(entry, siblings);
