@@ -115,7 +115,7 @@ int keyboard_count = 0;
  *
  *  @return void
  *  */
-void keyboard_interrupt(void *addr, ureg_t state)
+void keyboard_interrupt(ureg_t state)
 {
     // Temporarily use keyboard interrupts to trigger context switchers
     inb(KEYBOARD_PORT);
@@ -123,7 +123,7 @@ void keyboard_interrupt(void *addr, ureg_t state)
     
     if (keyboard_count % 2) {
         lprintf("Keyboard interrupt received");
-        yield(addr, -1);
+        yield(-1);
     }
     keyboard_count++;
     

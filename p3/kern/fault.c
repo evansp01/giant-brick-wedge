@@ -20,7 +20,7 @@
  *  @param state Struct containing saved register state before exception
  *  @return void
  **/
-void fault_handler(tcb_t *ptr, ureg_t state)
+void fault_handler(ureg_t state)
 {
     // Print error message
     dump_registers(&state);

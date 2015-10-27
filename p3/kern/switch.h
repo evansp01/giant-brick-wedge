@@ -20,8 +20,14 @@
  **/
 void switch_context(void *stack, tcb_t *tcb);
 
+/** @brief Get the current value of esp
+ *  @return The value of esp
+ **/
+uint32_t get_esp();
+
 // C functions
-int yield(void *addr, int yield_tid);
+int yield(int yield_tid);
 void store_esp(void *saved_esp, tcb_t *tcb);
+
 
 #endif // SWITCH_H_

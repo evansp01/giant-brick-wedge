@@ -18,3 +18,7 @@ switch_context:
     popa                    # restore registers     (different thread)
     ret                     # return                (different thread)
     
+.global get_esp
+get_esp:
+    movl %esp, %eax
+    ret

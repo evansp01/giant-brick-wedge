@@ -14,6 +14,7 @@
 #include <page.h>
 #include <simics.h>
 #include <string.h>
+#include <switch.h>
 
 // Global kernel state with process and thread info
 kernel_state_t kernel_state;
@@ -145,8 +146,8 @@ void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
  *  @param An address on the current kernel stack
  *  @return Pointer to the tcb for the current kernel thread
  **/
-tcb_t *get_tcb_from_addr(void *addr)
+tcb_t *get_tcb()
 {
-    uint32_t tcb_addr = (((uint32_t)addr)&0xFFFFF000)|0xFF8;
+    uint32_t tcb_addr = (get_esp()&0xFFFFF000)|0xFF8;
     return *(tcb_t **)tcb_addr;
 }

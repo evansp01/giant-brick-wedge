@@ -18,9 +18,9 @@
  *  @param addr Any address on the current kernel stack
  *  @return void
  */
-void set_regs(void *addr)
+void set_regs()
 {
-    tcb_t *tcb = get_tcb_from_addr(addr);
+    tcb_t *tcb = get_tcb();
     pcb_t *pcb = tcb->parent;
     set_esp0((uint32_t)tcb->kernel_stack);
     set_cr3((uint32_t)pcb->directory);

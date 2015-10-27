@@ -62,6 +62,6 @@ tcb_t *create_pcb_entry(pcb_t *parent_pcb);
 tcb_t *create_tcb_entry(pcb_t *parent_pcb);
 void *allocate_kernel_stack();
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child);
-tcb_t *get_tcb_from_addr(void *addr);
+tcb_t *get_tcb();
 
 #endif // CONTROL_H_

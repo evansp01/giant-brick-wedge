@@ -19,21 +19,20 @@
  *
  *  @return void
  */
-void gettid_syscall(void *addr, ureg_t state)
+void gettid_syscall(ureg_t state)
 {
-    tcb_t *p_tcb = get_tcb_from_addr(addr);
+    tcb_t *p_tcb = get_tcb();
     // return the tid
     state.eax = p_tcb->id;
-    return;
 }
 
 /** @brief Handler function for fork()
  *
  *  @return void
  */
-void fork_syscall(void *addr, ureg_t state)
+void fork_syscall(ureg_t state)
 {
-    tcb_t *tcb_parent = get_tcb_from_addr(addr);
+    tcb_t *tcb_parent = get_tcb();
     
     // Copy memory regions to new memory
     tcb_t *tcb_child = create_copy(tcb_parent);
@@ -50,5 +49,4 @@ void fork_syscall(void *addr, ureg_t state)
     
     // Return child tid to parent
     state.eax = tcb_child->id;
-    return;
 }

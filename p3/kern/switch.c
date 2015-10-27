@@ -17,10 +17,10 @@
  *  @param yield_tid Thread id of thread to yield to
  *  @return Zero on success, an integer less than zero on failure
  **/
-int yield(void *addr, int yield_tid)
+int yield(int yield_tid)
 {
     extern kernel_state_t kernel_state;
-    tcb_t *p_tcb = get_tcb_from_addr(addr);
+    tcb_t *p_tcb = get_tcb();
     
     lprintf("------------Yield------------");
     lprintf("Current tid: %d", p_tcb->id);

@@ -10,7 +10,7 @@
 #include <seg.h>
 
 /** @brief Save user mode state and switch to kernel mode */
-.macro KERNEL_MODE_SWITCH
+.macro SAVE_STATE
     pusha
     pushl %gs
     pushl %fs
@@ -24,11 +24,11 @@
 .endm
 
 /**  @brief Restores state to user mode */
-.macro USER_MODE_SWITCH
+.macro RESTORE_STATE
     pushl %esp                          # provide a stack address to get tcb
     call set_regs                       # set esp0 and cr3
     add $4, %esp                        # clean up function call stack
-    add $12, %esp                       # clean up ureg arguments
+    add $8, %esp                        # clean up ureg arguments
     popl %ds
     popl %es
     popl %fs
@@ -42,42 +42,39 @@
     .global \NAME\()_asm
     \NAME\()_asm:
         pushl $0                        # set ureg.error_code = 0
-        KERNEL_MODE_SWITCH
+        SAVE_STATE
         pushl $0                        # set ureg.cr2 = 0
         pushl $0                        # set ureg.cause = 0
-        pushl %esp                      # set pointer to &tcb at top of stack
         call \NAME\()
-        USER_MODE_SWITCH
+        RESTORE_STATE
 .endm
 
 .macro EXCEPTION_ASM_WRAPPER_ERROR INT
     .global interrupt\INT\()_asm
     interrupt\INT\()_asm:
-        KERNEL_MODE_SWITCH
+        SAVE_STATE
         pushl $0
         pushl $\INT\()
-        pushl $0                        # set pointer to tcb
         call fault_handler
-        USER_MODE_SWITCH
+        RESTORE_STATE
 .endm
 
 .macro EXCEPTION_ASM_WRAPPER INT
     .global interrupt\INT\()_asm
     interrupt\INT\()_asm:
         pushl $0
-        KERNEL_MODE_SWITCH
+        SAVE_STATE
         pushl $0
         pushl $\INT\()
-        pushl $0                        # set pointer to tcb
         call fault_handler
-        USER_MODE_SWITCH
+        RESTORE_STATE
 .endm
 
 /* Assembly function for entering user mode for the first time */
 .global first_entry_user_mode
 first_entry_user_mode:
     movl 4(%esp), %esp      # switch stack pointers
-    USER_MODE_SWITCH        # perform the mode switch
+    RESTORE_STATE           # perform the mode switch
 
 /* Assembly wrappers for device interrupts */
 INTERRUPT_ASM_WRAPPER timer_interrupt

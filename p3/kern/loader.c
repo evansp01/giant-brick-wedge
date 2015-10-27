@@ -46,10 +46,10 @@ void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
         .es = SEGSEL_USER_DS,
         .ds = SEGSEL_USER_DS
     };
-    void *tcb = NULL;
+    //void *tcb = NULL;
     void *kernel_stack = (void*)stack;
     PUSH_STACK(kernel_stack, ureg, ureg_t);
-    PUSH_STACK(kernel_stack, tcb, void*);
+    //PUSH_STACK(kernel_stack, tcb, void*);
     
     return kernel_stack;
 }
