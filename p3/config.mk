@@ -146,7 +146,7 @@ KERNEL_OBJS = fake_console.o kernel.o loader.o malloc_wrappers.o fault.o \
 # or init unless you are writing your own, and don't do that unless
 # you have a really good reason to do so.
 #
-410REQPROGS = idle init shell
+410REQPROGS = idle init shell fork_test1
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

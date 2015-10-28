@@ -84,6 +84,8 @@ INTERRUPT_ASM_WRAPPER keyboard_interrupt
 /* Assembly wrappers for system call interrupts */
 INTERRUPT_ASM_WRAPPER gettid_syscall
 INTERRUPT_ASM_WRAPPER fork_syscall
+INTERRUPT_ASM_WRAPPER set_status_syscall
+INTERRUPT_ASM_WRAPPER vanish_syscall
 
 
 /* Assembly wrappers for various system interrutps */

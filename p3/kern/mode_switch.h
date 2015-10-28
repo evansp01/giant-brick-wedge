@@ -156,6 +156,16 @@ NAME_ASM_H(gettid_syscall);
  */
 NAME_ASM_H(fork_syscall);
 
+/** @brief Wrapper for the set status handler
+ *  @return void
+ */
+NAME_ASM_H(set_status_syscall);
+
+/** @brief Wrapper for the vanish handler
+ *  @return void
+ */
+NAME_ASM_H(vanish_syscall);
+
 // Device interrupt handlers
 /** @brief Wrapper for the timer interrupt handler
  *  @return void

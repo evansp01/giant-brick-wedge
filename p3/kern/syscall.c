@@ -50,3 +50,30 @@ void fork_syscall(ureg_t state)
     // Return child tid to parent
     state.eax = tcb_child->id;
 }
+
+/** @brief Handler function for set_status()
+ *
+ *  @return void
+ */
+void set_status_syscall(ureg_t state)
+{
+    //tcb_t *p_tcb = get_tcb();
+    
+    // TODO: Set status syscall
+    lprintf("Set status syscall handler running");
+}
+
+/** @brief Handler function for vanish()
+ *
+ *  @return void
+ */
+void vanish_syscall(ureg_t state)
+{
+    //tcb_t *p_tcb = get_tcb();
+    
+    // TODO: Vanish syscall
+    lprintf("Vanish syscall handler running");
+    while (1) {
+    }
+}
+
