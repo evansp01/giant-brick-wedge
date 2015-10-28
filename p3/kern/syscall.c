@@ -80,3 +80,16 @@ void vanish_syscall(ureg_t state)
     }
 }
 
+/** @brief Handler function for wait()
+ *
+ *  @return void
+ */
+void wait_syscall(ureg_t state)
+{
+    //tcb_t *p_tcb = get_tcb();
+    
+    // TODO: Wait syscall
+    lprintf("Wait syscall handler running");
+    while (1) {
+    }
+}

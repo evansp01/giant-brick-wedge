@@ -86,6 +86,7 @@ INTERRUPT_ASM_WRAPPER gettid_syscall
 INTERRUPT_ASM_WRAPPER fork_syscall
 INTERRUPT_ASM_WRAPPER set_status_syscall
 INTERRUPT_ASM_WRAPPER vanish_syscall
+INTERRUPT_ASM_WRAPPER wait_syscall
 
 
 /* Assembly wrappers for various system interrutps */

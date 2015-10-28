@@ -166,6 +166,11 @@ NAME_ASM_H(set_status_syscall);
  */
 NAME_ASM_H(vanish_syscall);
 
+/** @brief Wrapper for the wait handler
+ *  @return void
+ */
+NAME_ASM_H(wait_syscall);
+
 // Device interrupt handlers
 /** @brief Wrapper for the timer interrupt handler
  *  @return void

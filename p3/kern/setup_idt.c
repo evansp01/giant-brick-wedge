@@ -69,6 +69,7 @@ void install_syscalls()
     set_idt_syscall(NAME_ASM(fork_syscall), FORK_INT);
     set_idt_syscall(NAME_ASM(set_status_syscall), SET_STATUS_INT);
     set_idt_syscall(NAME_ASM(vanish_syscall), VANISH_INT);
+    set_idt_syscall(NAME_ASM(wait_syscall), WAIT_INT);
 }
 
 /** @brief Installs the device driver handlers
