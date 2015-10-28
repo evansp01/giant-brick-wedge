@@ -40,6 +40,7 @@
 #include <ureg.h>
 #include <control.h>
 #include <switch.h>
+#include <scheduler.h>
 
 #define TIMER_INTERRUPT_FREQUENCY 1000
 #define KEYBOARD_BUFFER_SIZE 2048
@@ -93,6 +94,9 @@ void timer_interrupt()
     ticks_so_far++;
     tick_handler(ticks_so_far);
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
+    
+    // let timer trigger the scheduler
+    run_next();
 }
 
 /** @brief The next index in the circular keyboard buffer
@@ -122,7 +126,6 @@ void keyboard_interrupt(ureg_t state)
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
     
     if (keyboard_count % 2) {
-        lprintf("Keyboard interrupt received");
         yield(-1);
     }
     keyboard_count++;

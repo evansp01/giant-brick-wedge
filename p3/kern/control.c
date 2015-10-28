@@ -93,7 +93,8 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb)
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
-
+    Q_INIT_ELEM(entry, runnable_threads);
+    
     // Scheduler lists
     INSERT(&kernel_state.threads, entry, all_threads);
     INSERT(&parent_pcb->threads, entry, pcb_threads);

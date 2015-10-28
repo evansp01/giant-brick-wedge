@@ -31,14 +31,7 @@ Stuff to do for checkpoint 2:
     scheduler
         runnable queue
             things are added when marked runnable
-        make_runnable should not be preemptible (?)
-        disable interrupts across make_runnable (?)
+        make_runnable should not be preemptible
+            disable interrupts across make_runnable
         yield() does not affect scheduling
-        
-        if (!queue_empty) {
-            enqueue(current_tcb)
-            tcb = dequeue()
-            yield(tcb->id)
-        }
-            
         

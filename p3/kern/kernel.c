@@ -35,6 +35,7 @@
 #include <loader.h>
 #include <mode_switch.h>
 #include <cr.h>
+#include <scheduler.h>
 
 /** @brief Tick function, to be called by the timer interrupt handler
  * 
@@ -59,6 +60,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     install_syscalls();
     init_frame_alloc();
     init_virtual_memory();
+    init_scheduler();
     
     // TODO: Is it ok not to have interrupts yet here?
     //       Interrupts trigger a fault since there is no pcb entry yet
@@ -74,12 +76,12 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     //test_process_vm();
     
     // Create 1st idle process
-    tcb_t *tcb1 = create_idle();
-    if (tcb1 == NULL)
+    tcb_t *tcb = create_idle();
+    if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
     
     // Switch to 1st idle thread
-    first_entry_user_mode(tcb1->saved_esp);
+    first_entry_user_mode(tcb->saved_esp);
     
     while (1) {
         panic("Kernel has wandered into limbo.");

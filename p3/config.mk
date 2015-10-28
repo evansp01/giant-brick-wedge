@@ -128,7 +128,7 @@ AUTOSTACK_OBJS = autostack.o
 KERNEL_OBJS = fake_console.o kernel.o loader.o malloc_wrappers.o fault.o \
               mode_switch.o mode_switch_asm.o frame_alloc.o vm.o control.o \
               switch_asm.o debug.o setup_idt.o syscall.o devices.o \
-              kernel_tests.o switch.o
+              kernel_tests.o switch.o scheduler.o
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your

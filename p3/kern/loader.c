@@ -123,7 +123,7 @@ tcb_t *create_idle()
 {
     tcb_t* tcb_entry = create_pcb_entry(NULL);
     
-    if (load_program(tcb_entry, "idle") < 0) {
+    if (load_program(tcb_entry, "fork_test1") < 0) {
         lprintf("cannot load program");
         return 0;
     }

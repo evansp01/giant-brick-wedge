@@ -305,3 +305,13 @@
          CURRENT_ELEM != NULL; \
          CURRENT_ELEM = Q_GET_NEXT(CURRENT_ELEM, LINK_NAME) \
         )
+
+/** @def Q_IS_EMPTY(Q_HEAD, Q_INQ, Q_TOINSERT, LINK_NAME)
+ *
+ *  @brief Returns 1 if queue is empty, 0 if there are elements
+ *
+ *  @param Q_HEAD head of the queue
+ **/
+#define Q_IS_EMPTY(Q_HEAD) \
+    ((*Q_HEAD).head == NULL)
+    

@@ -13,7 +13,7 @@
 
 typedef enum state {
     NOTYET,
-    RUNNING,
+    RUNNABLE,
     EXITED
 } state_t;
 
@@ -40,6 +40,7 @@ typedef struct pcb {
 typedef struct tcb {
     NEW_LINK(tcb) all_threads;
     NEW_LINK(tcb) pcb_threads;
+    NEW_LINK(tcb) runnable_threads;
     int id;
     pcb_t *parent;
     void *kernel_stack;

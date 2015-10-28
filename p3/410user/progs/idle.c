@@ -12,12 +12,14 @@
  
 int main()
 {
-    int pid = gettid();
-    lprintf("my pid is: %d", pid);
-    
     int ret = fork();
     lprintf("fork: %d", ret);
     
+    int tid = gettid();
+    lprintf("my tid is: %d", tid);
+    
     while (1) {
+        // uncomment this to see the scheduler at work!
+        //lprintf("my tid is: %d", tid);
     }
 }
