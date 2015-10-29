@@ -9,7 +9,7 @@
 #define CONTROL_H_
 
 #include <vm.h>
-#include <datastructures/interface.h>
+#include <interface.h>
 
 typedef enum state {
     NOTYET,

@@ -125,10 +125,24 @@ AUTOSTACK_OBJS = autostack.o
 #
 # Kernel object files you provide in from kern/
 #
-KERNEL_OBJS = fake_console.o kernel.o loader.o malloc_wrappers.o fault.o \
-              mode_switch.o mode_switch_asm.o frame_alloc.o vm.o control.o \
-              switch_asm.o debug.o setup_idt.o syscall.o devices.o \
-              kernel_tests.o switch.o scheduler.o
+KERN_SYSCALL = syscall/loader.o syscall/syscall.o
+KERN_COMMON = common/int_hash.o common/malloc_wrappers.o
+KERN_CONTROL = control/control.o
+KERN_INTERRUPT = interrupt/debug.o interrupt/devices.o interrupt/fault.o \
+				 interrupt/fake_console.o interrupt/mode_switch.o \
+				 interrupt/mode_switch_asm.o interrupt/setup_idt.o
+KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o scheduler/switch.o
+KERN_TESTS = tests/kernel_tests.o
+KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o
+
+KERNEL_OBJS = kernel.o
+KERNEL_OBJS +=${KERN_SYSCALL}
+KERNEL_OBJS +=${KERN_COMMON}
+KERNEL_OBJS +=${KERN_CONTROL}
+KERNEL_OBJS +=${KERN_INTERRUPT}
+KERNEL_OBJS +=${KERN_SCHEDULER}
+KERNEL_OBJS +=${KERN_TESTS}
+KERNEL_OBJS +=${KERN_VM}
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your

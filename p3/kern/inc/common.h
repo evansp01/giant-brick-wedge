@@ -10,7 +10,7 @@
 #define COMMON_H_
 
 #include <vm.h>
-#include <datastructures/variable_queue.h>
+#include <variable_queue.h>
 
 //fault handler stuff
 void handle_kernel_fault();

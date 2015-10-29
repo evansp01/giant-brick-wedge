@@ -8,7 +8,7 @@
 #ifndef INTERFACE_H_
 #define INTERFACE_H_
 
-#include <datastructures/variable_queue.h>
+#include <variable_queue.h>
 
 /** @def NEW_STRUCT(STRUCT_TYPE, ELEM_TYPE)
  *

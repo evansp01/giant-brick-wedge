@@ -8,7 +8,7 @@
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
 
-#include <datastructures/variable_queue.h>
+#include <variable_queue.h>
 
 /** @brief Structure for a list of threads */
 Q_NEW_HEAD(runnable_queue_t, tcb);

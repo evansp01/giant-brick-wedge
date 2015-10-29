@@ -10,7 +10,7 @@
 #include <control.h>
 #include <scheduler.h>
 #include <switch.h>
-#include <datastructures/variable_queue.h>
+#include <variable_queue.h>
 #include <simics.h>
 #include <asm.h>
  
