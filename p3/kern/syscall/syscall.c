@@ -14,6 +14,7 @@
 #include <control.h>
 #include <loader.h>
 #include <scheduler.h>
+#include <stdlib.h>
 
 /** @brief Handler function for gettid()
  *
@@ -92,4 +93,18 @@ void wait_syscall(ureg_t state)
     lprintf("Wait syscall handler running");
     while (1) {
     }
+}
+
+/** @brief Handler function for halt()
+ *
+ *  @return void
+ */
+void halt_syscall(ureg_t state)
+{
+    // Halt machines running on simics
+    sim_halt();
+    
+    // Halt machines running on real hardware
+    panic("Running on real hardware, please add code to initiate shutdown\
+           based on current hardware implementation!");
 }
