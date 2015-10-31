@@ -1,5 +1,5 @@
-/** @file loader.c
- *  @brief Implementation of functions to load programs
+/** @file exec.c
+ *  @brief Implementation of functions to load program via exec
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)

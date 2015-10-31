@@ -4,10 +4,12 @@ Stuff to do:
 
     fix write_vm
     void * to uint32_t where we might do math
-    
-Stuff to do for checkpoint 2:
-    
     disable interrupts vs disable context switching
+    
+    copy_frame function to handle all types of copying
+    move local headers from inc to local folder
+    
+Stuff to do:
     
     locking
         mutexes
@@ -34,4 +36,9 @@ Stuff to do for checkpoint 2:
         make_runnable should not be preemptible
             disable interrupts across make_runnable
         yield() does not affect scheduling
+        
+    error handling
+        1. recoverable fault -> fix the problem
+        2. inform the user -> kill the thread / process
+        3. kill the kernel
         

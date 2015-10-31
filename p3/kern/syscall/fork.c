@@ -1,5 +1,5 @@
-/** @file loader.c
- *  @brief Implementation of functions to load programs
+/** @file fork.c
+ *  @brief Implementation of functions to create new process via fork
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
