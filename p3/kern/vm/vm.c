@@ -259,76 +259,19 @@ page_directory_t* create_kernel_directory()
     return dir;
 }
 
-/** @brief Allocates all pages in page table from start address to start+size
- *  @param cr2 The address of the page table
- *  @param start The virtual address to begin allocation at
- *  @param size The amount of virtual memory to allocate pages for
- *  @param model The permissions to use for created page table entries
- *  @return zero on success less than zero on failure
- **/
-int allocate_pages(void* cr2, void* start, size_t size, entry_t model)
-{
-    page_directory_t* dir = cr2;
-    char* end = ((char*)start) + size;
-    address_t vm_start = AS_TYPE(start, address_t);
-    address_t vm_end = AS_TYPE(end, address_t);
-    address_t location = { 0 };
-    int i;
-    // allocate all relevant page tables
-    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
-        location.page_dir_index = i;
-        entry_t* dir_entry = &dir->tables[i];
-        if (!dir_entry->present) {
-            void* frame = create_page_table();
-            if (frame == NULL) {
-                lprintf("Ran out of kernel memory for page tables");
-                return -1;
-            }
-            *dir_entry = create_entry(frame, e_user_dir);
-        }
-        int j;
-        int start_index = 0;
-        int end_index = PAGES_PER_TABLE - 1;
-        page_table_t* table = get_entry_address(*dir_entry);
-        if (i == vm_start.page_dir_index) {
-            start_index = vm_start.page_table_index;
-        }
-        if (i == vm_end.page_dir_index) {
-            end_index = vm_end.page_table_index;
-        }
-        for (j = start_index; j <= end_index; j++) {
-            location.page_table_index = j;
-            entry_t* table_entry = &table->pages[j];
-            if (table_entry->present) {
-                lprintf("WARN: page already allocated at %x",
-                        AS_TYPE(location, int));
-                continue;
-            }
-            void* frame = allocate_frame();
-            if (frame == NULL) {
-                lprintf("Ran out of frames to allocate");
-                return -2;
-            }
-            *table_entry = create_entry(frame, model);
-            zero_frame(AS_TYPE(location, void*));
-        }
-    }
-    return 0;
-}
-
 /** @brief Gets or creates the physical mapping of a virtual address
- *  @param cr2 The address of the page table to use
+ *  @param cr3 The address of the page table to use
  *  @param virtual The virtual address to write to
  *  @param physical A place to store the write pointer
  *  @param model A model entry used to create missing page table entries
  *  @param permissions If not null will be set to permissions of this page
  *  @return Bytes to the end of the page, or less than zero on error
  **/
-int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
+int vm_to_physical_create(void* cr3, void* virtual, entry_t model,
                           void** physical, entry_t* permissions)
 {
-    ASSERT_PAGE_ALIGNED(cr2);
-    page_directory_t* dir = cr2;
+    ASSERT_PAGE_ALIGNED(cr3);
+    page_directory_t* dir = cr3;
     entry_t* dir_entry = get_dir_entry(virtual, dir);
     if (!dir_entry->present) {
         void* frame = create_page_table();
@@ -355,17 +298,16 @@ int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
 }
 
 /** @brief Gets the physical mapping of a virtual address
- *  @param cr2 The page table register
+ *  @param cr3 The page table register
  *  @param virtual The virtual address
  *  @param physical The physical address
  *  @param permissions If not null will be set to permissions of this page
  *  @return less than zero on error, otherwise bytes to end of page
  **/
-int vm_to_physical(void* cr2, void* virtual,
-                   void** physical, entry_t* permissions)
+int vm_to_physical(void* cr3, void* virtual, void** physical, entry_t* permissions)
 {
-    ASSERT_PAGE_ALIGNED(cr2);
-    page_directory_t* dir = cr2;
+    ASSERT_PAGE_ALIGNED(cr3);
+    page_directory_t* dir = cr3;
     entry_t* dir_entry = get_dir_entry(virtual, dir);
     if (!dir_entry->present) {
         return -1;
@@ -386,19 +328,19 @@ int vm_to_physical(void* cr2, void* virtual,
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 /** @brief Write from a buffer to a virtual memory address
- *  @param cr2 The page directory address of virtual memory
+ *  @param cr3 The page directory address of virtual memory
  *  @param address The address in virtual memory to write to
  *  @param buffer The buffer to write from
  *  @param size The amount of memory to write
  **/
-int vm_write(void* cr2, void* address, void* buffer, int size)
+int vm_write(void* cr3, void* address, void* buffer, int size)
 {
     int to_write = size;
     char* offset = buffer;
     char* virtual = address;
     while (to_write > 0) {
         void* physical;
-        int bytes = vm_to_physical_create(cr2, virtual, e_write_page, &physical, NULL);
+        int bytes = vm_to_physical_create(cr3, virtual, e_write_page, &physical, NULL);
         if (bytes < 0) {
             return size - to_write;
         }
@@ -412,19 +354,19 @@ int vm_write(void* cr2, void* address, void* buffer, int size)
 }
 
 /** @brief Write from a buffer to a virtual memory address
- *  @param cr2 The page directory address of virtual memory
+ *  @param cr3 The page directory address of virtual memory
  *  @param address The address in virtual memory to read from
  *  @param buffer The buffer to read to
  *  @param size The amount of memory to read
  **/
-int vm_read(void* cr2, void* address, void* buffer, int size)
+int vm_read(void* cr3, void* address, void* buffer, int size)
 {
     int to_read = size;
     char* offset = buffer;
     char* virtual = address;
     while (to_read > 0) {
         void* physical;
-        int bytes = vm_to_physical(cr2, virtual, &physical, NULL);
+        int bytes = vm_to_physical(cr3, virtual, &physical, NULL);
         if (bytes < 0) {
             return size - to_read;
         }
@@ -435,4 +377,186 @@ int vm_read(void* cr2, void* address, void* buffer, int size)
         virtual += read_size;
     }
     return size;
+}
+
+typedef enum {
+    VM_UNALLOCATED,
+    VM_ALLOCATED,
+    VM_MIXED
+} virtual_info_t;
+
+int permissions_equal(entry_t p1, entry_t p2)
+{
+    int user_same = p1.user == p2.user;
+    int write_same = p1.write == p2.write;
+    int present_same = p1.present == p2.present;
+    return user_same && write_same && present_same;
+}
+
+int make_writeabe(entry_t* entry)
+{
+    int was_writeable = entry->write;
+    entry->write = 1;
+    return was_writeable;
+}
+
+int vm_make_writeable(void* cr3, void* start, int size)
+{
+    int i, j;
+    page_directory_t* dir = cr3;
+    char* end = ((char*)start) + size;
+    address_t vm_start = AS_TYPE(start, address_t);
+    address_t vm_end = AS_TYPE(end, address_t);
+    // allocate all relevant page tables
+    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
+        entry_t* dir_entry = &dir->tables[i];
+        if (!dir_entry->present) {
+            lprintf("Page dir entry not present");
+            return -1;
+        }
+        int start_index = 0;
+        int end_index = PAGES_PER_TABLE - 1;
+        if (i == vm_start.page_dir_index) {
+            start_index = vm_start.page_table_index;
+        }
+        if (i == vm_end.page_dir_index) {
+            end_index = vm_end.page_table_index;
+        }
+        page_table_t* table = get_entry_address(*dir_entry);
+        address_t location = { .page_dir_index = i };
+        for (j = start_index; j <= end_index; j++) {
+            location.page_table_index = j;
+            entry_t* table_entry = &table->pages[j];
+            if (!table_entry->present) {
+                lprintf("Page table not present");
+                return -2;
+            }
+            if (make_writeabe(table_entry) == 0) {
+                invalidate_page(AS_TYPE(location, void*));
+            }
+        }
+    }
+    return 0;
+}
+
+int vm_info(void* virtual, size_t size, entry_t* permissions)
+{
+    ASSERT_PAGE_ALIGNED(virtual);
+    uint32_t address, start = (uint32_t) virtual;
+    int first_time = 1;
+    entry_t current_perm;
+    for (address = start; address < start + size; address += PAGE_SIZE) {
+        entry_t perm;
+        vm_permissions((void*)address, &perm);
+        if (first_time) {
+            current_perm = perm;
+            first_time = 0;
+        } else {
+            if (!permissions_equal(perm, current_perm)) {
+                return VM_MIXED;
+            }
+        }
+    }
+    if (current_perm.present) {
+        *permissions = current_perm;
+        return VM_ALLOCATED;
+    } else {
+        return VM_UNALLOCATED;
+    }
+}
+
+int vm_permissions(void* virtual, entry_t* permissions)
+{
+    void* physical;
+    return vm_addr_info(virtual, permissions, &physical);
+}
+
+int vm_addr_info(void* virtual, entry_t* permissions, void** physical)
+{
+    entry_t perm = { 0 };
+    page_directory_t* dir = (page_directory_t*)get_cr3();
+    entry_t* dir_entry = get_dir_entry(virtual, dir);
+    if (!dir_entry->present) {
+        *permissions = perm;
+        return -1;
+    }
+    page_table_t* table = get_entry_address(*dir_entry);
+    entry_t* table_entry = get_table_entry(virtual, table);
+    if (!table_entry->present) {
+        *permissions = perm;
+        return -1;
+    }
+    void* address = get_address(virtual, get_entry_address(*table_entry));
+    *physical = address;
+    *permissions = combine_permissions(dir_entry, table_entry);
+    return page_bytes_left(virtual);
+}
+
+int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
+{
+    int j;
+    address_t location = { .page_dir_index = pdi };
+    page_table_t* table = (page_table_t*)ptable;
+    int start_index = start;
+    int end_index = end;
+    for (j = start_index; j <= end_index; j++) {
+        location.page_table_index = j;
+        entry_t* table_entry = &table->pages[j];
+        if (table_entry->present) {
+            lprintf("WARN: page already allocated at %x",
+                    AS_TYPE(location, int));
+            return -3;
+        }
+        void* frame = allocate_frame();
+        if (frame == NULL) {
+            lprintf("Ran out of frames to allocate");
+            return -2;
+        }
+        *table_entry = create_entry(frame, model);
+        zero_frame(AS_TYPE(location, void*));
+        lprintf("Allocated 0x%lx", AS_TYPE(location, uint32_t));
+    }
+    return 0;
+}
+
+/** @brief Allocates all pages in page table from start address to start+size
+ *  @param cr3 The address of the page table
+ *  @param start The virtual address to begin allocation at
+ *  @param size The amount of virtual memory to allocate pages for
+ *  @param model The permissions to use for created page table entries
+ *  @return zero on success less than zero on failure
+ **/
+int allocate_pages(void* cr3, void* start, size_t size, entry_t model)
+{
+    page_directory_t* dir = cr3;
+    char* end = ((char*)start) + size - 1;
+    address_t vm_start = AS_TYPE(start, address_t);
+    address_t vm_end = AS_TYPE(end, address_t);
+    int i;
+    if (size == 0) {
+        return 0;
+    }
+    // allocate all relevant page tables
+    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
+        entry_t* dir_entry = &dir->tables[i];
+        if (!dir_entry->present) {
+            void* frame = create_page_table();
+            if (frame == NULL) {
+                lprintf("Ran out of kernel memory for page tables");
+                return -1;
+            }
+            *dir_entry = create_entry(frame, e_user_dir);
+        }
+        int start_index = 0;
+        int end_index = PAGES_PER_TABLE - 1;
+        if (i == vm_start.page_dir_index) {
+            start_index = vm_start.page_table_index;
+        }
+        if (i == vm_end.page_dir_index) {
+            end_index = vm_end.page_table_index;
+        }
+        void* table = get_entry_address(*dir_entry);
+        allocate_table(i, start_index, end_index, table, model);
+    }
+    return 0;
 }

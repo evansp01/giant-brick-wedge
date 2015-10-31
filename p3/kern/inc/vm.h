@@ -66,6 +66,7 @@ int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
 
 int vm_write(void* cr2, void* address, void* buffer, int size);
 int vm_read(void* cr2, void* address, void* buffer, int size);
+int vm_make_writeable(void* cr3, void* start, int size);
 
 //headers for frame alloc
 void init_frame_alloc();
@@ -74,5 +75,9 @@ void free_reserved_frames(int count);
 void* get_reserved_frame();
 void* allocate_frame();
 void free_frame(void* frame);
+void invalidate_page(void *page);
+int vm_permissions(void* virtual, entry_t* permissions);
+int vm_info(void* virtual, size_t size, entry_t* permissions);
+int vm_addr_info(void* virtual, entry_t* permissions, void** physical);
 
 #endif // PAGE_STRUCTS_H_

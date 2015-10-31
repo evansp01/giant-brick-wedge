@@ -38,7 +38,7 @@
 #include <scheduler.h>
 
 /** @brief Tick function, to be called by the timer interrupt handler
- * 
+ *
  *  @param ticks Number of ticks sent by timer
  *  @return Void
  **/
@@ -61,28 +61,28 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     init_frame_alloc();
     init_virtual_memory();
     init_scheduler();
-    
+
     // TODO: Is it ok not to have interrupts yet here?
     //       Interrupts trigger a fault since there is no pcb entry yet
     //       and set_regs() needs to reference the pcb
-    //enable_interrupts();
-    
+
     page_directory_t* dir = create_kernel_directory();
     turn_on_vm(dir);
     init_kernel_state(dir);
-    
+
     // Run kernel tests (TODO: Free/reallocate frames)
     //vm_diagnose(dir);
     //test_process_vm();
-    
+
     // Create 1st idle process
     tcb_t *tcb = create_idle();
     if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
-    
+
+    enable_interrupts();
     // Switch to 1st idle thread
     first_entry_user_mode(tcb->saved_esp);
-    
+
     while (1) {
         panic("Kernel has wandered into limbo.");
     }
