@@ -278,7 +278,6 @@ int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
         }
         *table_entry = create_entry(frame, model);
         zero_frame(AS_TYPE(location, void*));
-        lprintf("Allocated 0x%lx", AS_TYPE(location, uint32_t));
     }
     return 0;
 }
