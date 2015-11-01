@@ -59,14 +59,7 @@ page_directory_t* create_page_directory();
 page_table_t* create_page_table();
 page_directory_t* create_kernel_directory();
 int allocate_pages(void* cr2, void* start, size_t size, entry_t model);
-int vm_to_physical(void* cr2, void* virtual,
-                   void** physical, entry_t* permissions);
-int vm_to_physical_create(void* cr2, void* virtual, entry_t model,
-                          void** physical, entry_t* permissions);
-
-int vm_write(void* cr2, void* address, void* buffer, int size);
-int vm_read(void* cr2, void* address, void* buffer, int size);
-int vm_make_writeable(void* cr3, void* start, int size);
+int page_bytes_left(void* address);
 
 //headers for frame alloc
 void init_frame_alloc();
@@ -79,5 +72,12 @@ void invalidate_page(void *page);
 int vm_permissions(void* virtual, entry_t* permissions);
 int vm_info(void* virtual, size_t size, entry_t* permissions);
 int vm_addr_info(void* virtual, entry_t* permissions, void** physical);
+
+int vm_set_readonly(void* cr3, void* start, int size);
+int vm_set_readwrite(void* cr3, void* start, int size);
+int vm_user_can_read(void* cr3, void* start, int size);
+int vm_user_can_write(void* cr3, void* start, int size);
+int vm_user_can_alloc(void* cr3, void* start, int size);
+int vm_user_strlen(void* cr3, char* start);
 
 #endif // PAGE_STRUCTS_H_
