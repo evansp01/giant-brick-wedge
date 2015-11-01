@@ -54,5 +54,7 @@ int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child);
 int copy_frames(page_table_t *table_parent, page_table_t *table_child);
 void calc_saved_esp(tcb_t* tcb_parent, tcb_t *tcb_child);
 void setup_for_switch(tcb_t *tcb);
+int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int arglen);
+tcb_t* new_program(char* fname, int argc, char** argv);
 
 #endif /* _LOADER_H */

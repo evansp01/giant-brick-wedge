@@ -80,15 +80,35 @@ first_entry_user_mode:
 INTERRUPT_ASM_WRAPPER timer_interrupt
 INTERRUPT_ASM_WRAPPER keyboard_interrupt
 
-
 /* Assembly wrappers for system call interrupts */
-INTERRUPT_ASM_WRAPPER gettid_syscall
 INTERRUPT_ASM_WRAPPER fork_syscall
+INTERRUPT_ASM_WRAPPER exec_syscall
 INTERRUPT_ASM_WRAPPER set_status_syscall
 INTERRUPT_ASM_WRAPPER vanish_syscall
+INTERRUPT_ASM_WRAPPER task_vanish_syscall
 INTERRUPT_ASM_WRAPPER wait_syscall
-INTERRUPT_ASM_WRAPPER halt_syscall
 
+INTERRUPT_ASM_WRAPPER gettid_syscall
+INTERRUPT_ASM_WRAPPER yield_syscall
+INTERRUPT_ASM_WRAPPER deschedule_syscall
+INTERRUPT_ASM_WRAPPER make_runnable_syscall
+INTERRUPT_ASM_WRAPPER get_ticks_syscall
+INTERRUPT_ASM_WRAPPER sleep_syscall
+
+INTERRUPT_ASM_WRAPPER new_pages_syscall
+INTERRUPT_ASM_WRAPPER remove_pages_syscall
+
+INTERRUPT_ASM_WRAPPER getchar_syscall
+INTERRUPT_ASM_WRAPPER readline_syscall
+INTERRUPT_ASM_WRAPPER print_syscall
+INTERRUPT_ASM_WRAPPER set_term_color_syscall
+INTERRUPT_ASM_WRAPPER set_cursor_pos_syscall
+INTERRUPT_ASM_WRAPPER get_cursor_pos_syscall
+
+INTERRUPT_ASM_WRAPPER halt_syscall
+INTERRUPT_ASM_WRAPPER readfile_syscall
+INTERRUPT_ASM_WRAPPER misbehave_syscall
+INTERRUPT_ASM_WRAPPER swexn_syscall
 
 /* Assembly wrappers for various system interrutps */
 EXCEPTION_ASM_WRAPPER IDT_DE
@@ -110,4 +130,3 @@ EXCEPTION_ASM_WRAPPER IDT_MF
 EXCEPTION_ASM_WRAPPER_ERROR IDT_AC
 EXCEPTION_ASM_WRAPPER IDT_MC
 EXCEPTION_ASM_WRAPPER IDT_XF
-    
