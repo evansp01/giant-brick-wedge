@@ -92,10 +92,11 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb)
 {
     tcb_t *entry = (tcb_t *)smalloc(sizeof(tcb_t));
     
-    void* stack = allocate_kernel_stack();
-    if (stack == NULL) {
+    uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
+    if (mem == 0) {
         panic("Cannot allocate kernel stack");
     }
+    void *stack = (void *)(mem + PAGE_SIZE - (2*sizeof(int)));
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
@@ -128,16 +129,6 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb)
     *((tcb_t **)stack) = entry;
     
     return entry;
-}
-
-/** @brief Creates a new kernel stack for a kernel process
- *
- *  @return Pointer to the top of the new kernel stack
- **/
-void *allocate_kernel_stack()
-{
-    uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
-    return (void *)(mem + PAGE_SIZE - (2*sizeof(int)));
 }
 
 /** @brief Copies the kernel stack from a parent to child process

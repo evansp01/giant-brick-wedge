@@ -32,11 +32,10 @@
  *  @param tcb_child Pointer to child tcb
  *  @return void
  **/
-void calc_saved_esp(tcb_t* tcb_parent, tcb_t *tcb_child)
+void calc_saved_esp(tcb_t* parent, tcb_t *child)
 {
-    uint32_t child_mask = (uint32_t)tcb_child->kernel_stack & 0xFFFFF000;
-    uint32_t parent_mask = (uint32_t)tcb_parent->saved_esp & 0x00000FFF;
-    tcb_child->saved_esp = (void *)(parent_mask | child_mask);
+    uint32_t offset = (uint32_t)parent->kernel_stack - (uint32_t)parent->saved_esp;
+    child->saved_esp = (void *) ((uint32_t)child->kernel_stack - offset);
 }
 
 /** @brief Creates a copy of the given process
