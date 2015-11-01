@@ -61,10 +61,9 @@ void fork_syscall(ureg_t state)
  */
 void set_status_syscall(ureg_t state)
 {
-    //tcb_t *p_tcb = get_tcb();
-    
-    // TODO: Set status syscall
-    lprintf("Set status syscall handler running");
+    tcb_t *tcb = get_tcb();
+    pcb_t *pcb = tcb->parent;
+    pcb->exit_status = state.esi;
 }
 
 /** @brief Handler function for vanish()
