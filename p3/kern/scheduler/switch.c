@@ -10,8 +10,8 @@
 #include <control.h>
 #include <switch.h>
 #include <simics.h>
-
-//#define DEBUG 1
+#include <scheduler.h>
+#include <asm.h>
 
 /** @brief Yields execution to another thread
  *
@@ -20,35 +20,27 @@
  **/
 int yield(int yield_tid)
 {
-    extern kernel_state_t kernel_state;
-    tcb_t *p_tcb = get_tcb();
-
-#ifdef DEBUG
-    lprintf("------------Yield------------");
-    lprintf("Current tid: %d", p_tcb->id);
-    lprintf("Current kernel stack: 0x%x", (int)p_tcb->kernel_stack);
-    lprintf("Current page dir: 0x%x", (int)(p_tcb->parent)->directory);
-#endif
+    // Get scheduler to choose next thread to run if tid is -1
+    if (yield_tid == -1) {
+        run_next();
+        return 0;
+    }
     
-    // TODO: The code to decide which thread to run if yield_tid == -1 should
-    //       be moved to a scheduler once it has been written
+    tcb_t *p_tcb = get_tcb();
+    
+    // User has requested to yield to the currently running thread
+    if (yield_tid == p_tcb->id) {
+        return 0;
+    }
+    
+    extern kernel_state_t kernel_state;
     tcb_t *tcb;
     Q_FOREACH(tcb, &kernel_state.threads, all_threads) {
-        // Ignore the calling thread
-        if (tcb->id == p_tcb->id)
-            continue;
-        
-        else {
-            if ((yield_tid == -1)||(tcb->id == yield_tid)) {
-#ifdef DEBUG
-                lprintf("Other tid: %d", tcb->id);
-                lprintf("Other saved esp: 0x%x", (int)tcb->saved_esp);
-                lprintf("Other page dir: 0x%x", (int)(tcb->parent)->directory);
-                lprintf("-----------------------------");
-#endif
-                switch_context(tcb->saved_esp, p_tcb);
-                return 0;
-            }
+        if (tcb->id == yield_tid) {
+            cond_schedule(p_tcb);
+            switch_context(tcb->saved_esp, p_tcb);
+            enable_interrupts(); // TODO: Switch to scheduler mutex?
+            return 0;
         }
     }
     return -1;

@@ -10,6 +10,7 @@
 
 #include <vm.h>
 #include <interface.h>
+#include <mutex.h>
 
 typedef enum state {
     NOTYET,
@@ -53,6 +54,7 @@ typedef struct kernel_state {
     tcb_ds_t threads;
     int next_id;
     page_directory_t* dir;
+    mutex_t next_id_mutex;
 } kernel_state_t;
 
 // Headers regarding create process

@@ -12,7 +12,6 @@ Stuff to do:
 Stuff to do:
     
     locking
-        mutexes
         process locks
         thread locks
         scheduler lock (flag)

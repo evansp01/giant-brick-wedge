@@ -15,6 +15,7 @@
 #include <simics.h>
 #include <string.h>
 #include <switch.h>
+#include <mutex.h>
 
 // Global kernel state with process and thread info
 kernel_state_t kernel_state;
@@ -27,6 +28,7 @@ void init_kernel_state(page_directory_t* dir)
     INIT_STRUCT(&kernel_state.threads);
     kernel_state.next_id = 1;
     kernel_state.dir = dir;
+    mutex_init(&kernel_state.next_id_mutex);
 }
 
 /** @brief Gives the next available process/thread id number
@@ -34,8 +36,10 @@ void init_kernel_state(page_directory_t* dir)
  **/
 int get_next_id()
 {
+    mutex_lock(&kernel_state.next_id_mutex);
     int id = kernel_state.next_id;
     kernel_state.next_id++;
+    mutex_unlock(&kernel_state.next_id_mutex);
     return id;
 }
 
