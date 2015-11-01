@@ -32,7 +32,6 @@ typedef struct pcb {
     mutex_t threads_mutex;
     int id;
     int parent_id;
-    int reserved_pages;
     int exit_status;
     int num_threads;
     mutex_t num_threads_mutex;
