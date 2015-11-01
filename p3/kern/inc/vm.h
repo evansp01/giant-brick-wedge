@@ -59,7 +59,7 @@ typedef struct {
 
 int init_ppd_from(ppd_t *ppd, ppd_t *from);
 int free_ppd(ppd_t* ppd);
-void switch_to(ppd_t* ppd);
+void switch_ppd(ppd_t* ppd);
 int init_ppd(ppd_t* ppd);
 
 

@@ -24,5 +24,5 @@ void set_regs()
     tcb_t *tcb = get_tcb();
     pcb_t *pcb = tcb->parent;
     set_esp0((uint32_t)tcb->kernel_stack);
-    switch_to(&pcb->directory);
+    switch_ppd(&pcb->directory);
 }

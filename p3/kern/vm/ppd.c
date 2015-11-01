@@ -23,7 +23,7 @@ int free_ppd(ppd_t* ppd)
     return 0;
 }
 
-void switch_to(ppd_t* ppd)
+void switch_ppd(ppd_t* ppd)
 {
     set_cr3((uint32_t)ppd->dir);
 }
@@ -56,9 +56,9 @@ int init_ppd_from(ppd_t* ppd, ppd_t* from)
     page_directory_t* from_dir = from->dir;
     //temporarily use identity mapping
     from->dir = virtual_memory.identity;
-    switch_to(from);
-    int status = copy_page_tables(ppd->dir, from_dir);
+    switch_ppd(from);
+    int status = copy_page_tables(from_dir, ppd->dir);
     from->dir = from_dir;
-    switch_to(from);
+    switch_ppd(from);
     return status;
 }

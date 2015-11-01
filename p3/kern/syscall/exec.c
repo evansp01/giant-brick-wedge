@@ -264,7 +264,7 @@ int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
     if(init_ppd(&pcb->directory) < 0){
         return -3;
     }
-    switch_to(&pcb->directory);
+    switch_ppd(&pcb->directory);
     if (create_proc_pagedir(&elf, &pcb->directory) < 0) {
         return -4;
     }
@@ -325,7 +325,7 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
     if (status < 0) {
         // if we failed make sure to restore the old page directory
         tcb->parent->directory = old_dir;
-        switch_to(&old_dir);
+        switch_ppd(&old_dir);
     } else {
         //if we succeeded free the old directory
         free_ppd(&old_dir);
