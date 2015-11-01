@@ -65,12 +65,34 @@ void install_exceptions()
  */
 void install_syscalls()
 {
-    set_idt_syscall(NAME_ASM(gettid_syscall), GETTID_INT);
     set_idt_syscall(NAME_ASM(fork_syscall), FORK_INT);
+    set_idt_syscall(NAME_ASM(exec_syscall), EXEC_INT);
     set_idt_syscall(NAME_ASM(set_status_syscall), SET_STATUS_INT);
     set_idt_syscall(NAME_ASM(vanish_syscall), VANISH_INT);
+    set_idt_syscall(NAME_ASM(task_vanish_syscall), TASK_VANISH_INT);
     set_idt_syscall(NAME_ASM(wait_syscall), WAIT_INT);
+
+    set_idt_syscall(NAME_ASM(gettid_syscall), GETTID_INT);
+    set_idt_syscall(NAME_ASM(yield_syscall), YIELD_INT);
+    set_idt_syscall(NAME_ASM(deschedule_syscall), DESCHEDULE_INT);
+    set_idt_syscall(NAME_ASM(make_runnable_syscall), MAKE_RUNNABLE_INT);
+    set_idt_syscall(NAME_ASM(get_ticks_syscall), GET_TICKS_INT);
+    set_idt_syscall(NAME_ASM(sleep_syscall), SLEEP_INT);
+
+    set_idt_syscall(NAME_ASM(new_pages_syscall), NEW_PAGES_INT);
+    set_idt_syscall(NAME_ASM(remove_pages_syscall), REMOVE_PAGES_INT);
+
+    set_idt_syscall(NAME_ASM(getchar_syscall), GETCHAR_INT);
+    set_idt_syscall(NAME_ASM(readline_syscall), READLINE_INT);
+    set_idt_syscall(NAME_ASM(print_syscall), PRINT_INT);
+    set_idt_syscall(NAME_ASM(set_term_color_syscall), SET_TERM_COLOR_INT);
+    set_idt_syscall(NAME_ASM(set_cursor_pos_syscall), SET_CURSOR_POS_INT);
+    set_idt_syscall(NAME_ASM(get_cursor_pos_syscall), GET_CURSOR_POS_INT);
+
     set_idt_syscall(NAME_ASM(halt_syscall), HALT_INT);
+    set_idt_syscall(NAME_ASM(readfile_syscall), READFILE_INT);
+    set_idt_syscall(NAME_ASM(misbehave_syscall), MISBEHAVE_INT);
+    set_idt_syscall(NAME_ASM(swexn_syscall), SWEXN_INT);
 }
 
 /** @brief Installs the device driver handlers

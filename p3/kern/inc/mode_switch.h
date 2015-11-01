@@ -49,7 +49,9 @@ void first_entry_user_mode(void *esp);
 void set_regs();
 
 
-// Fault handlers
+/*****************************************************************************
+ ********* FAULT INTERRUPT HANDLERS *****************************************
+ *****************************************************************************/
 /** @brief Wrapper for the divide error handler
  *  @return void
  */
@@ -144,39 +146,10 @@ INT_ASM_H(IDT_MC);
  *  @return void
  */
 INT_ASM_H(IDT_XF);
- 
-// Syscall handlers
-/** @brief Wrapper for the gettid handler
- *  @return void
- */
-NAME_ASM_H(gettid_syscall);
 
-/** @brief Wrapper for the fork handler
- *  @return void
- */
-NAME_ASM_H(fork_syscall);
-
-/** @brief Wrapper for the set status handler
- *  @return void
- */
-NAME_ASM_H(set_status_syscall);
-
-/** @brief Wrapper for the vanish handler
- *  @return void
- */
-NAME_ASM_H(vanish_syscall);
-
-/** @brief Wrapper for the wait handler
- *  @return void
- */
-NAME_ASM_H(wait_syscall);
-
-/** @brief Wrapper for the halt handler
- *  @return void
- */
-NAME_ASM_H(halt_syscall);
-
-// Device interrupt handlers
+/*****************************************************************************
+ ********* DEVICE INTERRUPT HANDLERS *****************************************
+ *****************************************************************************/
 /** @brief Wrapper for the timer interrupt handler
  *  @return void
  */
@@ -186,5 +159,129 @@ NAME_ASM_H(timer_interrupt);
  *  @return void
  */
 NAME_ASM_H(keyboard_interrupt);
+
+/*****************************************************************************
+ ********* SYSCALL INTERRUPT HANDLERS*****************************************
+ *****************************************************************************/
+
+/** @brief Wrapper for fork syscall handler
+ *  @return void
+ */
+NAME_ASM_H(fork_syscall);
+
+/** @brief Wrapper for exec syscall handler
+ *  @return void
+ */
+NAME_ASM_H(exec_syscall);
+
+/** @brief Wrapper for set_status syscall handler
+ *  @return void
+ */
+NAME_ASM_H(set_status_syscall);
+
+/** @brief Wrapper for vanish syscall handler
+ *  @return void
+ */
+NAME_ASM_H(vanish_syscall);
+
+/** @brief Wrapper for task_vanish syscall handler
+ *  @return void
+ */
+NAME_ASM_H(task_vanish_syscall);
+
+/** @brief Wrapper for wait syscall handler
+ *  @return void
+ */
+NAME_ASM_H(wait_syscall);
+
+/** @brief Wrapper for gettid syscall handler
+ *  @return void
+ */
+NAME_ASM_H(gettid_syscall);
+
+/** @brief Wrapper for yield syscall handler
+ *  @return void
+ */
+NAME_ASM_H(yield_syscall);
+
+/** @brief Wrapper for deschedule syscall handler
+ *  @return void
+ */
+NAME_ASM_H(deschedule_syscall);
+
+/** @brief Wrapper for make_runnable syscall handler
+ *  @return void
+ */
+NAME_ASM_H(make_runnable_syscall);
+
+/** @brief Wrapper for get_ticks syscall handler
+ *  @return void
+ */
+NAME_ASM_H(get_ticks_syscall);
+
+/** @brief Wrapper for sleep syscall handler
+ *  @return void
+ */
+NAME_ASM_H(sleep_syscall);
+
+/** @brief Wrapper for new_pages syscall handler
+ *  @return void
+ */
+NAME_ASM_H(new_pages_syscall);
+
+/** @brief Wrapper for remove_pages syscall handler
+ *  @return void
+ */
+NAME_ASM_H(remove_pages_syscall);
+
+/** @brief Wrapper for getchar syscall handler
+ *  @return void
+ */
+NAME_ASM_H(getchar_syscall);
+
+/** @brief Wrapper for readline syscall handler
+ *  @return void
+ */
+NAME_ASM_H(readline_syscall);
+
+/** @brief Wrapper for print syscall handler
+ *  @return void
+ */
+NAME_ASM_H(print_syscall);
+
+/** @brief Wrapper for set_term_color syscall handler
+ *  @return void
+ */
+NAME_ASM_H(set_term_color_syscall);
+
+/** @brief Wrapper for set_cursor_pos syscall handler
+ *  @return void
+ */
+NAME_ASM_H(set_cursor_pos_syscall);
+
+/** @brief Wrapper for get_cursor_pos syscall handler
+ *  @return void
+ */
+NAME_ASM_H(get_cursor_pos_syscall);
+
+/** @brief Wrapper for halt syscall handler
+ *  @return void
+ */
+NAME_ASM_H(halt_syscall);
+
+/** @brief Wrapper for readfile syscall handler
+ *  @return void
+ */
+NAME_ASM_H(readfile_syscall);
+
+/** @brief Wrapper for misbehave syscall handler
+ *  @return void
+ */
+NAME_ASM_H(misbehave_syscall);
+
+/** @brief Wrapper for swexn syscall handler
+ *  @return void
+ */
+NAME_ASM_H(swexn_syscall);
 
 #endif /* _MODE_SWITCH_H */
