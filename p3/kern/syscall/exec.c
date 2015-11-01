@@ -26,6 +26,55 @@
 #define STACK_HIGH 0xFFFFFFF0
 #define USER_STACK_SIZE PAGE_SIZE
 
+int get_argv_length(void* cr3, int argc, char** argv)
+{
+    int i;
+    int total_length = 0;
+    for (i = 0; i < argc; i++) {
+        int length = vm_user_strlen(cr3, argv[i]);
+        if (length < 0) {
+            return -1;
+        }
+        total_length += length + 1;
+    }
+    return total_length;
+}
+
+void exec_syscall(ureg_t state)
+{
+    struct {
+        char* fname;
+        char** argv;
+    } packet;
+    tcb_t* tcb = get_tcb();
+    // TODO: kill all other threads
+    if (get_packet(&packet, (void*)state.esi, sizeof(packet)) < 0) {
+        state.eax = -1;
+        return;
+    }
+    void* cr3 = (void*)get_cr3();
+    int flen, argc, argvlen = 0;
+    if ((flen = vm_user_strlen(cr3, packet.fname)) < 0) {
+        goto return_fail;
+    } else {
+        // add one for the null character
+        flen += 1;
+    }
+    if ((argc = vm_user_arrlen(cr3, packet.argv)) < 0) {
+        goto return_fail;
+    }
+    if ((argvlen = get_argv_length(cr3, argc, packet.argv)) < 0) {
+        goto return_fail;
+    }
+    state.eax = user_exec(tcb, flen, packet.fname, argc, packet.argv, argvlen);
+    return;
+//node that we failed and return -- release mutex?
+return_fail:
+    state.eax = -1;
+    return;
+}
+
+
 /** @brief Crafts the kernel stack for the initial program
  *
  *  @param stack Stack pointer for the thread stack to be crafted
