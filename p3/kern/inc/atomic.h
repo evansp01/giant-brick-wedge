@@ -1,5 +1,5 @@
 /** @file atomic.h
- *  @brief Interface for locking functions
+ *  @brief Interface for atomic functions
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
