@@ -1,27 +1,4 @@
 ###########################################################################
-#
-#    #####          #######         #######         ######            ###
-#   #     #            #            #     #         #     #           ###
-#   #                  #            #     #         #     #           ###
-#    #####             #            #     #         ######             #
-#         #            #            #     #         #
-#   #     #            #            #     #         #                 ###
-#    #####             #            #######         #                 ###
-#
-#
-# Please read the directions in README and in this config.mk carefully.
-# Do -N-O-T- just dump things randomly in here until your kernel builds.
-# If you do that, you run an excellent chance of turning in something
-# which can't be graded.  If you think the build infrastructure is
-# somehow restricting you from doing something you need to do, contact
-# the course staff--don't just hit it with a hammer and move on.
-#
-# [Once you've read this message, please edit it out of your config.mk]
-# [Once you've read this message, please edit it out of your config.mk]
-# [Once you've read this message, please edit it out of your config.mk]
-###########################################################################
-
-###########################################################################
 # This is the include file for the make file.
 # You should have to edit only this file to get things to build.
 ###########################################################################
@@ -133,7 +110,7 @@ KERN_INTERRUPT = interrupt/debug.o interrupt/devices.o interrupt/fault.o \
 				 interrupt/mode_switch_asm.o interrupt/setup_idt.o
 KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o scheduler/switch.o
 KERN_TESTS = tests/kernel_tests.o
-KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o
+KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o
 
 KERNEL_OBJS = kernel.o
 KERNEL_OBJS +=${KERN_SYSCALL}
@@ -160,7 +137,7 @@ KERNEL_OBJS +=${KERN_VM}
 # or init unless you are writing your own, and don't do that unless
 # you have a really good reason to do so.
 #
-410REQPROGS = idle init shell fork_test1
+410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

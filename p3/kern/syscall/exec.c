@@ -23,7 +23,6 @@
 #include <limits.h>
 #include <eflags.h>
 
-
 #define STACK_HIGH 0xFFFFFFF0
 #define USER_STACK_SIZE PAGE_SIZE
 
@@ -70,11 +69,11 @@ int getbytes(const char* filename, int offset, int size, char* buf)
             break;
     }
     // No program matching the given filename found
-    if (i == exec2obj_userapp_count){
+    if (i == exec2obj_userapp_count) {
         return -1;
     }
     // Check if given offset and size exceeds the file size
-    if ((offset + size) > exec2obj_userapp_TOC[i].execlen){
+    if ((offset + size) > exec2obj_userapp_TOC[i].execlen) {
         return -1;
     }
     // Copy bytes over to buffer
@@ -123,32 +122,19 @@ int create_proc_pagedir(simple_elf_t* elf, page_directory_t* dir)
                          elf->e_bssstart + elf->e_bsslen };
     uint32_t min_start = min(starts, 4);
     uint32_t max_end = max(ends, 4);
-    allocate_pages(dir, (void*)min_start, max_end - min_start, e_read_page);
-    vm_make_writeable(dir, (void*)elf->e_datstart, elf->e_datlen);
-    vm_make_writeable(dir, (void*)elf->e_bssstart, elf->e_bsslen);
+    //all pages should be writeable so we can write to them even
+    allocate_pages(dir, (void*)min_start, max_end - min_start, e_write_page);
     getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
     getbytes(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen, (char*)elf->e_rodatstart);
     getbytes(elf->e_fname, elf->e_datoff, elf->e_datlen, (char*)elf->e_datstart);
+    // set everything to readonly
+    vm_set_readonly(dir, (void*)min_start, max_end - min_start);
+    // set pages which need to be writeable to read/write this means that
+    // if a readonly and write section are on the same page, both will be
+    // writeable, so at least the program still runs
+    vm_set_readwrite(dir, (void*)elf->e_datstart, elf->e_datlen);
+    vm_set_readwrite(dir, (void*)elf->e_bssstart, elf->e_bsslen);
     return 0;
-}
-
-/** @brief Creates a new idle process
- *
- *  @return Pointer to tcb on success, null on failure
- **/
-tcb_t* create_idle()
-{
-    tcb_t* tcb_entry = create_pcb_entry(NULL);
-
-    if (load_program(tcb_entry, "fork_test1", 0, NULL) < 0) {
-        return NULL;
-    }
-    return tcb_entry;
-}
-
-int vm_strspace(char* str)
-{
-    return strlen(str) + 1;
 }
 
 int strcpy_len(char* dest, char* source)
@@ -158,20 +144,6 @@ int strcpy_len(char* dest, char* source)
         i++;
     }
     return i + 1;
-}
-
-int get_argv_length(int argc, char** argv)
-{
-    int i;
-    int total_length = 0;
-    for (i = 0; i < argc; i++) {
-        int length;
-        if ((length = vm_strspace(argv[i])) < 0) {
-            return -1;
-        }
-        total_length += length;
-    }
-    return total_length;
 }
 
 /** @brief Allocates the stack for the new process
@@ -215,9 +187,13 @@ uint32_t setup_main_stack(int argc, char** argv, int argv_total, uint32_t stack_
     return (uint32_t)(stack_current - 1);
 }
 
-uint32_t argument_space(int argvlen, int argc)
+uint32_t stack_space(int argvlen, int argc)
 {
-    return argvlen * sizeof(char) + argc * sizeof(char*) + 5 * sizeof(uint32_t);
+    uint32_t space = USER_STACK_SIZE;
+    space += argvlen * sizeof(char);
+    space += argc * sizeof(char*);
+    space += 5 * sizeof(uint32_t);
+    return space;
 }
 
 int allocate_stack(void* cr3, uint32_t stack_low)
@@ -227,42 +203,85 @@ int allocate_stack(void* cr3, uint32_t stack_low)
     return allocate_pages(cr3, (void*)stack_low, stack_size, e_write_page);
 }
 
-/** @brief Loads the given program file
- *
- *  @param pcb Process to load program on
- *  @param tcb Thread to load program on
- *  @param filename Name of the program to be loaded
- *  @return Pointer to tcb on success, null on failure
- **/
-int load_program(tcb_t* tcb, char* filename, int argc, char** argv)
+int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
 {
     simple_elf_t elf;
-    if (elf_check_header(filename) < 0) {
-        lprintf("%s not a process", filename);
+    if (elf_check_header(fname) < 0) {
+        lprintf("%s not a process", fname);
         return -1;
     }
-    elf_load_helper(&elf, filename);
-    int argv_length = get_argv_length(argc, argv);
-    if (argv_length < 0) {
-        return -2;
-    }
-    pcb_t *pcb = tcb->parent;
+    elf_load_helper(&elf, fname);
+    pcb_t* pcb = tcb->parent;
     pcb->directory = create_page_directory();
     if (pcb->directory == NULL) {
         return -3;
     }
-    uint32_t stack_low = STACK_HIGH -
-        (argument_space(argv_length, argc) + USER_STACK_SIZE);
     set_cr3((uint32_t)pcb->directory);
-    if (allocate_stack(pcb->directory, stack_low) < 0) {
-        return -4;
-    }
     if (create_proc_pagedir(&elf, pcb->directory) < 0) {
         return -4;
     }
-    uint32_t stack_entry = setup_main_stack(argc, argv, argv_length, stack_low);
+    uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
+    if (allocate_stack(pcb->directory, stack_low) < 0) {
+        return -4;
+    }
+    uint32_t stack_entry = setup_main_stack(argc, argv, argspace, stack_low);
     // Craft kernel stack contents
     tcb->saved_esp = create_context(
-            (uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
+        (uint32_t)tcb->kernel_stack, stack_entry, elf.e_entry);
+    return 0;
+}
+
+tcb_t* new_program(char* fname, int argc, char** argv)
+{
+    tcb_t* tcb_entry = create_pcb_entry(NULL);
+    int i, argspace = 0;
+    for (i = 0; i < argc; i++) {
+        argspace += strlen(argv[i]) + 1;
+    }
+    if (exec(tcb_entry, fname, argc, argv, argspace) < 0) {
+        //TODO: free tcb
+        return NULL;
+    }
+    return tcb_entry;
+}
+
+#define EXEC_MAX_BYTES (4 * PAGE_SIZE)
+
+int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int arglen)
+{
+    size_t flen_space = flen * sizeof(char);
+    size_t argv_space = argc * sizeof(char*);
+    size_t string_space = arglen * sizeof(char);
+    size_t total_space = flen_space + argv_space + string_space;
+    if (total_space > EXEC_MAX_BYTES) {
+        return -1;
+    }
+    char* k_space = malloc(total_space);
+    if (k_space == NULL) {
+        return -1;
+    }
+    char** k_argv = (char**)(k_space + flen);
+    char* k_str_start = (char*)(k_argv + argc);
+    memcpy(k_space, fname, flen * sizeof(char));
+    memcpy(k_argv, argv, argc * sizeof(char*));
+    int i;
+    char* k_str_current = k_str_start;
+    for (i = 0; i < argc; i++) {
+        k_argv[i] = k_str_current;
+        int copied = strcpy_len(k_str_current, argv[i]);
+        k_str_current += copied;
+    }
+    //we have copied all the arguments to kernel space -- now try to exec
+    page_directory_t* old_dir = tcb->parent->directory;
+    int status = exec(tcb, k_space, argc, k_argv, arglen);
+    if (status < 0) {
+        // if we failed make sure to restore the old page directory
+        tcb->parent->directory = old_dir;
+        set_cr3((uint32_t)old_dir);
+    } else {
+        //if we succeeded free the old directory
+        free_page_directory(old_dir);
+    }
+    free(k_space);
     return 0;
 }

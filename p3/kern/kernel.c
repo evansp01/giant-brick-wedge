@@ -75,7 +75,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     //test_process_vm();
 
     // Create 1st idle process
-    tcb_t *tcb = create_idle();
+    tcb_t *tcb = new_program("exec_basic", 0, NULL);
     if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
 

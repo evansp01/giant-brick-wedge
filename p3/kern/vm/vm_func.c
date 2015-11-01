@@ -122,6 +122,27 @@ int vm_user_strlen(void* cr3, char* start)
     }
 }
 
+int vm_user_arrlen(void* cr3, char** start)
+{
+    entry_t table, dir;
+    int space = 0;
+    int i, length;
+    for (;;) {
+        if ((length = vm_get_address(cr3, start+space, &table, &dir)) < 0) {
+            return -1;
+        }
+        if (!is_user(&table, &dir)) {
+            return -1;
+        }
+        for (i = 0; i < length; i++) {
+            if (start[space + i] == '\0') {
+                return space + i;
+            }
+        }
+        space += length;
+    }
+}
+
 int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr, int status)
 {
 

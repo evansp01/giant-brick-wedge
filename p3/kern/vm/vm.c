@@ -205,6 +205,11 @@ page_directory_t* create_page_directory()
     return dir;
 }
 
+void free_page_directory(page_directory_t* dir)
+{
+    //TODO: actually free the page directroy
+}
+
 /** @brief Allocate and initialize a page table
  *  @return the page table
  **/

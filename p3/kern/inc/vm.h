@@ -58,6 +58,7 @@ void init_virtual_memory();
 page_directory_t* create_page_directory();
 page_table_t* create_page_table();
 page_directory_t* create_kernel_directory();
+void free_page_directory(page_directory_t* dir);
 int allocate_pages(void* cr2, void* start, size_t size, entry_t model);
 int page_bytes_left(void* address);
 
@@ -79,5 +80,7 @@ int vm_user_can_read(void* cr3, void* start, int size);
 int vm_user_can_write(void* cr3, void* start, int size);
 int vm_user_can_alloc(void* cr3, void* start, int size);
 int vm_user_strlen(void* cr3, char* start);
+int vm_user_arrlen(void* cr3, char** start);
+uint32_t get_cr3();
 
 #endif // PAGE_STRUCTS_H_
