@@ -47,7 +47,6 @@ tcb_t *create_idle();
 tcb_t *create_copy(tcb_t *tcb_parent);
 int getbytes( const char *filename, int offset, int size, char *buf );
 void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
-int create_proc_pagedir(simple_elf_t* elf, page_directory_t *pd);
 int load_program(tcb_t* tcb, char* filename, int argc, char **argv);
 int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child);
 int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child);

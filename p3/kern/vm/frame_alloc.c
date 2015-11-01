@@ -12,14 +12,29 @@
 #include <string.h>
 #include <utilities.h>
 #include <common.h>
+#include <mutex.h>
+#include "vm_internal.h"
+#include <vm.h>
 
 /** @brief Structure for the frame allocator */
 static struct frame_alloc {
     int total_frames;
-    int reserved_frames;
     int free_frames;
     int next_physical_frame;
+    uint32_t *next_frame;
+    void* zero_page;
+    mutex_t lock;
 } frames;
+
+/** @brief Zero a frame
+ *  @param frame The frame to zero
+ *  @return void
+ **/
+void zero_frame(void* frame)
+{
+    ASSERT_PAGE_ALIGNED(frame);
+    memset(frame, 0, PAGE_SIZE);
+}
 
 /** @brief Return the next physical frame not yet touched by the frame allocator
  *
@@ -32,9 +47,8 @@ static void* next_physical_frame()
     }
     int frame_index = frames.next_physical_frame;
     frames.next_physical_frame++;
-    void* frame = LEA(USER_MEM_START, PAGE_SIZE, frame_index);
-    ASSERT_PAGE_ALIGNED(frame);
-    return frame;
+    uint32_t frame = USER_MEM_START + PAGE_SIZE*frame_index;
+    return (void*)frame;
 }
 
 /** @brief Initializes the frame allocator
@@ -43,45 +57,13 @@ static void* next_physical_frame()
 void init_frame_alloc()
 {
     frames.total_frames = machine_phys_frames() - USER_MEM_START / PAGE_SIZE;
-    frames.reserved_frames = 0;
     frames.free_frames = frames.total_frames;
     frames.next_physical_frame = 0;
-}
-
-/** @brief Reserves frames for later use
- *
- *  Reserves frame_count frames for later use. The sum of reserved frames and
- *  allocated frames will never exceed the number of physical frames on the
- *  system
- *
- *  @param frame_count The number of frames to reserver
- *  @return Zero on success, an integer less than zero on failure
- **/
-int reserve_frames(int frame_count)
-{
-    if (frames.free_frames < frame_count) {
-        return -1;
-    }
-    frames.free_frames -= frame_count;
-    frames.reserved_frames += frame_count;
-    return 0;
-}
-
-/** @brief Allocates a previously reserved frame
- *
- *  This function gets a previously reserved frame, decrementing the count
- *  of reserved frames by one. Frames are zeroed before being allocated
- *
- *  @return The pointer to the frame, or NULL if there are no reserved frames
- **/
-void* get_reserved_frame()
-{
-    if (frames.reserved_frames == 0) {
-        return NULL;
-    }
-    frames.reserved_frames--;
-    void *frame = next_physical_frame();
-    return frame;
+    frames.next_frame = 0;
+    frames.zero_page = next_physical_frame();
+    zero_frame(frames.zero_page);
+    frames.free_frames--;
+    mutex_init(&frames.lock);
 }
 
 /** @brief Allocates a frame
@@ -90,12 +72,58 @@ void* get_reserved_frame()
  *
  *  @return A pointer to the frame or NULL if there are no frames left
  **/
-void* allocate_frame()
+int alloc_frame(void* virtual, entry_t* table, entry_t model)
 {
-    if (reserve_frames(1) < 0) {
-        return NULL;
+    mutex_lock(&frames.lock);
+    if (frames.next_frame != 0) {
+        //allocate from implicit frame list
+        *table = create_entry(frames.next_frame, model);
+        //retreive the implicit frame pointer
+        frames.next_frame = *((uint32_t**)virtual);
+    } else {
+        void* physical = next_physical_frame();
+        if (physical == NULL) {
+            mutex_unlock(&frames.lock);
+            return -1;
+        }
+        //allocate from physical frame list
+        *table = create_entry(physical, model);
     }
-    return get_reserved_frame();
+    frames.free_frames--;
+    zero_frame(virtual);
+    mutex_unlock(&frames.lock);
+    return 0;
+}
+
+/** @brief Allocates a frame
+ *
+ *  Allocates an unreserved frame
+ *
+ *  @return A pointer to the frame or NULL if there are no frames left
+ **/
+int kernel_alloc_frame(entry_t* table, entry_t model)
+{
+    mutex_lock(&frames.lock);
+    uint32_t* physical;
+    if (frames.next_frame != 0) {
+        //allocate from implicit frame list
+        physical = frames.next_frame;
+        *table = create_entry(physical, model);
+        //retreive the implicit frame pointer
+        frames.next_frame = (uint32_t *)*physical;
+    } else {
+        physical = next_physical_frame();
+        if (physical == NULL) {
+            mutex_unlock(&frames.lock);
+            return -1;
+        }
+        //allocate from physical frame list
+        *table = create_entry(physical, model);
+    }
+    frames.free_frames--;
+    zero_frame(physical);
+    mutex_unlock(&frames.lock);
+    return 0;
 }
 
 /** @brief Frees an allocated frame allowing it to be reused
@@ -103,26 +131,14 @@ void* allocate_frame()
  *  @param frame The frame to free
  *  @return void
  **/
-void free_frame(void* frame)
+void free_frame(void* virtual, void* physical)
 {
-}
-
-/** @brief Frees a number of reserved frames
- *
- *  Frees a number of reserved but unallocated frames allowing them to be
- *  reserved or allocated again
- *
- *  @param count The number of frames to free
- *  @return void
- **/
-void free_reserved_frames(int count)
-{
-    if (frames.reserved_frames < count) {
-        lprintf("Error freed too many reserved frames");
-        frames.free_frames += frames.reserved_frames;
-        frames.reserved_frames = 0;
-        return;
-    }
-    frames.reserved_frames -= count;
-    frames.free_frames += count;
+    mutex_lock(&frames.lock);
+    uint32_t** frame_ptr = virtual;
+    //save the next frame pointer to this page using the current address
+    *frame_ptr = frames.next_frame;
+    //save the physical address to this frame as the next frame pointer
+    frames.next_frame = physical;
+    frames.free_frames++;
+    mutex_unlock(&frames.lock);
 }

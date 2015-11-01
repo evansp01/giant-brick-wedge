@@ -8,13 +8,15 @@
 #include <vm.h>
 #include <malloc.h>
 #include <cr.h>
+#include "vm_internal.h"
 
 COMPILE_TIME_ASSERT(sizeof(address_t) == sizeof(uint32_t));
 COMPILE_TIME_ASSERT(sizeof(entry_t) == sizeof(uint32_t));
 COMPILE_TIME_ASSERT(sizeof(page_directory_t) == PAGE_SIZE);
 COMPILE_TIME_ASSERT(sizeof(page_table_t) == PAGE_SIZE);
 
-#define KERNEL_TABLES DIVIDE_ROUND_UP(USER_MEM_START, PAGE_SIZE* PAGES_PER_TABLE)
+struct virtual_memory virtual_memory = {0};
+
 
 const entry_t e_kernel_dir = {
     .present = 1,
@@ -49,31 +51,6 @@ const entry_t e_write_page = {
     .user = 1
 };
 
-struct {
-    void* zero_page;
-    page_table_t* kernel_pages[KERNEL_TABLES];
-} virtual_memory = { 0 };
-
-/** @brief Turns on virtual memory on the kernel
- *  @param dir Page directory base
- *  @return void
- **/
-void turn_on_vm(page_directory_t* dir)
-{
-    set_cr3((uint32_t)dir);
-    set_cr4(get_cr4() | CR4_PGE);
-    set_cr0(get_cr0() | CR0_PG);
-}
-
-/** @brief Zero a frame
- *  @param frame The frame to zero
- *  @return void
- **/
-void zero_frame(void* frame)
-{
-    ASSERT_PAGE_ALIGNED(frame);
-    memset(frame, 0, PAGE_SIZE);
-}
 
 entry_t create_entry(void* address, entry_t model)
 {
@@ -173,23 +150,22 @@ physical_table(void* frame, int table_idx, int pages, entry_t init)
 void init_virtual_memory()
 {
     int i;
-    if (reserve_frames(1 + KERNEL_TABLES) < 0) {
-        panic("Not enough frames to initialize virtual memory");
-    }
-    // set up the zero pages
-    virtual_memory.zero_page = get_reserved_frame();
     // set up the page tables which define the kernel memory
     for (i = 0; i < KERNEL_TABLES; i++) {
-        page_table_t* table = get_reserved_frame();
+        page_table_t* table = (page_table_t*)smemalign(PAGE_SIZE, PAGE_SIZE);
         table = physical_table(table, i, PAGES_PER_TABLE, e_kernel_global);
         virtual_memory.kernel_pages[i] = table;
     }
+    virtual_memory.identity = alloc_kernel_directory();
+    set_cr3((uint32_t)virtual_memory.identity);
+    set_cr4(get_cr4() | CR4_PGE);
+    set_cr0(get_cr0() | CR0_PG);
 }
 
 /** @brief Allocate and initialize a page directory
  *  @return the page directory
  **/
-page_directory_t* create_page_directory()
+page_directory_t* alloc_page_directory()
 {
     int i;
     page_directory_t* dir = (page_directory_t*)smemalign(PAGE_SIZE, PAGE_SIZE);
@@ -213,7 +189,7 @@ void free_page_directory(page_directory_t* dir)
 /** @brief Allocate and initialize a page table
  *  @return the page table
  **/
-page_table_t* create_page_table()
+page_table_t* alloc_page_table()
 {
     page_table_t* table = (page_table_t*)smemalign(PAGE_SIZE, PAGE_SIZE);
     if (table == NULL) {
@@ -226,9 +202,9 @@ page_table_t* create_page_table()
 /** @brief Create a page directory for the kernel with the identity mapping
  *  @return The page directory
  **/
-page_directory_t* create_kernel_directory()
+page_directory_t* alloc_kernel_directory()
 {
-    page_directory_t* dir = create_page_directory();
+    page_directory_t* dir = alloc_page_directory();
     if (dir == NULL) {
         panic("Could not allocate frame for kernel page directory");
     }
@@ -238,7 +214,7 @@ page_directory_t* create_kernel_directory()
     int machine_extra_pages = machine_phys_frames() % PAGES_PER_TABLE;
 
     for (i = KERNEL_TABLES; i < machine_full_tables; i++) {
-        page_table_t* table = create_page_table();
+        page_table_t* table = alloc_page_table();
         if (table == NULL) {
             panic("Could not allocate frame for kernel page table");
         }
@@ -246,7 +222,7 @@ page_directory_t* create_kernel_directory()
         dir->tables[i] = create_entry(table, e_kernel_dir);
     }
     if (machine_extra_pages != 0) {
-        page_table_t* table = create_page_table();
+        page_table_t* table = alloc_page_table();
         if (table == NULL) {
             panic("Could not allocate frame for kernel page table");
         }
@@ -265,19 +241,16 @@ int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
     int end_index = end;
     for (j = start_index; j <= end_index; j++) {
         location.page_table_index = j;
+        void *virtual = AS_TYPE(location, void*);
         entry_t* table_entry = &table->pages[j];
         if (table_entry->present) {
-            lprintf("WARN: page already allocated at %x",
-                    AS_TYPE(location, int));
+            lprintf("WARN: page already allocated at %x", (int)virtual);
             return -3;
         }
-        void* frame = allocate_frame();
-        if (frame == NULL) {
+        if(alloc_frame(virtual, table_entry, model) < 0){
             lprintf("Ran out of frames to allocate");
             return -2;
         }
-        *table_entry = create_entry(frame, model);
-        zero_frame(AS_TYPE(location, void*));
     }
     return 0;
 }
@@ -303,7 +276,7 @@ int allocate_pages(void* cr3, void* start, size_t size, entry_t model)
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
         entry_t* dir_entry = &dir->tables[i];
         if (!dir_entry->present) {
-            void* frame = create_page_table();
+            void* frame = alloc_page_table();
             if (frame == NULL) {
                 lprintf("Ran out of kernel memory for page tables");
                 return -1;

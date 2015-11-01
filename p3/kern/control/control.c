@@ -23,11 +23,10 @@ kernel_state_t kernel_state;
 /** @brief Initializes the global lists of processes and threads
  *  @return void
  **/
-void init_kernel_state(page_directory_t* dir)
+void init_kernel_state()
 {
     INIT_STRUCT(&kernel_state.threads);
     kernel_state.next_id = 1;
-    kernel_state.dir = dir;
     mutex_init(&kernel_state.next_id_mutex);
     mutex_init(&kernel_state.threads_mutex);
 }
@@ -77,9 +76,6 @@ tcb_t *create_pcb_entry(pcb_t *parent_pcb)
     else
         entry->parent_id = 0;
 
-    entry->reserved_pages = 0;
-    entry->directory = NULL;
-    
     // create first process
     tcb_t *tcb = create_tcb_entry(entry);
 

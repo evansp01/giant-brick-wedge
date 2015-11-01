@@ -4,10 +4,13 @@
 #include <stdint.h>
 #include <page.h>
 #include <stddef.h>
+#include <mutex.h>
+#include <common.h>
 
 #define PAGES_PER_TABLE 1024
 #define TABLES_PER_DIR 1024
 #define ENTRY_ADDRESS_SHIFT 12
+
 
 typedef struct {
     uint32_t present : 1;       /* bit 0 */
@@ -37,6 +40,30 @@ typedef struct {
     uint32_t page_dir_index : 10;   /* bits 22 - 31 */
 } address_t;
 
+Q_NEW_HEAD(alloc_list_t, alloc);
+
+typedef struct alloc {
+    Q_NEW_LINK(alloc) list;
+    uint32_t start;
+    uint32_t size;
+} alloc_t;
+
+typedef struct {
+    page_directory_t* dir;
+    int frames;
+    alloc_list_t allocations;
+    mutex_t lock;
+} ppd_t;
+
+
+
+int init_ppd_from(ppd_t *ppd, ppd_t *from);
+int free_ppd(ppd_t* ppd);
+void switch_to(ppd_t* ppd);
+int init_ppd(ppd_t* ppd);
+
+
+
 extern const entry_t e_kernel_dir;
 extern const entry_t e_user_dir;
 extern const entry_t e_kernel_global;
@@ -51,28 +78,22 @@ void set_entry_address(entry_t* entry, void* address);
 entry_t* get_dir_entry(void* address, page_directory_t* directory);
 entry_t* get_table_entry(void* address, page_table_t* table);
 void* get_address(void* address, void* page);
-void turn_on_vm(page_directory_t* dir);
+void turn_on_vm();
 void zero_frame(void* frame);
 void copy_frame(void* frame, void* from);
 void init_virtual_memory();
-page_directory_t* create_page_directory();
-page_table_t* create_page_table();
-page_directory_t* create_kernel_directory();
+page_directory_t* alloc_page_directory();
+page_directory_t* alloc_kernel_directory();
+page_table_t* alloc_page_table();
 void free_page_directory(page_directory_t* dir);
 int allocate_pages(void* cr2, void* start, size_t size, entry_t model);
 int page_bytes_left(void* address);
 
 //headers for frame alloc
 void init_frame_alloc();
-int reserve_frames(int frame_count);
-void free_reserved_frames(int count);
-void* get_reserved_frame();
-void* allocate_frame();
-void free_frame(void* frame);
-void invalidate_page(void *page);
-int vm_permissions(void* virtual, entry_t* permissions);
-int vm_info(void* virtual, size_t size, entry_t* permissions);
-int vm_addr_info(void* virtual, entry_t* permissions, void** physical);
+int alloc_frame(void* virtual, entry_t* table, entry_t model);
+int kernel_alloc_frame(entry_t* table, entry_t model);
+void free_frame(void* virtual, void *physical);
 
 int vm_set_readonly(void* cr3, void* start, int size);
 int vm_set_readwrite(void* cr3, void* start, int size);

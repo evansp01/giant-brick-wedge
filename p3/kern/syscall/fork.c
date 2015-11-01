@@ -46,25 +46,25 @@ void calc_saved_esp(tcb_t* tcb_parent, tcb_t *tcb_child)
 tcb_t *create_copy(tcb_t *tcb_parent)
 {
     pcb_t* pcb_parent = tcb_parent->parent;
-    
+
     // Reject calls to fork for processes with more than one thread
     if (pcb_parent->num_threads > 1) {
         lprintf("Fork called on task with multiple threads");
         return NULL;
     }
-    
+
     // Create copy of pcb & tcb
     tcb_t* tcb_child = create_pcb_entry(pcb_parent);
 
     // Copy tcb data
     calc_saved_esp(tcb_parent, tcb_child);
-    
+
     // Copy memory regions
     if (copy_program(pcb_parent, tcb_child->parent) < 0) {
         lprintf("cannot copy program");
         return 0;
     }
-    
+
     return tcb_child;
 }
 
@@ -76,28 +76,9 @@ tcb_t *create_copy(tcb_t *tcb_parent)
  **/
 int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
 {
-    extern kernel_state_t kernel_state;
-    page_directory_t* dir_parent = pcb_parent->directory;
-    
-    // Create page directory for child process
-    page_directory_t* dir_child = create_page_directory();
-    if (dir_child == NULL) {
+    if(init_ppd_from(&pcb_child->directory, &pcb_parent->directory)){
         return -1;
     }
-    pcb_child->directory = dir_child;
-    
-    // Temporarily set to kernel identity mapping
-    set_cr3((uint32_t)kernel_state.dir);
-    pcb_parent->directory = kernel_state.dir;
-    
-    // Copy page tables from parent to child
-    if (copy_page_tables(dir_parent, dir_child) < 0)
-        return -2;
-    
-    // Return to process page directory mapping
-    set_cr3((uint32_t)dir_parent);
-    pcb_parent->directory = dir_parent;
-    
     return 0;
 }
 
@@ -107,29 +88,29 @@ int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
  *  @param dir_child PCB of child process
  *  @return Zero on success, an integer less than zero on failure
  **/
-int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child)
+int copy_page_tables(page_directory_t* dir_child, page_directory_t* dir_parent)
 {
     // Copy memory regions
     int i_dir;
     for (i_dir = 0; i_dir < TABLES_PER_DIR; i_dir++) {
-        
+
         // Check if it is a present user directory entry
         entry_t *dir_entry_parent = &dir_parent->tables[i_dir];
         if ((dir_entry_parent->present)&&(dir_entry_parent->user)) {
-            
+
             // Create copy of page table
             entry_t *dir_entry_child = &dir_child->tables[i_dir];
-            void* table = create_page_table();
+            void* table = alloc_page_table();
             if (table == NULL) {
                 lprintf("Ran out of kernel memory for page tables");
                 return -1;
             }
             *dir_entry_child = create_entry(table, *dir_entry_parent);
-            
+
             // Get page table
             page_table_t *table_parent = get_entry_address(*dir_entry_parent);
             page_table_t *table_child = get_entry_address(*dir_entry_child);
-            
+
             // Copy page frames from parent to child
             if (copy_frames(table_parent, table_child) < 0)
                 return -2;
@@ -148,23 +129,20 @@ int copy_frames(page_table_t *table_parent, page_table_t *table_child)
 {
     int i_page;
     for (i_page = 0; i_page < PAGES_PER_TABLE; i_page++) {
-        
+
         // Check if it is a present user page table entry
         entry_t *table_entry_parent = &table_parent->pages[i_page];
         if ((table_entry_parent->present)&&(table_entry_parent->user)) {
-            
+
             // Create copy of page
             entry_t *table_entry_child = &table_child->pages[i_page];
-            void* frame = allocate_frame();
-            if (frame == NULL) {
+            if(kernel_alloc_frame(table_entry_child, *table_entry_parent) < 0){
                 lprintf("Ran out of frames to allocate");
                 return -2;
             }
-            *table_entry_child = create_entry(frame, *table_entry_parent);
-            
             // Copy frame data
             memcpy(get_entry_address(*table_entry_child),
-                   get_entry_address(*table_entry_parent), PAGE_SIZE); 
+                   get_entry_address(*table_entry_parent), PAGE_SIZE);
         }
     }
     return 0;
@@ -178,12 +156,12 @@ int copy_frames(page_table_t *table_parent, page_table_t *table_child)
 void setup_for_switch(tcb_t *tcb)
 {
     void *saved_esp = tcb->saved_esp;
-    
+
     context_stack_t context_stack = {
         .func_addr = first_entry_user_mode,
         .saved_esp = saved_esp,
     };
-    
+
     PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);
 }
 

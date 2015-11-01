@@ -1,6 +1,7 @@
 #include <vm.h>
 #include <utilities.h>
 #include <string.h>
+#include "vm_internal.h"
 
 typedef int (*vm_operator)(entry_t*, entry_t*, address_t, int);
 
@@ -213,5 +214,3 @@ int get_packet(void* packet, void* esi, size_t size)
     }
     return -1;
 }
-
-

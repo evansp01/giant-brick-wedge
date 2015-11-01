@@ -61,21 +61,19 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     init_frame_alloc();
     init_virtual_memory();
     init_scheduler();
+    init_kernel_state();
 
     // TODO: Is it ok not to have interrupts yet here?
     //       Interrupts trigger a fault since there is no pcb entry yet
     //       and set_regs() needs to reference the pcb
 
-    page_directory_t* dir = create_kernel_directory();
-    turn_on_vm(dir);
-    init_kernel_state(dir);
 
     // Run kernel tests (TODO: Free/reallocate frames)
     //vm_diagnose(dir);
     //test_process_vm();
 
     // Create 1st idle process
-    tcb_t *tcb = new_program("exec_basic", 0, NULL);
+    tcb_t *tcb = new_program("knife", 0, NULL);
     if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
 

@@ -36,7 +36,7 @@ typedef struct pcb {
     int exit_status;
     int num_threads;
     mutex_t num_threads_mutex;
-    page_directory_t *directory;
+    ppd_t directory;
     state_t state;
 } pcb_t;
 
@@ -56,14 +56,13 @@ typedef struct tcb {
 typedef struct kernel_state {
     tcb_ds_t threads;
     int next_id;
-    page_directory_t* dir;
     mutex_t next_id_mutex;
     mutex_t threads_mutex;
 } kernel_state_t;
 
 // Headers regarding create process
 kernel_state_t *get_kernel_state();
-void init_kernel_state(page_directory_t* dir);
+void init_kernel_state();
 tcb_t *create_pcb_entry(pcb_t *parent_pcb);
 tcb_t *create_tcb_entry(pcb_t *parent_pcb);
 void *allocate_kernel_stack();

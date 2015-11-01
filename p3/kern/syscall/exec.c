@@ -161,7 +161,7 @@ uint32_t max(uint32_t array[], int len)
  *  @param elf Struct containing elf file information
  *  @return page directory of new process
  **/
-int create_proc_pagedir(simple_elf_t* elf, page_directory_t* dir)
+int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)
 {
     uint32_t starts[4] = { elf->e_txtstart, elf->e_rodatstart,
                            elf->e_datstart, elf->e_bssstart };
@@ -172,17 +172,17 @@ int create_proc_pagedir(simple_elf_t* elf, page_directory_t* dir)
     uint32_t min_start = min(starts, 4);
     uint32_t max_end = max(ends, 4);
     //all pages should be writeable so we can write to them even
-    allocate_pages(dir, (void*)min_start, max_end - min_start, e_write_page);
+    allocate_pages(dir->dir, (void*)min_start, max_end - min_start, e_write_page);
     getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
     getbytes(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen, (char*)elf->e_rodatstart);
     getbytes(elf->e_fname, elf->e_datoff, elf->e_datlen, (char*)elf->e_datstart);
     // set everything to readonly
-    vm_set_readonly(dir, (void*)min_start, max_end - min_start);
+    vm_set_readonly(dir->dir, (void*)min_start, max_end - min_start);
     // set pages which need to be writeable to read/write this means that
     // if a readonly and write section are on the same page, both will be
     // writeable, so at least the program still runs
-    vm_set_readwrite(dir, (void*)elf->e_datstart, elf->e_datlen);
-    vm_set_readwrite(dir, (void*)elf->e_bssstart, elf->e_bsslen);
+    vm_set_readwrite(dir->dir, (void*)elf->e_datstart, elf->e_datlen);
+    vm_set_readwrite(dir->dir, (void*)elf->e_bssstart, elf->e_bsslen);
     return 0;
 }
 
@@ -245,11 +245,11 @@ uint32_t stack_space(int argvlen, int argc)
     return space;
 }
 
-int allocate_stack(void* cr3, uint32_t stack_low)
+int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
     uint32_t stack_size = STACK_HIGH - stack_low;
     lprintf("start 0x%lx, size 0x%lx", stack_low, stack_size);
-    return allocate_pages(cr3, (void*)stack_low, stack_size, e_write_page);
+    return allocate_pages(ppd->dir, (void*)stack_low, stack_size, e_write_page);
 }
 
 int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
@@ -261,16 +261,15 @@ int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
     }
     elf_load_helper(&elf, fname);
     pcb_t* pcb = tcb->parent;
-    pcb->directory = create_page_directory();
-    if (pcb->directory == NULL) {
+    if(init_ppd(&pcb->directory) < 0){
         return -3;
     }
-    set_cr3((uint32_t)pcb->directory);
-    if (create_proc_pagedir(&elf, pcb->directory) < 0) {
+    switch_to(&pcb->directory);
+    if (create_proc_pagedir(&elf, &pcb->directory) < 0) {
         return -4;
     }
     uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
-    if (allocate_stack(pcb->directory, stack_low) < 0) {
+    if (allocate_stack(&pcb->directory, stack_low) < 0) {
         return -4;
     }
     uint32_t stack_entry = setup_main_stack(argc, argv, argspace, stack_low);
@@ -321,15 +320,15 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         k_str_current += copied;
     }
     //we have copied all the arguments to kernel space -- now try to exec
-    page_directory_t* old_dir = tcb->parent->directory;
+    ppd_t old_dir = tcb->parent->directory;
     int status = exec(tcb, k_space, argc, k_argv, arglen);
     if (status < 0) {
         // if we failed make sure to restore the old page directory
         tcb->parent->directory = old_dir;
-        set_cr3((uint32_t)old_dir);
+        switch_to(&old_dir);
     } else {
         //if we succeeded free the old directory
-        free_page_directory(old_dir);
+        free_ppd(&old_dir);
     }
     free(k_space);
     return 0;
