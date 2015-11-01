@@ -28,11 +28,14 @@ typedef struct pcb {
     NEW_LINK(pcb) siblings;
     pcb_ds_t children;
     tcb_ds_t threads;
+    mutex_t children_mutex;
+    mutex_t threads_mutex;
     int id;
     int parent_id;
     int reserved_pages;
     int exit_status;
     int num_threads;
+    mutex_t num_threads_mutex;
     page_directory_t *directory;
     state_t state;
 } pcb_t;
@@ -55,6 +58,7 @@ typedef struct kernel_state {
     int next_id;
     page_directory_t* dir;
     mutex_t next_id_mutex;
+    mutex_t threads_mutex;
 } kernel_state_t;
 
 // Headers regarding create process

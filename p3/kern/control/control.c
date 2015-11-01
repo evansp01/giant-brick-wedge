@@ -29,6 +29,7 @@ void init_kernel_state(page_directory_t* dir)
     kernel_state.next_id = 1;
     kernel_state.dir = dir;
     mutex_init(&kernel_state.next_id_mutex);
+    mutex_init(&kernel_state.threads_mutex);
 }
 
 /** @brief Gives the next available process/thread id number
@@ -54,17 +55,22 @@ tcb_t *create_pcb_entry(pcb_t *parent_pcb)
 
     if (parent_pcb != NULL) {
         INIT_ELEM(entry, siblings);
+        mutex_lock(&parent_pcb->children_mutex);
         INSERT(&parent_pcb->children, entry, siblings);
+        mutex_unlock(&parent_pcb->children_mutex);
     }
 
     /* scheduler lists */
     INIT_STRUCT(&entry->children);
     INIT_STRUCT(&entry->threads);
+    mutex_init(&entry->children_mutex);
+    mutex_init(&entry->threads_mutex);
 
     entry->id = get_next_id();
     entry->exit_status = 0;
     entry->state = NOTYET;
     entry->num_threads = 0;
+    mutex_init(&entry->num_threads_mutex);
 
     if (parent_pcb != NULL)
         entry->parent_id = parent_pcb->id;
@@ -99,18 +105,28 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb)
     Q_INIT_ELEM(entry, pcb_threads);
     Q_INIT_ELEM(entry, runnable_threads);
     
-    // Scheduler lists
+    // Scheduler thread list
+    mutex_lock(&kernel_state.threads_mutex);
     INSERT(&kernel_state.threads, entry, all_threads);
+    mutex_unlock(&kernel_state.threads_mutex);
+    
+    // Parent thread list
+    mutex_lock(&parent_pcb->threads_mutex);
     INSERT(&parent_pcb->threads, entry, pcb_threads);
-
+    mutex_unlock(&parent_pcb->threads_mutex);
+    
     if (parent_pcb->num_threads == 0)
         entry->id = parent_pcb->id;
     else
         entry->id = get_next_id();
+    
+    mutex_lock(&parent_pcb->num_threads_mutex);
+    parent_pcb->num_threads++;
+    mutex_unlock(&parent_pcb->num_threads_mutex);
+    
     entry->parent = parent_pcb;
     entry->kernel_stack = stack;
     entry->state = NOTYET;
-    parent_pcb->num_threads++;
 
     // Store pointer to tcb at the top of the kernel stack
     *((tcb_t **)stack) = entry;
