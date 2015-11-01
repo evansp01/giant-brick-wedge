@@ -1,5 +1,6 @@
 #include <vm.h>
 #include <utilities.h>
+#include <string.h>
 
 typedef int (*vm_operator)(entry_t*, entry_t*, address_t, int);
 
@@ -203,3 +204,14 @@ int vm_set_readonly(void* cr3, void* start, int size)
 {
     return vm_map_pages(cr3, start, size, vm_set_readonly_h) == 0;
 }
+
+int get_packet(void* packet, void* esi, size_t size)
+{
+    if (vm_user_can_read((void*)get_cr3(), esi, size)) {
+        memcpy(packet, esi, size);
+        return 0;
+    }
+    return -1;
+}
+
+

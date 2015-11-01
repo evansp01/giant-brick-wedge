@@ -17,15 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-int get_packet(void* packet, void* esi, size_t size)
-{
-    if (vm_user_can_read((void*)get_cr3(), esi, size)) {
-        memcpy(packet, esi, size);
-        return 0;
-    }
-    return -1;
-}
-
 /** @brief Handler function for fork()
  *
  *  @return void
