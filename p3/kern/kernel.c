@@ -47,6 +47,8 @@ void timer(unsigned int ticks)
     return;
 }
 
+void init_malloc();
+
 /** @brief Kernel entrypoint.
  *
  *  This is the entrypoint for the kernel.
@@ -60,6 +62,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     install_syscalls();
     init_frame_alloc();
     init_virtual_memory();
+    init_malloc();
     init_scheduler();
     init_kernel_state();
 
@@ -73,7 +76,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     //test_process_vm();
 
     // Create 1st idle process
-    tcb_t *tcb = new_program("knife", 0, NULL);
+    tcb_t *tcb = new_program("coolness", 0, NULL);
     if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
 

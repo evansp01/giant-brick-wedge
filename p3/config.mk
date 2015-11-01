@@ -137,7 +137,8 @@ KERNEL_OBJS +=${KERN_VM}
 # or init unless you are writing your own, and don't do that unless
 # you have a really good reason to do so.
 #
-410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper knife
+410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper knife \
+	merchant peon coolness
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

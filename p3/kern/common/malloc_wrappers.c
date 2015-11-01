@@ -9,15 +9,26 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <malloc_internal.h>
+#include <mutex.h>
+
+mutex_t lock;
+
+void init_malloc()
+{
+    mutex_init(&lock);
+}
 
 /** @brief Allocates memory of size bytes
  *
  *  @param size Size of memory in bytes to be allocated
  *  @return Pointer to the allocated memory
  **/
-void *malloc(size_t size)
+void* malloc(size_t size)
 {
-    return _malloc(size);
+    mutex_lock(&lock);
+    void* stuff = _malloc(size);
+    mutex_unlock(&lock);
+    return stuff;
 }
 
 /** @brief Allocates aligned memory of size bytes
@@ -26,9 +37,12 @@ void *malloc(size_t size)
  *  @param size Size of memory in bytes to be allocated
  *  @return Pointer to the allocated memory
  **/
-void *memalign(size_t alignment, size_t size)
+void* memalign(size_t alignment, size_t size)
 {
-    return _memalign(alignment, size);
+    mutex_lock(&lock);
+    void* stuff = _memalign(alignment, size);
+    mutex_unlock(&lock);
+    return stuff;
 }
 
 /** @brief Allocates memory for an array of elements
@@ -37,9 +51,12 @@ void *memalign(size_t alignment, size_t size)
  *  @param eltsize Size of each array element in bytes
  *  @return Pointer to the allocated memory
  **/
-void *calloc(size_t nelt, size_t eltsize)
+void* calloc(size_t nelt, size_t eltsize)
 {
-    return _calloc(nelt, eltsize);
+    mutex_lock(&lock);
+    void* stuff = _calloc(nelt, eltsize);
+    mutex_unlock(&lock);
+    return stuff;
 }
 
 /** @brief Changes the size of the given memory block
@@ -48,9 +65,12 @@ void *calloc(size_t nelt, size_t eltsize)
  *  @param new_size Size of the desired new memory block
  *  @return Pointer to the allocated memory
  **/
-void *realloc(void *buf, size_t new_size)
+void* realloc(void* buf, size_t new_size)
 {
-    return _realloc(buf, new_size);
+    mutex_lock(&lock);
+    void* stuff = _realloc(buf, new_size);
+    mutex_unlock(&lock);
+    return stuff;
 }
 
 /** @brief Frees the given memory block
@@ -58,9 +78,11 @@ void *realloc(void *buf, size_t new_size)
  *  @param buf Pointer to the memory block to be freed
  *  @return void
  **/
-void free(void *buf)
+void free(void* buf)
 {
+    mutex_lock(&lock);
     _free(buf);
+    mutex_unlock(&lock);
 }
 
 /** @brief Safe version of malloc
@@ -68,9 +90,12 @@ void free(void *buf)
  *  @param size Size of memory in bytes to be allocated
  *  @return Pointer to the allocated memory
  **/
-void *smalloc(size_t size)
+void* smalloc(size_t size)
 {
-    return _smalloc(size);
+    mutex_lock(&lock);
+    void* stuff = _smalloc(size);
+    mutex_unlock(&lock);
+    return stuff;
 }
 
 /** @brief Safe version of memalign
@@ -79,9 +104,12 @@ void *smalloc(size_t size)
  *  @param size Size of memory in bytes to be allocated
  *  @return Pointer to the allocated memory
  **/
-void *smemalign(size_t alignment, size_t size)
+void* smemalign(size_t alignment, size_t size)
 {
-    return _smemalign(alignment, size);
+    mutex_lock(&lock);
+    void* stuff = _smemalign(alignment, size);
+    mutex_unlock(&lock);
+    return stuff;
 }
 
 /** @brief Safe version of free
@@ -90,9 +118,9 @@ void *smemalign(size_t alignment, size_t size)
  *  @param size Size of memory to be freed
  *  @return void
  **/
-void sfree(void *buf, size_t size)
+void sfree(void* buf, size_t size)
 {
+    mutex_lock(&lock);
     _sfree(buf, size);
+    mutex_unlock(&lock);
 }
-
-

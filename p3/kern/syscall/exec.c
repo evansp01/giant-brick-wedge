@@ -208,7 +208,7 @@ uint32_t setup_argv(int argc, char** argv, int argv_total)
     int i;
     char* strings_start = (char*)(STACK_HIGH - argv_total);
     char* current_string = strings_start;
-    char** pointers_start = (char**)(strings_start - argc);
+    char** pointers_start = ((char**)strings_start) - argc;
     for (i = 0; i < argc; i++) {
         pointers_start[i] = current_string;
         int copied = strcpy_len(current_string, argv[i]);
@@ -233,7 +233,7 @@ uint32_t setup_main_stack(int argc, char** argv, int argv_total, uint32_t stack_
     PUSH_STACK(stack_current, argv_start, uint32_t);
     PUSH_STACK(stack_current, argc, uint32_t);
     PUSH_STACK(stack_current, 0xDEAD1337, uint32_t);
-    return (uint32_t)(stack_current - 1);
+    return (uint32_t)(stack_current);
 }
 
 uint32_t stack_space(int argvlen, int argc)
