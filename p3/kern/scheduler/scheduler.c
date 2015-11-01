@@ -38,14 +38,27 @@ void init_scheduler()
 void run_next()
 {
     disable_interrupts();
+    tcb_t *print;
+    lprintf("Queue start");
+    Q_FOREACH(print, &runnable, runnable_threads){
+        lprintf("Thread %d is in the queue", print->id);
+    }
+    lprintf("Queue end");
     
     if (!Q_IS_EMPTY(&runnable)) {
         tcb_t *curr_tcb = get_tcb();
-        schedule(curr_tcb);
+        if(scheduled_tcb == NULL){
+            schedule(curr_tcb);
+        } else {
+            schedule(scheduled_tcb);
+        }
         tcb_t *next_tcb = Q_GET_FRONT(&runnable);
         scheduled_tcb = next_tcb;
         Q_REMOVE(&runnable, next_tcb, runnable_threads);
-        switch_context(next_tcb->saved_esp, curr_tcb);
+        lprintf("Timer -- Switching from %d to %d", curr_tcb->id, next_tcb->id);
+        if(curr_tcb->id != next_tcb->id){
+            switch_context_ppd(curr_tcb, next_tcb);
+        }
     }
     
     enable_interrupts();
@@ -60,8 +73,10 @@ void schedule(tcb_t *tcb)
 {
     // TODO: Need to disable interrupts when adding to queue?
     //       Or maybe switch to using a mutex to lock?    
+    disable_interrupts();
     tcb->state = RUNNABLE;
     Q_INSERT_TAIL(&runnable, tcb, runnable_threads);
+    enable_interrupts();
 }
 
 /** @brief Re-schedule the thread if it was scheduled at the previous timer tick

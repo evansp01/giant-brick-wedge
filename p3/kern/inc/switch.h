@@ -19,6 +19,7 @@
  *  @return Void
  **/
 void switch_context(void *stack, tcb_t *tcb);
+void switch_context_ppd(tcb_t* from, tcb_t* to);
 
 /** @brief Get the current value of esp
  *  @return The value of esp

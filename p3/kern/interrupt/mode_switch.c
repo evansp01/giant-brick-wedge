@@ -21,8 +21,15 @@
  */
 void set_regs()
 {
-    tcb_t *tcb = get_tcb();
-    pcb_t *pcb = tcb->parent;
+    tcb_t* tcb = get_tcb();
+    pcb_t* pcb = tcb->parent;
     set_esp0((uint32_t)tcb->kernel_stack);
     switch_ppd(&pcb->directory);
+}
+
+void first_user_c()
+{
+    tcb_t* tcb = get_tcb();
+    lprintf("Running %d for the first time", tcb->id);
+    switch_ppd(&tcb->parent->directory);
 }
