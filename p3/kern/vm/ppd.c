@@ -57,7 +57,7 @@ int init_ppd_from(ppd_t* ppd, ppd_t* from)
     //temporarily use identity mapping
     from->dir = virtual_memory.identity;
     switch_ppd(from);
-    int status = copy_page_tables(from_dir, ppd->dir);
+    int status = copy_page_tables(ppd->dir, from_dir);
     from->dir = from_dir;
     switch_ppd(from);
     return status;

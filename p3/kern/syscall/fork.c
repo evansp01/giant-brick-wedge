@@ -84,8 +84,8 @@ int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
 
 /** @brief Copies the page tables into a new process
  *
- *  @param dir_parent PCB of parent process
  *  @param dir_child PCB of child process
+ *  @param dir_parent PCB of parent process
  *  @return Zero on success, an integer less than zero on failure
  **/
 int copy_page_tables(page_directory_t* dir_child, page_directory_t* dir_parent)
