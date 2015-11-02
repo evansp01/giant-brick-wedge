@@ -48,12 +48,10 @@ void run_next()
         tcb_t *next_tcb = Q_GET_FRONT(&runnable);
         scheduled_tcb = next_tcb;
         Q_REMOVE(&runnable, next_tcb, runnable_threads);
-        lprintf("Timer -- Switching from %d to %d", curr_tcb->id, next_tcb->id);
         if(curr_tcb->id != next_tcb->id){
             switch_context_ppd(curr_tcb, next_tcb);
         }
     }
-    
     enable_interrupts();
 }
 
@@ -70,18 +68,5 @@ void schedule(tcb_t *tcb)
     tcb->state = RUNNABLE;
     Q_INSERT_TAIL(&runnable, tcb, runnable_threads);
     enable_interrupts();
-}
-
-/** @brief Re-schedule the thread if it was scheduled at the previous timer tick
- *
- *  @param tcb Pointer to tcb of thread to schedule
- *  @return void
- */
-void cond_schedule(tcb_t *tcb)
-{
-    // Re-schedule only if yield did not occur between timer ticks
-    if (tcb == scheduled_tcb) {
-        schedule(tcb);
-    }
 }
 

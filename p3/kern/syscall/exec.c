@@ -248,7 +248,6 @@ uint32_t stack_space(int argvlen, int argc)
 int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
     uint32_t stack_size = STACK_HIGH - stack_low;
-    lprintf("start 0x%lx, size 0x%lx", stack_low, stack_size);
     return allocate_pages(ppd->dir, (void*)stack_low, stack_size, e_write_page);
 }
 

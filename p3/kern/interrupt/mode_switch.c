@@ -30,6 +30,5 @@ void set_regs()
 void first_user_c()
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Running %d for the first time", tcb->id);
     switch_ppd(&tcb->parent->directory);
 }

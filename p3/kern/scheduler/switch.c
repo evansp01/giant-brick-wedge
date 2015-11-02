@@ -15,10 +15,8 @@
 
 void switch_context_ppd(tcb_t* from, tcb_t* to)
 {
-    lprintf("Switching from %d to %d", from->id, to->id);
     switch_ppd(&to->parent->directory);
     switch_context(to->saved_esp, from);
-    lprintf("Now running %d", from->id);
 }
 
 /** @brief Yields execution to another thread
@@ -46,9 +44,8 @@ int yield(int yield_tid)
     Q_FOREACH(tcb, &kernel_state.threads, all_threads) {
         if (tcb->id == yield_tid) {
             disable_interrupts();
-            lprintf("Yield -- Switching from %d to %d", p_tcb->id, tcb->id);
             switch_context_ppd(p_tcb, tcb);
-            enable_interrupts(); // TODO: Switch to scheduler mutex?
+            enable_interrupts();
             return 0;
         }
     }
