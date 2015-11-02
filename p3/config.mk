@@ -138,7 +138,8 @@ KERNEL_OBJS +=${KERN_VM}
 # you have a really good reason to do so.
 #
 410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper knife \
-	merchant peon coolness
+	merchant peon coolness getpid_test1 loader_test1 loader_test2 \
+    exec_nonexist
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

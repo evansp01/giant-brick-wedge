@@ -331,5 +331,5 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         free_ppd(&old_dir);
     }
     free(k_space);
-    return 0;
+    return status;
 }
