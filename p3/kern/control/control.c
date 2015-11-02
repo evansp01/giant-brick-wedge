@@ -131,19 +131,6 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb)
     return entry;
 }
 
-/** @brief Copies the kernel stack from a parent to child process
- *
- *  @param tcb_parent Pointer to parent tcb
- *  @param tcb_child Pointer to child tcb
- *  @return void
- **/
-void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
-{
-    uint32_t child_addr = (uint32_t)tcb_child->kernel_stack & 0xFFFFF000;
-    uint32_t parent_addr = (uint32_t)tcb_parent->kernel_stack & 0xFFFFF000;
-    // PAGE_SIZE-8 ensures that the pointer to tcb is not overwritten
-    memcpy((void*)child_addr, (void*)parent_addr, PAGE_SIZE-8);
-}
 
 /** @brief Gets the tcb from the top of the kernel stack
  *

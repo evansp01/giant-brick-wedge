@@ -38,13 +38,6 @@ void init_scheduler()
 void run_next()
 {
     disable_interrupts();
-    tcb_t *print;
-    lprintf("Queue start");
-    Q_FOREACH(print, &runnable, runnable_threads){
-        lprintf("Thread %d is in the queue", print->id);
-    }
-    lprintf("Queue end");
-    
     if (!Q_IS_EMPTY(&runnable)) {
         tcb_t *curr_tcb = get_tcb();
         if(scheduled_tcb == NULL){
