@@ -67,8 +67,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     init_kernel_state();
 
     // TODO: Is it ok not to have interrupts yet here?
-    //       Interrupts trigger a fault since there is no pcb entry yet
-    //       and set_regs() needs to reference the pcb
+    //       
 
 
     // Run kernel tests (TODO: Free/reallocate frames)
@@ -80,8 +79,10 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
 
-    enable_interrupts();
     // Switch to 1st idle thread
+    // Interrupts cannot yet be enabled, as they will trigger a fault since
+    // there is no pcb entry for this kernel stack
+    // Interrupts will be enabled upon switching to user mode
     first_entry_user_mode(tcb->saved_esp);
 
     while (1) {

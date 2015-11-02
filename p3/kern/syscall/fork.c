@@ -50,6 +50,10 @@ void fork_syscall(ureg_t state)
 
     // Schedule the child
     schedule(tcb_child);
+    
+    // Register child process for simics user space debugging
+    sim_reg_child(tcb_child->parent->directory.dir,
+                  tcb_parent->parent->directory.dir);
 
     // TODO: Copy software exception handler (if installed)
 

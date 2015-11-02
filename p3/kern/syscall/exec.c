@@ -289,6 +289,10 @@ tcb_t* new_program(char* fname, int argc, char** argv)
         //TODO: free tcb
         return NULL;
     }
+    
+    // Register process for simics user space debugging
+    sim_reg_process(tcb_entry->parent->directory.dir, fname);
+    
     return tcb_entry;
 }
 
@@ -328,6 +332,10 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
     } else {
         //if we succeeded free the old directory
         free_ppd(&old_dir);
+        // De-register the previously running process in simics
+        sim_unreg_process(old_dir.dir);
+        // Register the new process for simics user space debugging
+        sim_reg_process(tcb->parent->directory.dir, k_space);
     }
     free(k_space);
     return status;
