@@ -5,8 +5,6 @@
 #include "vm_internal.h"
 #include <stdlib.h>
 
-int copy_page_tables(page_directory_t* dir_parent, page_directory_t* dir_child);
-
 int init_ppd(ppd_t* ppd)
 {
     ppd->frames = 0;
@@ -57,7 +55,7 @@ int init_ppd_from(ppd_t* ppd, ppd_t* from)
     //temporarily use identity mapping
     from->dir = virtual_memory.identity;
     switch_ppd(from);
-    int status = copy_page_tables(ppd->dir, from_dir);
+    int status = copy_page_dir(ppd->dir, from_dir);
     from->dir = from_dir;
     switch_ppd(from);
     return status;

@@ -25,7 +25,8 @@ typedef struct {
     uint32_t dirty : 1;         /* bit 6 */
     uint32_t page_size : 1;     /* bit 7 */
     uint32_t global : 1;        /* bit 8 */
-    uint32_t unused : 3;        /* bit 9  - 11 */
+    uint32_t zfod : 1;          /* bit 9 */
+    uint32_t unused : 2;        /* bit 10  - 11 */
     uint32_t address : 20;      /* bit 12 - 31 */
 } entry_t;
 
@@ -56,6 +57,7 @@ extern const entry_t e_kernel_global;
 extern const entry_t e_kernel_local;
 extern const entry_t e_read_page;
 extern const entry_t e_write_page;
+extern const entry_t e_zfod_page;
 
 
 void invalidate_page(void *page);
@@ -68,18 +70,23 @@ entry_t* get_table_entry(void* address, page_table_t* table);
 void* get_address(void* address, void* page);
 void turn_on_vm();
 void zero_frame(void* frame);
-void copy_frame(void* frame, void* from);
 page_directory_t* alloc_page_directory();
 page_directory_t* alloc_kernel_directory();
 page_table_t* alloc_page_table();
 void free_page_directory(page_directory_t* dir);
 int allocate_pages(ppd_t *ppd, void* start, size_t size, entry_t model);
 int page_bytes_left(void* address);
+int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent);
 
 
+int is_user(entry_t* table, entry_t* dir);
+int is_write(entry_t* table);
+int is_zfod(entry_t* table);
+int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir);
 //page table manipulation
 //headers for frame alloc
 void init_frame_alloc();
+void* get_zero_page();
 int alloc_frame(void* virtual, entry_t* table, entry_t model);
 int kernel_alloc_frame(entry_t* table, entry_t model);
 void free_frame(void* virtual, void *physical);

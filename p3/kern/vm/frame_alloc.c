@@ -21,7 +21,7 @@ static struct frame_alloc {
     int total_frames;
     int free_frames;
     int next_physical_frame;
-    uint32_t *next_frame;
+    uint32_t* next_frame;
     void* zero_page;
     mutex_t lock;
 } frames;
@@ -47,8 +47,13 @@ static void* next_physical_frame()
     }
     int frame_index = frames.next_physical_frame;
     frames.next_physical_frame++;
-    uint32_t frame = USER_MEM_START + PAGE_SIZE*frame_index;
+    uint32_t frame = USER_MEM_START + PAGE_SIZE * frame_index;
     return (void*)frame;
+}
+
+void* get_zero_page()
+{
+    return frames.zero_page;
 }
 
 /** @brief Initializes the frame allocator
@@ -75,9 +80,17 @@ void init_frame_alloc()
 int alloc_frame(void* virtual, entry_t* table, entry_t model)
 {
     mutex_lock(&frames.lock);
+    // save the user attribute of the model
+    int user_page = model.user;
+    int zfod_page = model.zfod;
+    // we want kernel mode while we map to prevent info leaks
+    model.user = 0;
+    model.zfod = 1;
     if (frames.next_frame != 0) {
         //allocate from implicit frame list
         *table = create_entry(frames.next_frame, model);
+        // map it in kernel mode so we can zero it
+        invalidate_page((void*)virtual);
         //retreive the implicit frame pointer
         frames.next_frame = *((uint32_t**)virtual);
     } else {
@@ -88,10 +101,17 @@ int alloc_frame(void* virtual, entry_t* table, entry_t model)
         }
         //allocate from physical frame list
         *table = create_entry(physical, model);
+        // map it in kernel mode so we can zero it
+        invalidate_page((void*)virtual);
     }
     frames.free_frames--;
-    zero_frame(virtual);
     mutex_unlock(&frames.lock);
+    zero_frame(virtual);
+    // reset the user flag
+    table->user = user_page;
+    table->zfod = zfod_page;
+    // now that the frame is zeroed others can read it
+    invalidate_page((void*)virtual);
     return 0;
 }
 
@@ -110,7 +130,7 @@ int kernel_alloc_frame(entry_t* table, entry_t model)
         physical = frames.next_frame;
         *table = create_entry(physical, model);
         //retreive the implicit frame pointer
-        frames.next_frame = (uint32_t *)*physical;
+        frames.next_frame = (uint32_t*)*physical;
     } else {
         physical = next_physical_frame();
         if (physical == NULL) {
@@ -121,8 +141,8 @@ int kernel_alloc_frame(entry_t* table, entry_t model)
         *table = create_entry(physical, model);
     }
     frames.free_frames--;
-    zero_frame(physical);
     mutex_unlock(&frames.lock);
+    zero_frame(physical);
     return 0;
 }
 

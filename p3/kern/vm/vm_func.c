@@ -5,7 +5,7 @@
 
 typedef int (*vm_operator)(entry_t*, entry_t*, address_t, int);
 
-int vm_map_pages(ppd_t *ppd, void* start, int size, vm_operator op)
+int vm_map_pages(ppd_t* ppd, void* start, int size, vm_operator op)
 {
     int i, j;
     page_directory_t* dir = ppd->dir;
@@ -44,7 +44,7 @@ int vm_map_pages(ppd_t *ppd, void* start, int size, vm_operator op)
     return value;
 }
 
-int vm_user_can_alloc(ppd_t *ppd, void* start, int size)
+int vm_user_can_alloc(ppd_t* ppd, void* start, int size)
 {
     int i, j;
     page_directory_t* dir = ppd->dir;
@@ -81,7 +81,7 @@ int vm_user_can_alloc(ppd_t *ppd, void* start, int size)
     return 1;
 }
 
-int vm_get_address(ppd_t *ppd, void* addr, entry_t* table, entry_t* dir)
+int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir)
 {
     page_directory_t* page_dir = ppd->dir;
     entry_t* dir_entry = get_dir_entry(addr, page_dir);
@@ -93,26 +93,37 @@ int vm_get_address(ppd_t *ppd, void* addr, entry_t* table, entry_t* dir)
     if (!table_entry->present) {
         return -1;
     }
-    *table = *table_entry;
-    *dir = *dir_entry;
+    *table = table_entry;
+    *dir = dir_entry;
     return page_bytes_left(addr);
 }
+
 
 int is_user(entry_t* table, entry_t* dir)
 {
     return table->user && dir->user;
 }
 
-int vm_user_strlen(ppd_t *ppd, char* start)
+int is_write(entry_t* table)
 {
-    entry_t table, dir;
+    return table->write || table->zfod;
+}
+
+int is_zfod(entry_t* table)
+{
+    return (get_entry_address(*table) == get_zero_page());
+}
+
+int vm_user_strlen(ppd_t* ppd, char* start)
+{
+    entry_t* table, *dir;
     int space = 0;
     int i, length;
     for (;;) {
-        if ((length = vm_get_address(ppd, start+space, &table, &dir)) < 0) {
+        if ((length = vm_get_address(ppd, start + space, &table, &dir)) < 0) {
             return -1;
         }
-        if (!is_user(&table, &dir)) {
+        if (!is_user(table, dir)) {
             return -1;
         }
         for (i = 0; i < length; i++) {
@@ -124,16 +135,16 @@ int vm_user_strlen(ppd_t *ppd, char* start)
     }
 }
 
-int vm_user_arrlen(ppd_t *ppd, char** start)
+int vm_user_arrlen(ppd_t* ppd, char** start)
 {
-    entry_t table, dir;
+    entry_t* table, *dir;
     int space = 0;
     int i, length;
     for (;;) {
-        if ((length = vm_get_address(ppd, start+space, &table, &dir)) < 0) {
+        if ((length = vm_get_address(ppd, start + space, &table, &dir)) < 0) {
             return -1;
         }
-        if (!is_user(&table, &dir)) {
+        if (!is_user(table, dir)) {
             return -1;
         }
         for (i = 0; i < length; i++) {
@@ -148,7 +159,7 @@ int vm_user_arrlen(ppd_t *ppd, char** start)
 int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr, int status)
 {
 
-    if (is_user(table, dir) && table->write) {
+    if (is_user(table, dir) && is_write(table)) {
         return 0;
     }
     return -3;
@@ -167,8 +178,14 @@ int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr, int status)
     if (!is_user(table, dir)) {
         return -3;
     }
-    if (!table->write) {
-        table->write = 1;
+    if (!is_write(table)) {
+        if (is_zfod(table)) {
+            // set the zfod write bit
+            table->zfod = 1;
+        } else {
+            // set the write bit
+            table->write = 1;
+        }
         invalidate_page(AS_TYPE(addr, void*));
     }
     return 0;
@@ -179,6 +196,7 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr, int status)
     if (!is_user(table, dir)) {
         return -3;
     }
+    // no worries about zfod stuff
     if (table->write) {
         table->write = 0;
         invalidate_page(AS_TYPE(addr, void*));
@@ -186,27 +204,27 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr, int status)
     return 0;
 }
 
-int vm_user_can_write(ppd_t *ppd, void* start, int size)
+int vm_user_can_write(ppd_t* ppd, void* start, int size)
 {
     return vm_map_pages(ppd, start, size, vm_user_write_h) == 0;
 }
 
-int vm_user_can_read(ppd_t *ppd, void* start, int size)
+int vm_user_can_read(ppd_t* ppd, void* start, int size)
 {
     return vm_map_pages(ppd, start, size, vm_user_read_h) == 0;
 }
 
-int vm_set_readwrite(ppd_t *ppd, void* start, int size)
+int vm_set_readwrite(ppd_t* ppd, void* start, int size)
 {
     return vm_map_pages(ppd, start, size, vm_set_readwrite_h) == 0;
 }
 
-int vm_set_readonly(ppd_t *ppd, void* start, int size)
+int vm_set_readonly(ppd_t* ppd, void* start, int size)
 {
     return vm_map_pages(ppd, start, size, vm_set_readonly_h) == 0;
 }
 
-int vm_read(ppd_t *ppd, void* buffer, void* start, size_t size)
+int vm_read(ppd_t* ppd, void* buffer, void* start, size_t size)
 {
     if (vm_user_can_read(ppd, start, size)) {
         memcpy(buffer, start, size);
@@ -215,7 +233,7 @@ int vm_read(ppd_t *ppd, void* buffer, void* start, size_t size)
     return -1;
 }
 
-int vm_write(ppd_t *ppd, void* buffer, void* start, size_t size)
+int vm_write(ppd_t* ppd, void* buffer, void* start, size_t size)
 {
     if (vm_user_can_write(ppd, start, size)) {
         memcpy(start, buffer, size);
@@ -233,16 +251,13 @@ int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
     int end_index = end;
     for (j = start_index; j <= end_index; j++) {
         location.page_table_index = j;
-        void *virtual = AS_TYPE(location, void*);
+        void* virtual = AS_TYPE(location, void*);
         entry_t* table_entry = &table->pages[j];
         if (table_entry->present) {
             lprintf("WARN: page already allocated at %x", (int)virtual);
             return -3;
         }
-        if(alloc_frame(virtual, table_entry, model) < 0){
-            lprintf("Ran out of frames to allocate");
-            return -2;
-        }
+        *table_entry = create_entry(get_zero_page(), model);
     }
     return 0;
 }
@@ -254,7 +269,7 @@ int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
  *  @param model The permissions to use for created page table entries
  *  @return zero on success less than zero on failure
  **/
-int allocate_pages(ppd_t *ppd, void* start, size_t size, entry_t model)
+int allocate_pages(ppd_t* ppd, void* start, size_t size, entry_t model)
 {
     page_directory_t* dir = ppd->dir;
     char* end = ((char*)start) + size - 1;
@@ -289,10 +304,11 @@ int allocate_pages(ppd_t *ppd, void* start, size_t size, entry_t model)
     return 0;
 }
 
-int vm_alloc_readonly(ppd_t *ppd, void *start, size_t size){
+int vm_alloc_readonly(ppd_t* ppd, void* start, size_t size)
+{
     return allocate_pages(ppd, start, size, e_read_page);
 }
-int vm_alloc_readwrite(ppd_t *ppd, void *start, size_t size){
-    return allocate_pages(ppd, start, size, e_write_page);
+int vm_alloc_readwrite(ppd_t* ppd, void* start, size_t size)
+{
+    return allocate_pages(ppd, start, size, e_zfod_page);
 }
-

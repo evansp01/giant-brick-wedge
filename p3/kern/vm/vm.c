@@ -15,8 +15,7 @@ COMPILE_TIME_ASSERT(sizeof(entry_t) == sizeof(uint32_t));
 COMPILE_TIME_ASSERT(sizeof(page_directory_t) == PAGE_SIZE);
 COMPILE_TIME_ASSERT(sizeof(page_table_t) == PAGE_SIZE);
 
-struct virtual_memory virtual_memory = {0};
-
+struct virtual_memory virtual_memory = { 0 };
 
 const entry_t e_kernel_dir = {
     .present = 1,
@@ -51,7 +50,13 @@ const entry_t e_write_page = {
     .user = 1
 };
 
-void print_entry(entry_t *entry)
+const entry_t e_zfod_page = {
+    .present = 1,
+    .zfod = 1,
+    .user = 1
+};
+
+void print_entry(entry_t* entry)
 {
     lprintf("present:%d, write:%d, user:%d, write_through:%d",
             entry->present, entry->write, entry->user, entry->write_through);
@@ -144,7 +149,7 @@ physical_table(void* frame, int table_idx, int pages, entry_t init)
     //iterate over the physical pages which belong in this table
     for (page_idx = 0; page_idx < pages; page_idx++) {
         //add the page to the page table
-        uint32_t page = table_start + PAGE_SIZE*page_idx;
+        uint32_t page = table_start + PAGE_SIZE * page_idx;
         table->pages[page_idx] = create_entry((void*)page, init);
     }
     return table;
@@ -170,7 +175,7 @@ void init_virtual_memory()
     virtual_memory.identity = alloc_kernel_directory();
     set_cr3((uint32_t)virtual_memory.identity);
     set_cr4(get_cr4() | CR4_PGE);
-    set_cr0(get_cr0() | CR0_PG);
+    set_cr0(get_cr0() | CR0_PG | CR0_WP);
 }
 
 /** @brief Allocate and initialize a page directory
@@ -243,6 +248,27 @@ page_directory_t* alloc_kernel_directory()
     return dir;
 }
 
+int is_present_user(entry_t* entry)
+{
+    return entry->present && entry->user;
+}
+
+int copy_frame(entry_t* child_entry, entry_t* parent_entry)
+{
+    if (is_zfod(parent_entry)) {
+        *child_entry = create_entry(get_zero_page(), *parent_entry);
+        return 0;
+    }
+    // Create copy of page
+    if (kernel_alloc_frame(child_entry, *parent_entry) < 0) {
+        lprintf("Ran out of frames to allocate");
+        return -1;
+    }
+    // Copy frame data
+    memcpy(get_entry_address(*child_entry),
+           get_entry_address(*parent_entry), PAGE_SIZE);
+    return 0;
+}
 
 /** @brief Copies the page frames into a new process
  *
@@ -250,24 +276,19 @@ page_directory_t* alloc_kernel_directory()
  *  @param table_child PCB of child process
  *  @return Zero on success, an integer less than zero on failure
  **/
-int copy_frames(page_table_t *table_parent, page_table_t *table_child)
+int copy_page_table(page_table_t* table_child, page_table_t* table_parent)
 {
     int i_page;
     for (i_page = 0; i_page < PAGES_PER_TABLE; i_page++) {
 
         // Check if it is a present user page table entry
-        entry_t *table_entry_parent = &table_parent->pages[i_page];
-        if ((table_entry_parent->present)&&(table_entry_parent->user)) {
-
-            // Create copy of page
-            entry_t *table_entry_child = &table_child->pages[i_page];
-            if(kernel_alloc_frame(table_entry_child, *table_entry_parent) < 0){
-                lprintf("Ran out of frames to allocate");
-                return -2;
-            }
-            // Copy frame data
-            memcpy(get_entry_address(*table_entry_child),
-                   get_entry_address(*table_entry_parent), PAGE_SIZE);
+        entry_t* parent_entry = &table_parent->pages[i_page];
+        if (!is_present_user(parent_entry)) {
+            continue;
+        }
+        entry_t* child_entry = &table_child->pages[i_page];
+        if (copy_frame(child_entry, parent_entry) < 0) {
+            return -1;
         }
     }
     return 0;
@@ -279,34 +300,33 @@ int copy_frames(page_table_t *table_parent, page_table_t *table_child)
  *  @param dir_parent PCB of parent process
  *  @return Zero on success, an integer less than zero on failure
  **/
-int copy_page_tables(page_directory_t* dir_child, page_directory_t* dir_parent)
+int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent)
 {
     // Copy memory regions
     int i_dir;
     for (i_dir = 0; i_dir < TABLES_PER_DIR; i_dir++) {
-
         // Check if it is a present user directory entry
-        entry_t *dir_entry_parent = &dir_parent->tables[i_dir];
-        if ((dir_entry_parent->present)&&(dir_entry_parent->user)) {
+        entry_t* dir_entry_parent = &dir_parent->tables[i_dir];
+        if (!is_present_user(dir_entry_parent)) {
+            continue;
+        }
 
-            // Create copy of page table
-            entry_t *dir_entry_child = &dir_child->tables[i_dir];
-            void* table = alloc_page_table();
-            if (table == NULL) {
-                lprintf("Ran out of kernel memory for page tables");
-                return -1;
-            }
-            *dir_entry_child = create_entry(table, *dir_entry_parent);
+        // Create copy of page table
+        entry_t* dir_entry_child = &dir_child->tables[i_dir];
+        void* table = alloc_page_table();
+        if (table == NULL) {
+            lprintf("Ran out of kernel memory for page tables");
+            return -1;
+        }
+        *dir_entry_child = create_entry(table, *dir_entry_parent);
+        // Get page table
+        page_table_t* table_child = get_entry_address(*dir_entry_child);
+        page_table_t* table_parent = get_entry_address(*dir_entry_parent);
 
-            // Get page table
-            page_table_t *table_parent = get_entry_address(*dir_entry_parent);
-            page_table_t *table_child = get_entry_address(*dir_entry_child);
-
-            // Copy page frames from parent to child
-            if (copy_frames(table_parent, table_child) < 0)
-                return -2;
+        // Copy page frames from parent to child
+        if (copy_page_table(table_child, table_parent) < 0) {
+            return -2;
         }
     }
     return 0;
 }
-

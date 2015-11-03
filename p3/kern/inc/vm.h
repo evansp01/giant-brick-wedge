@@ -47,4 +47,6 @@ int vm_user_can_alloc(ppd_t *ppd, void* start, int size);
 int vm_write(ppd_t *ppd, void* buffer, void* start, size_t size);
 int vm_read(ppd_t *ppd, void* buffer, void* start, size_t size);
 
+int vm_resolve_pagefault(ppd_t *ppd, uint32_t cr2, int error_code);
+
 #endif // PAGE_STRUCTS_H_
