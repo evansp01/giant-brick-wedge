@@ -9,8 +9,6 @@
 
 #include <control.h>
 #include <malloc.h>
-#include <lmm/lmm.h>
-#include <malloc/malloc_internal.h>
 #include <page.h>
 #include <simics.h>
 #include <string.h>
@@ -82,6 +80,15 @@ tcb_t *create_pcb_entry(pcb_t *parent_pcb)
     return tcb;
 }
 
+
+int get_thread_count(pcb_t *pcb)
+{
+    mutex_lock(&pcb->threads_mutex);
+    int thread_count =  pcb->num_threads;
+    mutex_unlock(&pcb->threads_mutex);
+    return thread_count;
+}
+
 /** @brief Creates a new pcb entry for the current process
  *
  *  @param parent_pcb PCB entry for the parent process
@@ -91,10 +98,12 @@ tcb_t *create_pcb_entry(pcb_t *parent_pcb)
 tcb_t *create_tcb_entry(pcb_t *parent_pcb)
 {
     tcb_t *entry = (tcb_t *)smalloc(sizeof(tcb_t));
-    
+    if(entry == NULL){
+        return NULL;
+    }
     uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
     if (mem == 0) {
-        panic("Cannot allocate kernel stack");
+        return NULL;
     }
     void *stack = (void *)(mem + PAGE_SIZE - (2*sizeof(int)));
 

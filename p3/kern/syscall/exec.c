@@ -46,12 +46,15 @@ void exec_syscall(ureg_t state)
         char* fname;
         char** argv;
     } packet;
+
     tcb_t* tcb = get_tcb();
+    if(get_thread_count(tcb->parent) > 1){
+        goto return_fail;
+    }
     ppd_t *dir = &tcb->parent->directory;
     // TODO: kill all other threads
     if (vm_read(dir, &packet, (void*)state.esi, sizeof(packet)) < 0) {
-        state.eax = -1;
-        return;
+        goto return_fail;
     }
     int flen, argc, argvlen = 0;
     if ((flen = vm_user_strlen(dir, packet.fname)) < 0) {

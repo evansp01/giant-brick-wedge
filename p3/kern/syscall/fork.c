@@ -12,11 +12,8 @@
 #include <malloc.h>
 #include <loader.h>
 #include <simics.h>
-#include <cr.h>
 #include <switch.h>
 #include <stdint.h>
-#include <seg.h>
-#include <eflags.h>
 #include <ureg.h>
 #include <mode_switch.h>
 #include <utilities.h>
@@ -31,7 +28,6 @@
  */
 void fork_syscall(ureg_t state)
 {
-    disable_interrupts();
     tcb_t* tcb_parent = get_tcb();
 
     // Copy memory regions to new memory
@@ -59,7 +55,6 @@ void fork_syscall(ureg_t state)
 
     // Return child tid to parent
     state.eax = tcb_child->id;
-    enable_interrupts();
 }
 
 /** @brief Copies the kernel stack from a parent to child process
@@ -98,11 +93,10 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
     pcb_t* pcb_parent = tcb_parent->parent;
 
     // Reject calls to fork for processes with more than one thread
-    if (pcb_parent->num_threads > 1) {
+    if(get_thread_count(pcb_parent) > 1){
         lprintf("Fork called on task with multiple threads");
         return NULL;
     }
-
     // Create copy of pcb & tcb
     tcb_t* tcb_child = create_pcb_entry(pcb_parent);
 
@@ -110,26 +104,11 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
     calc_saved_esp(tcb_parent, tcb_child, state);
 
     // Copy memory regions
-    if (copy_program(pcb_parent, tcb_child->parent) < 0) {
+    if(init_ppd_from(&tcb_child->parent->directory, &pcb_parent->directory)){
         lprintf("cannot copy program");
-        return 0;
+        return NULL;
     }
-
     return tcb_child;
-}
-
-/** @brief Copies the page directory tables into a new process
- *
- *  @param pcb_parent PCB of parent process
- *  @param pcb_child PCB of child process
- *  @return Zero on success, an integer less than zero on failure
- **/
-int copy_program(pcb_t* pcb_parent, pcb_t* pcb_child)
-{
-    if(init_ppd_from(&pcb_child->directory, &pcb_parent->directory)){
-        return -1;
-    }
-    return 0;
 }
 
 /** @brief Sets up a given thread stack for entry via context switch
