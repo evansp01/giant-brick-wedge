@@ -56,6 +56,8 @@ const entry_t e_zfod_page = {
     .user = 1
 };
 
+const entry_t e_unmapped = { 0 };
+
 void print_entry(entry_t* entry)
 {
     lprintf("present:%d, write:%d, user:%d, write_through:%d",

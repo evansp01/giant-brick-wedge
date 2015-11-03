@@ -151,11 +151,32 @@ void sleep_syscall(ureg_t state)
  */
 void new_pages_syscall(ureg_t state)
 {
+    struct {
+        void *start;
+        uint32_t size;
+    } packet;
+
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called new_pages. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    ppd_t *ppd = &tcb->parent->directory;
+    mutex_lock(&ppd->lock);
+    if(vm_read(ppd, &packet, (void *)state.esi, sizeof(packet)) < 0){
+        goto return_fail;
     }
+    if(!vm_user_can_alloc(ppd, packet.start, packet.size)){
+        goto return_fail;
+    }
+    if(vm_alloc_readwrite(ppd, packet.start, packet.size) < 0){
+        goto return_fail;
+    }
+    mutex_unlock(&ppd->lock);
+    state.eax = 0;
+    return;
+
+return_fail:
+    lprintf("New pages failed %lx %lx", (uint32_t)packet.start, packet.size);
+    mutex_unlock(&ppd->lock);
+    state.eax = -1;
+    return;
 }
 
 /** @brief The remove_pages syscall
@@ -165,10 +186,11 @@ void new_pages_syscall(ureg_t state)
 void remove_pages_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called remove_pages. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    ppd_t *ppd = &tcb->parent->directory;
+    mutex_lock(&ppd->lock);
+    int result = vm_free(ppd, (void*)state.esi);
+    mutex_unlock(&ppd->lock);
+    state.eax = result;
 }
 
 /** @brief The getchar syscall

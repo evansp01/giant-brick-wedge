@@ -58,7 +58,10 @@ extern const entry_t e_kernel_local;
 extern const entry_t e_read_page;
 extern const entry_t e_write_page;
 extern const entry_t e_zfod_page;
+extern const entry_t e_unmapped;
 
+int add_alloc(ppd_t* ppd, void* start, uint32_t size);
+int remove_alloc(ppd_t* ppd, void* start, uint32_t* size);
 
 void invalidate_page(void *page);
 entry_t create_entry(void* address, entry_t model);
