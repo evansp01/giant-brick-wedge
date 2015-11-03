@@ -253,7 +253,7 @@ uint32_t stack_space(int argvlen, int argc)
 
 int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
-    uint32_t stack_size = STACK_HIGH - stack_low;
+    uint32_t stack_size = STACK_HIGH - stack_low + 1;
     return vm_alloc_readwrite(ppd, (void*)stack_low, stack_size);
 }
 

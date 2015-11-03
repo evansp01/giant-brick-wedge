@@ -29,32 +29,33 @@
 void fork_syscall(ureg_t state)
 {
     tcb_t* tcb_parent = get_tcb();
+    //cant call fork with more than one thread
+    if(get_thread_count(tcb_parent->parent) > 1){
+        state.eax = -1;
+        return;
+    }
 
     // Copy memory regions to new memory
+    // TODO: refactor into thread_fork and fork parts
     tcb_t* tcb_child = create_copy(tcb_parent, &state);
     if(tcb_child == NULL){
         state.eax = -1;
         return;
     }
-
     // Copy kernel stack with return value of 0 for child
     state.eax = 0;
     copy_kernel_stack(tcb_parent, tcb_child);
-
+    // TODO: Copy software exception handler (if installed)
     // Setup stack for re-entry via context_switch
     setup_for_switch(tcb_child);
-
     // Schedule the child
     schedule(tcb_child);
-    
     // Register child process for simics user space debugging
     sim_reg_child(tcb_child->parent->directory.dir,
                   tcb_parent->parent->directory.dir);
-
-    // TODO: Copy software exception handler (if installed)
-
     // Return child tid to parent
     state.eax = tcb_child->id;
+
 }
 
 /** @brief Copies the kernel stack from a parent to child process
@@ -65,6 +66,7 @@ void fork_syscall(ureg_t state)
  **/
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
 {
+    //TODO: name this constant it shows up lots of places
     uint32_t child_addr = (uint32_t)tcb_child->kernel_stack & 0xFFFFF000;
     uint32_t parent_addr = (uint32_t)tcb_parent->kernel_stack & 0xFFFFF000;
     // PAGE_SIZE-8 ensures that the pointer to tcb is not overwritten
@@ -93,10 +95,6 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
     pcb_t* pcb_parent = tcb_parent->parent;
 
     // Reject calls to fork for processes with more than one thread
-    if(get_thread_count(pcb_parent) > 1){
-        lprintf("Fork called on task with multiple threads");
-        return NULL;
-    }
     // Create copy of pcb & tcb
     tcb_t* tcb_child = create_pcb_entry(pcb_parent);
 
@@ -127,4 +125,3 @@ void setup_for_switch(tcb_t *tcb)
 
     PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);
 }
-
