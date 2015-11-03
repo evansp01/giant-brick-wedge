@@ -3,7 +3,7 @@
 #include <string.h>
 #include "vm_internal.h"
 
-typedef int (*vm_operator)(entry_t*, entry_t*, address_t, int);
+typedef int (*vm_operator)(entry_t*, entry_t*, address_t);
 
 int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
 {
@@ -32,11 +32,7 @@ int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
         for (j = start_index; j <= end_index; j++) {
             location.page_table_index = j;
             entry_t* table_entry = &table->pages[j];
-            if (!table_entry->present) {
-                lprintf("Page table not present");
-                return -2;
-            }
-            if ((value = op(table_entry, dir_entry, location, value)) < 0) {
+            if ((value = op(table_entry, dir_entry, location)) < 0) {
                 return value;
             }
         }
@@ -98,10 +94,9 @@ int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir)
     return page_bytes_left(addr);
 }
 
-
 int is_user(entry_t* table, entry_t* dir)
 {
-    return table->user && dir->user;
+    return table->present && table->user && dir->user;
 }
 
 int is_write(entry_t* table)
@@ -156,7 +151,7 @@ int vm_user_arrlen(ppd_t* ppd, char** start)
     }
 }
 
-int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr, int status)
+int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr)
 {
 
     if (is_user(table, dir) && is_write(table)) {
@@ -165,7 +160,7 @@ int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr, int status)
     return -3;
 }
 
-int vm_user_read_h(entry_t* table, entry_t* dir, address_t addr, int status)
+int vm_user_read_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (is_user(table, dir)) {
         return 0;
@@ -173,7 +168,7 @@ int vm_user_read_h(entry_t* table, entry_t* dir, address_t addr, int status)
     return -3;
 }
 
-int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr, int status)
+int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (!is_user(table, dir)) {
         return -3;
@@ -191,7 +186,7 @@ int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr, int status)
     return 0;
 }
 
-int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr, int status)
+int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (!is_user(table, dir)) {
         return -3;
@@ -242,73 +237,87 @@ int vm_write(ppd_t* ppd, void* buffer, void* start, uint32_t size)
     return -1;
 }
 
-int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
-{
-    int j;
-    address_t location = { .page_dir_index = pdi };
-    page_table_t* table = (page_table_t*)ptable;
-    int start_index = start;
-    int end_index = end;
-    for (j = start_index; j <= end_index; j++) {
-        location.page_table_index = j;
-        void* virtual = AS_TYPE(location, void*);
-        entry_t* table_entry = &table->pages[j];
-        if (table_entry->present) {
-            lprintf("WARN: page already allocated at %x", (int)virtual);
-            return -3;
-        }
-        *table_entry = create_entry(get_zero_page(), model);
-    }
-    return 0;
-}
-
-/** @brief Allocates all pages in page table from start address to start+size
+/** @brief Allocates all page tables from start address to start+size
  *  @param cr3 The address of the page table
  *  @param start The virtual address to begin allocation at
  *  @param size The amount of virtual memory to allocate pages for
- *  @param model The permissions to use for created page table entries
  *  @return zero on success less than zero on failure
  **/
-int allocate_pages(ppd_t* ppd, void* start, uint32_t size, entry_t model)
+int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
 {
+    int i;
     page_directory_t* dir = ppd->dir;
     char* end = ((char*)start) + size - 1;
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
-    int i;
     if (size == 0) {
         return 0;
     }
     // allocate all relevant page tables
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
         entry_t* dir_entry = &dir->tables[i];
-        if (!dir_entry->present) {
-            void* frame = alloc_page_table();
-            if (frame == NULL) {
-                lprintf("Ran out of kernel memory for page tables");
-                return -1;
-            }
-            *dir_entry = create_entry(frame, e_user_dir);
+        if (dir_entry->present) {
+            continue;
         }
-        int start_index = 0;
-        int end_index = PAGES_PER_TABLE - 1;
-        if (i == vm_start.page_dir_index) {
-            start_index = vm_start.page_table_index;
+        void* frame = alloc_page_table();
+        if (frame == NULL) {
+            lprintf("Ran out of kernel memory for page tables");
+            return -1;
         }
-        if (i == vm_end.page_dir_index) {
-            end_index = vm_end.page_table_index;
-        }
-        void* table = get_entry_address(*dir_entry);
-        allocate_table(i, start_index, end_index, table, model);
+        *dir_entry = create_entry(frame, e_user_dir);
     }
+    // at this point the allocation has committed and must be performed
+    return 0;
+}
+
+int vm_alloc_readonly_h(entry_t* table, entry_t* dir, address_t addr)
+{
+    if(table->present){
+        lprintf("Error already allocated");
+        return -1;
+    }
+    *table = create_entry(get_zero_page(), e_read_page);
+    return 0;
+}
+
+int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
+{
+    if(table->present){
+        lprintf("Error already allocated");
+        return -1;
+    }
+    *table = create_entry(get_zero_page(), e_zfod_page);
     return 0;
 }
 
 int vm_alloc_readonly(ppd_t* ppd, void* start, uint32_t size)
 {
-    return allocate_pages(ppd, start, size, e_read_page);
+    if (allocate_tables(ppd, start, size) < 0) {
+        return -1;
+    }
+    if (add_alloc(ppd, start, size) < 0) {
+        return -1;
+    }
+    // at this point all memory is allocated
+    if(vm_map_pages(ppd, start, size, vm_alloc_readonly_h) < 0){
+        lprintf("This really shouldn't happen");
+        return -2;
+    }
+    return 0;
 }
+
 int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
 {
-    return allocate_pages(ppd, start, size, e_zfod_page);
+    if (allocate_tables(ppd, start, size) < 0) {
+        return -1;
+    }
+    if (add_alloc(ppd, start, size) < 0) {
+        return -1;
+    }
+    // at this point all memory is allocated
+    if(vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) < 0){
+        lprintf("This really shouldn't happen");
+        return -2;
+    }
+    return 0;
 }

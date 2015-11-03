@@ -16,6 +16,37 @@ int init_ppd(ppd_t* ppd)
     return 0;
 }
 
+int add_alloc(ppd_t* ppd, void* start, uint32_t size)
+{
+    alloc_t* new_alloc = malloc(sizeof(alloc_t));
+    if (new_alloc == NULL) {
+        return -1;
+    }
+    new_alloc->start = (uint32_t)start;
+    new_alloc->size = size;
+    Q_INSERT_TAIL(&ppd->allocations, new_alloc, list);
+    return 0;
+}
+
+int remove_alloc(ppd_t* ppd, void* start, uint32_t* size)
+{
+    alloc_t* alloc;
+    int found = 0;
+    Q_FOREACH(alloc, &ppd->allocations, list)
+    {
+        if (alloc->start == (uint32_t)start) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        return -1;
+    }
+    *size = alloc->size;
+    Q_REMOVE(&ppd->allocations, alloc, list);
+    return 0;
+}
+
 int free_ppd(ppd_t* ppd)
 {
     return 0;

@@ -30,6 +30,8 @@ int init_ppd(ppd_t* ppd);
 int init_ppd_from(ppd_t *ppd, ppd_t *from);
 int free_ppd(ppd_t* ppd);
 void switch_ppd(ppd_t* ppd);
+int add_alloc(ppd_t* ppd, void* start, uint32_t size);
+int remove_alloc(ppd_t* ppd, void* start, uint32_t* size);
 
 int vm_alloc_readonly(ppd_t *ppd, void *start, uint32_t size);
 int vm_alloc_readwrite(ppd_t *ppd, void *start, uint32_t size);
