@@ -31,21 +31,21 @@ int init_ppd_from(ppd_t *ppd, ppd_t *from);
 int free_ppd(ppd_t* ppd);
 void switch_ppd(ppd_t* ppd);
 
-int vm_alloc_readonly(ppd_t *ppd, void *start, size_t size);
-int vm_alloc_readwrite(ppd_t *ppd, void *start, size_t size);
+int vm_alloc_readonly(ppd_t *ppd, void *start, uint32_t size);
+int vm_alloc_readwrite(ppd_t *ppd, void *start, uint32_t size);
 
 int vm_user_strlen(ppd_t *ppd, char* start);
 int vm_user_arrlen(ppd_t *ppd, char** start);
 
-int vm_set_readonly(ppd_t *ppd, void* start, int size);
-int vm_set_readwrite(ppd_t *ppd, void* start, int size);
+int vm_set_readonly(ppd_t *ppd, void* start, uint32_t size);
+int vm_set_readwrite(ppd_t *ppd, void* start, uint32_t size);
 
-int vm_user_can_read(ppd_t *ppd, void* start, int size);
-int vm_user_can_write(ppd_t *ppd, void* start, int size);
-int vm_user_can_alloc(ppd_t *ppd, void* start, int size);
+int vm_user_can_read(ppd_t *ppd, void* start, uint32_t size);
+int vm_user_can_write(ppd_t *ppd, void* start, uint32_t size);
+int vm_user_can_alloc(ppd_t *ppd, void* start, uint32_t size);
 
-int vm_write(ppd_t *ppd, void* buffer, void* start, size_t size);
-int vm_read(ppd_t *ppd, void* buffer, void* start, size_t size);
+int vm_write(ppd_t *ppd, void* buffer, void* start, uint32_t size);
+int vm_read(ppd_t *ppd, void* buffer, void* start, uint32_t size);
 
 int vm_resolve_pagefault(ppd_t *ppd, uint32_t cr2, int error_code);
 

@@ -74,7 +74,7 @@ page_directory_t* alloc_page_directory();
 page_directory_t* alloc_kernel_directory();
 page_table_t* alloc_page_table();
 void free_page_directory(page_directory_t* dir);
-int allocate_pages(ppd_t *ppd, void* start, size_t size, entry_t model);
+int allocate_pages(ppd_t *ppd, void* start, uint32_t size, entry_t model);
 int page_bytes_left(void* address);
 int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent);
 

@@ -5,7 +5,7 @@
 
 typedef int (*vm_operator)(entry_t*, entry_t*, address_t, int);
 
-int vm_map_pages(ppd_t* ppd, void* start, int size, vm_operator op)
+int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
 {
     int i, j;
     page_directory_t* dir = ppd->dir;
@@ -44,7 +44,7 @@ int vm_map_pages(ppd_t* ppd, void* start, int size, vm_operator op)
     return value;
 }
 
-int vm_user_can_alloc(ppd_t* ppd, void* start, int size)
+int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)
 {
     int i, j;
     page_directory_t* dir = ppd->dir;
@@ -204,27 +204,27 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr, int status)
     return 0;
 }
 
-int vm_user_can_write(ppd_t* ppd, void* start, int size)
+int vm_user_can_write(ppd_t* ppd, void* start, uint32_t size)
 {
     return vm_map_pages(ppd, start, size, vm_user_write_h) == 0;
 }
 
-int vm_user_can_read(ppd_t* ppd, void* start, int size)
+int vm_user_can_read(ppd_t* ppd, void* start, uint32_t size)
 {
     return vm_map_pages(ppd, start, size, vm_user_read_h) == 0;
 }
 
-int vm_set_readwrite(ppd_t* ppd, void* start, int size)
+int vm_set_readwrite(ppd_t* ppd, void* start, uint32_t size)
 {
     return vm_map_pages(ppd, start, size, vm_set_readwrite_h) == 0;
 }
 
-int vm_set_readonly(ppd_t* ppd, void* start, int size)
+int vm_set_readonly(ppd_t* ppd, void* start, uint32_t size)
 {
     return vm_map_pages(ppd, start, size, vm_set_readonly_h) == 0;
 }
 
-int vm_read(ppd_t* ppd, void* buffer, void* start, size_t size)
+int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
 {
     if (vm_user_can_read(ppd, start, size)) {
         memcpy(buffer, start, size);
@@ -233,7 +233,7 @@ int vm_read(ppd_t* ppd, void* buffer, void* start, size_t size)
     return -1;
 }
 
-int vm_write(ppd_t* ppd, void* buffer, void* start, size_t size)
+int vm_write(ppd_t* ppd, void* buffer, void* start, uint32_t size)
 {
     if (vm_user_can_write(ppd, start, size)) {
         memcpy(start, buffer, size);
@@ -269,7 +269,7 @@ int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
  *  @param model The permissions to use for created page table entries
  *  @return zero on success less than zero on failure
  **/
-int allocate_pages(ppd_t* ppd, void* start, size_t size, entry_t model)
+int allocate_pages(ppd_t* ppd, void* start, uint32_t size, entry_t model)
 {
     page_directory_t* dir = ppd->dir;
     char* end = ((char*)start) + size - 1;
@@ -304,11 +304,11 @@ int allocate_pages(ppd_t* ppd, void* start, size_t size, entry_t model)
     return 0;
 }
 
-int vm_alloc_readonly(ppd_t* ppd, void* start, size_t size)
+int vm_alloc_readonly(ppd_t* ppd, void* start, uint32_t size)
 {
     return allocate_pages(ppd, start, size, e_read_page);
 }
-int vm_alloc_readwrite(ppd_t* ppd, void* start, size_t size)
+int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
 {
     return allocate_pages(ppd, start, size, e_zfod_page);
 }
