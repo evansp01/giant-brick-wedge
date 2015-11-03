@@ -47,23 +47,23 @@ void exec_syscall(ureg_t state)
         char** argv;
     } packet;
     tcb_t* tcb = get_tcb();
+    ppd_t *dir = &tcb->parent->directory;
     // TODO: kill all other threads
-    if (get_packet(&packet, (void*)state.esi, sizeof(packet)) < 0) {
+    if (vm_read(dir, &packet, (void*)state.esi, sizeof(packet)) < 0) {
         state.eax = -1;
         return;
     }
-    void* cr3 = (void*)get_cr3();
     int flen, argc, argvlen = 0;
-    if ((flen = vm_user_strlen(cr3, packet.fname)) < 0) {
+    if ((flen = vm_user_strlen(dir, packet.fname)) < 0) {
         goto return_fail;
     } else {
         // add one for the null character
         flen += 1;
     }
-    if ((argc = vm_user_arrlen(cr3, packet.argv)) < 0) {
+    if ((argc = vm_user_arrlen(dir, packet.argv)) < 0) {
         goto return_fail;
     }
-    if ((argvlen = get_argv_length(cr3, argc, packet.argv)) < 0) {
+    if ((argvlen = get_argv_length(dir, argc, packet.argv)) < 0) {
         goto return_fail;
     }
     state.eax = user_exec(tcb, flen, packet.fname, argc, packet.argv, argvlen);
@@ -172,17 +172,20 @@ int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)
     uint32_t min_start = min(starts, 4);
     uint32_t max_end = max(ends, 4);
     //all pages should be writeable so we can write to them even
-    allocate_pages(dir->dir, (void*)min_start, max_end - min_start, e_write_page);
-    getbytes(elf->e_fname, elf->e_txtoff, elf->e_txtlen, (char*)elf->e_txtstart);
-    getbytes(elf->e_fname, elf->e_rodatoff, elf->e_rodatlen, (char*)elf->e_rodatstart);
-    getbytes(elf->e_fname, elf->e_datoff, elf->e_datlen, (char*)elf->e_datstart);
+    vm_alloc_readwrite(dir, (void*)min_start, max_end - min_start);
+    getbytes(elf->e_fname, elf->e_txtoff, 
+            elf->e_txtlen, (char*)elf->e_txtstart);
+    getbytes(elf->e_fname, elf->e_rodatoff,
+            elf->e_rodatlen, (char*)elf->e_rodatstart);
+    getbytes(elf->e_fname, elf->e_datoff,
+            elf->e_datlen, (char*)elf->e_datstart);
     // set everything to readonly
-    vm_set_readonly(dir->dir, (void*)min_start, max_end - min_start);
+    vm_set_readonly(dir, (void*)min_start, max_end - min_start);
     // set pages which need to be writeable to read/write this means that
     // if a readonly and write section are on the same page, both will be
     // writeable, so at least the program still runs
-    vm_set_readwrite(dir->dir, (void*)elf->e_datstart, elf->e_datlen);
-    vm_set_readwrite(dir->dir, (void*)elf->e_bssstart, elf->e_bsslen);
+    vm_set_readwrite(dir, (void*)elf->e_datstart, elf->e_datlen);
+    vm_set_readwrite(dir, (void*)elf->e_bssstart, elf->e_bsslen);
     return 0;
 }
 
@@ -248,7 +251,7 @@ uint32_t stack_space(int argvlen, int argc)
 int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
     uint32_t stack_size = STACK_HIGH - stack_low;
-    return allocate_pages(ppd->dir, (void*)stack_low, stack_size, e_write_page);
+    return vm_alloc_readwrite(ppd, (void*)stack_low, stack_size);
 }
 
 int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
@@ -330,12 +333,11 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         tcb->parent->directory = old_dir;
         switch_ppd(&old_dir);
     } else {
-        //if we succeeded free the old directory
-        free_ppd(&old_dir);
         // De-register the previously running process in simics
         sim_unreg_process(old_dir.dir);
-        // Register the new process for simics user space debugging
         sim_reg_process(tcb->parent->directory.dir, k_space);
+        //if we succeeded free the old directory
+        free_ppd(&old_dir);
     }
     free(k_space);
     return status;

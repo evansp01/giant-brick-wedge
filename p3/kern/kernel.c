@@ -60,7 +60,6 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     install_exceptions();
     initialize_devices(timer);
     install_syscalls();
-    init_frame_alloc();
     init_virtual_memory();
     init_malloc();
     init_scheduler();

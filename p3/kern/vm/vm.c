@@ -51,6 +51,16 @@ const entry_t e_write_page = {
     .user = 1
 };
 
+void print_entry(entry_t *entry)
+{
+    lprintf("present:%d, write:%d, user:%d, write_through:%d",
+            entry->present, entry->write, entry->user, entry->write_through);
+    lprintf("cache_disable:%d, accessed:%d, dirty:%d, page_size:%d, global:%d",
+            entry->cache_disable, entry->accessed, entry->dirty,
+            entry->page_size, entry->global);
+    lprintf("unused:%d, address:%d",
+            entry->unused, entry->address);
+}
 
 entry_t create_entry(void* address, entry_t model)
 {
@@ -128,14 +138,14 @@ physical_table(void* frame, int table_idx, int pages, entry_t init)
     ASSERT_PAGE_ALIGNED(frame);
     int page_idx;
     //get the address of the first page this page table will contain
-    void* table_start = (void*)(table_idx * PAGE_SIZE * PAGES_PER_TABLE);
+    uint32_t table_start = table_idx * PAGE_SIZE * PAGES_PER_TABLE;
     //allocate a frame for the page table
     page_table_t* table = frame;
     //iterate over the physical pages which belong in this table
     for (page_idx = 0; page_idx < pages; page_idx++) {
         //add the page to the page table
-        void* page = LEA(table_start, PAGE_SIZE, page_idx);
-        table->pages[page_idx] = create_entry(page, init);
+        uint32_t page = table_start + PAGE_SIZE*page_idx;
+        table->pages[page_idx] = create_entry((void*)page, init);
     }
     return table;
 }
@@ -149,6 +159,7 @@ physical_table(void* frame, int table_idx, int pages, entry_t init)
  **/
 void init_virtual_memory()
 {
+    init_frame_alloc();
     int i;
     // set up the page tables which define the kernel memory
     for (i = 0; i < KERNEL_TABLES; i++) {
@@ -232,67 +243,70 @@ page_directory_t* alloc_kernel_directory()
     return dir;
 }
 
-int allocate_table(int pdi, int start, int end, void* ptable, entry_t model)
+
+/** @brief Copies the page frames into a new process
+ *
+ *  @param table_parent PCB of parent process
+ *  @param table_child PCB of child process
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int copy_frames(page_table_t *table_parent, page_table_t *table_child)
 {
-    int j;
-    address_t location = { .page_dir_index = pdi };
-    page_table_t* table = (page_table_t*)ptable;
-    int start_index = start;
-    int end_index = end;
-    for (j = start_index; j <= end_index; j++) {
-        location.page_table_index = j;
-        void *virtual = AS_TYPE(location, void*);
-        entry_t* table_entry = &table->pages[j];
-        if (table_entry->present) {
-            lprintf("WARN: page already allocated at %x", (int)virtual);
-            return -3;
-        }
-        if(alloc_frame(virtual, table_entry, model) < 0){
-            lprintf("Ran out of frames to allocate");
-            return -2;
+    int i_page;
+    for (i_page = 0; i_page < PAGES_PER_TABLE; i_page++) {
+
+        // Check if it is a present user page table entry
+        entry_t *table_entry_parent = &table_parent->pages[i_page];
+        if ((table_entry_parent->present)&&(table_entry_parent->user)) {
+
+            // Create copy of page
+            entry_t *table_entry_child = &table_child->pages[i_page];
+            if(kernel_alloc_frame(table_entry_child, *table_entry_parent) < 0){
+                lprintf("Ran out of frames to allocate");
+                return -2;
+            }
+            // Copy frame data
+            memcpy(get_entry_address(*table_entry_child),
+                   get_entry_address(*table_entry_parent), PAGE_SIZE);
         }
     }
     return 0;
 }
 
-/** @brief Allocates all pages in page table from start address to start+size
- *  @param cr3 The address of the page table
- *  @param start The virtual address to begin allocation at
- *  @param size The amount of virtual memory to allocate pages for
- *  @param model The permissions to use for created page table entries
- *  @return zero on success less than zero on failure
+/** @brief Copies the page tables into a new process
+ *
+ *  @param dir_child PCB of child process
+ *  @param dir_parent PCB of parent process
+ *  @return Zero on success, an integer less than zero on failure
  **/
-int allocate_pages(void* cr3, void* start, size_t size, entry_t model)
+int copy_page_tables(page_directory_t* dir_child, page_directory_t* dir_parent)
 {
-    page_directory_t* dir = cr3;
-    char* end = ((char*)start) + size - 1;
-    address_t vm_start = AS_TYPE(start, address_t);
-    address_t vm_end = AS_TYPE(end, address_t);
-    int i;
-    if (size == 0) {
-        return 0;
-    }
-    // allocate all relevant page tables
-    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
-        entry_t* dir_entry = &dir->tables[i];
-        if (!dir_entry->present) {
-            void* frame = alloc_page_table();
-            if (frame == NULL) {
+    // Copy memory regions
+    int i_dir;
+    for (i_dir = 0; i_dir < TABLES_PER_DIR; i_dir++) {
+
+        // Check if it is a present user directory entry
+        entry_t *dir_entry_parent = &dir_parent->tables[i_dir];
+        if ((dir_entry_parent->present)&&(dir_entry_parent->user)) {
+
+            // Create copy of page table
+            entry_t *dir_entry_child = &dir_child->tables[i_dir];
+            void* table = alloc_page_table();
+            if (table == NULL) {
                 lprintf("Ran out of kernel memory for page tables");
                 return -1;
             }
-            *dir_entry = create_entry(frame, e_user_dir);
+            *dir_entry_child = create_entry(table, *dir_entry_parent);
+
+            // Get page table
+            page_table_t *table_parent = get_entry_address(*dir_entry_parent);
+            page_table_t *table_child = get_entry_address(*dir_entry_child);
+
+            // Copy page frames from parent to child
+            if (copy_frames(table_parent, table_child) < 0)
+                return -2;
         }
-        int start_index = 0;
-        int end_index = PAGES_PER_TABLE - 1;
-        if (i == vm_start.page_dir_index) {
-            start_index = vm_start.page_table_index;
-        }
-        if (i == vm_end.page_dir_index) {
-            end_index = vm_end.page_table_index;
-        }
-        void* table = get_entry_address(*dir_entry);
-        allocate_table(i, start_index, end_index, table, model);
     }
     return 0;
 }
+

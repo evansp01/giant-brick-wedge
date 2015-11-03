@@ -129,13 +129,4 @@ void dump_registers(ureg_t* ureg)
     lprintf("                         L L");
 }
 
-void print_entry(entry_t *entry)
-{
-    lprintf("present:%d, write:%d, user:%d, write_through:%d",
-            entry->present, entry->write, entry->user, entry->write_through);
-    lprintf("cache_disable:%d, accessed:%d, dirty:%d, page_size:%d, global:%d",
-            entry->cache_disable, entry->accessed, entry->dirty,
-            entry->page_size, entry->global);
-    lprintf("unused:%d, address:%d", 
-            entry->unused, entry->address);
-}
+
