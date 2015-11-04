@@ -56,6 +56,11 @@ void* get_zero_page()
     return frames.zero_page;
 }
 
+uint32_t user_mem_size()
+{
+    return frames.total_frames * PAGE_SIZE;
+}
+
 /** @brief Initializes the frame allocator
  *  @return void
  **/

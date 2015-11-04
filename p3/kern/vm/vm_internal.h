@@ -90,6 +90,7 @@ int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir);
 //headers for frame alloc
 void init_frame_alloc();
 void* get_zero_page();
+uint32_t user_mem_size();
 int alloc_frame(void* virtual, entry_t* table, entry_t model);
 int kernel_alloc_frame(entry_t* table, entry_t model);
 void free_frame(void* virtual, void *physical);

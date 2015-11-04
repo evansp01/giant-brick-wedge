@@ -12,7 +12,7 @@ int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
     char* end = ((char*)start) + size - 1;
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
-    if(AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)){
+    if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
         return -1;
     }
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
@@ -49,7 +49,7 @@ int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)
     char* end = ((char*)start) + size;
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
-    if(AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)){
+    if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
         return 0;
     }
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
@@ -255,7 +255,7 @@ int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
     char* end = ((char*)start) + size - 1;
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
-    if(AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)){
+    if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
         return -1;
     }
     // allocate all relevant page tables
@@ -277,7 +277,7 @@ int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
 
 int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 {
-    if(table->present){
+    if (table->present) {
         lprintf("Error already allocated");
         return -1;
     }
@@ -287,8 +287,13 @@ int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 
 int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
 {
-    if(size == 0){
+    //allocations of size zero are successful
+    if (size == 0) {
         return 0;
+    }
+    //you can't allocate more memory than the system has
+    if (size > user_mem_size()) {
+        return -1;
     }
     if (allocate_tables(ppd, start, size) < 0) {
         return -1;
@@ -297,21 +302,22 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
         return -1;
     }
     // at this point all memory is allocated
-    if(vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) < 0){
+    if (vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) < 0) {
         lprintf("This really shouldn't happen");
         return -2;
     }
     return 0;
 }
 
-int vm_free_h(entry_t *table, entry_t *dir, address_t addr){
+int vm_free_h(entry_t* table, entry_t* dir, address_t addr)
+{
     // everything we are freeing should be user mapped
-    if(!is_user(table, dir)){
+    if (!is_user(table, dir)) {
         return -3;
     }
-    void *virtual = AS_TYPE(addr, void*);
+    void* virtual = AS_TYPE(addr, void*);
     // for zfod pages we can just delete the page
-    if(is_zfod(table)){
+    if (is_zfod(table)) {
         *table = e_unmapped;
         invalidate_page(virtual);
         return 0;
@@ -323,13 +329,12 @@ int vm_free_h(entry_t *table, entry_t *dir, address_t addr){
     *table = e_unmapped;
     invalidate_page(virtual);
     return 0;
-
 }
 
-int vm_free(ppd_t *ppd, void *start)
+int vm_free(ppd_t* ppd, void* start)
 {
     uint32_t size;
-    if(remove_alloc(ppd, start, &size) < 0){
+    if (remove_alloc(ppd, start, &size) < 0) {
         return -1;
     }
     return vm_map_pages(ppd, start, size, vm_free_h);
