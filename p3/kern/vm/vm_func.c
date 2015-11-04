@@ -197,8 +197,12 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
         return -3;
     }
     // no worries about zfod stuff
-    if (table->write) {
-        table->write = 0;
+    if(is_write(table)){
+        if(is_zfod(table)){
+            table->zfod = 0;
+        } else {
+            table->write = 0;
+        }
         invalidate_page(AS_TYPE(addr, void*));
     }
     return 0;
