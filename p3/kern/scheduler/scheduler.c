@@ -38,6 +38,12 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
     Q_INSERT_TAIL(&scheduler.runnable, first, runnable_threads);
 }
 
+/** @brief Switches to the next thread to be run
+ *
+ *  @param current The tcb of the current thread
+ *  @param schedule Should this switch update the scheduling queue
+ *  @return void
+ **/
 void switch_to_next(tcb_t* current, int schedule)
 {
     if (!Q_IS_EMPTY(&scheduler.runnable)) {
@@ -51,6 +57,7 @@ void switch_to_next(tcb_t* current, int schedule)
         }
     } else {
         // no runnable threads, should run idle
+        switch_context_ppd(current, scheduler.idle);
     }
 }
 
