@@ -105,7 +105,7 @@ AUTOSTACK_OBJS = autostack.o
 KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o
 KERN_CONTROL = control/control.o control/mutex.o control/atomic.o \
-               control/cond.o
+               control/cond.o control/sem.o
 KERN_INTERRUPT = interrupt/debug.o interrupt/devices.o interrupt/fault.o \
 				 interrupt/fake_console.o interrupt/mode_switch.o \
 				 interrupt/mode_switch_asm.o interrupt/setup_idt.o

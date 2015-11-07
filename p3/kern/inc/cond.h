@@ -27,7 +27,10 @@ typedef struct cond {
     tid_list_t waiting;
 } cond_t;
 
-
-
+int cond_init( cond_t *cv );
+void cond_destroy( cond_t *cv );
+void cond_wait( cond_t *cv, mutex_t *mp );
+void cond_signal( cond_t *cv );
+void cond_broadcast( cond_t *cv );
 
 #endif // COND_H_

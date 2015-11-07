@@ -9,9 +9,6 @@ Stuff to do:
     copy_frame function to handle all types of copying
     move local headers from inc to local folder
     
-    p3 semaphores
-    change malloc (ret, mutexes->semaphores)
-    error handling
     readline
     
 Stuff to do:
@@ -45,4 +42,6 @@ Stuff to do:
         1. recoverable fault -> fix the problem
         2. inform the user -> kill the thread / process
         3. kill the kernel
+        
+        check for failure case in malloc calls
         

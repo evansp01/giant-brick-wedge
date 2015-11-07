@@ -9,13 +9,13 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <malloc_internal.h>
-#include <mutex.h>
+#include <sem.h>
 
-mutex_t lock;
+sem_t sem;
 
 void init_malloc()
 {
-    mutex_init(&lock);
+    sem_init(&sem, 1);
 }
 
 /** @brief Allocates memory of size bytes
@@ -25,9 +25,9 @@ void init_malloc()
  **/
 void* malloc(size_t size)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     void* stuff = _malloc(size);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
     return stuff;
 }
 
@@ -39,9 +39,9 @@ void* malloc(size_t size)
  **/
 void* memalign(size_t alignment, size_t size)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     void* stuff = _memalign(alignment, size);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
     return stuff;
 }
 
@@ -53,9 +53,9 @@ void* memalign(size_t alignment, size_t size)
  **/
 void* calloc(size_t nelt, size_t eltsize)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     void* stuff = _calloc(nelt, eltsize);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
     return stuff;
 }
 
@@ -67,9 +67,9 @@ void* calloc(size_t nelt, size_t eltsize)
  **/
 void* realloc(void* buf, size_t new_size)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     void* stuff = _realloc(buf, new_size);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
     return stuff;
 }
 
@@ -80,9 +80,9 @@ void* realloc(void* buf, size_t new_size)
  **/
 void free(void* buf)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     _free(buf);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
 }
 
 /** @brief Safe version of malloc
@@ -92,9 +92,9 @@ void free(void* buf)
  **/
 void* smalloc(size_t size)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     void* stuff = _smalloc(size);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
     return stuff;
 }
 
@@ -106,9 +106,9 @@ void* smalloc(size_t size)
  **/
 void* smemalign(size_t alignment, size_t size)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     void* stuff = _smemalign(alignment, size);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
     return stuff;
 }
 
@@ -120,7 +120,7 @@ void* smemalign(size_t alignment, size_t size)
  **/
 void sfree(void* buf, size_t size)
 {
-    mutex_lock(&lock);
+    sem_wait(&sem);
     _sfree(buf, size);
-    mutex_unlock(&lock);
+    sem_signal(&sem);
 }
