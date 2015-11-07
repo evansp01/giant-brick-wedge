@@ -84,8 +84,8 @@ void run_next()
 void schedule(tcb_t* tcb)
 {
     // TODO: Neeed mutex to access state
-    tcb->state = RUNNABLE;
     disable_interrupts();
+    tcb->state = RUNNABLE;
     Q_INSERT_TAIL(&scheduler.runnable, tcb, runnable_threads);
     enable_interrupts();
 }
@@ -100,6 +100,7 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
     mutex_unlock(mp);
+    tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
     enable_interrupts();
@@ -108,6 +109,7 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 void deschedule(tcb_t* tcb)
 {
     disable_interrupts();
+    tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
     enable_interrupts();
@@ -134,11 +136,20 @@ int yield(int yield_tid)
     }
     // Yield to a specific thread
     tcb_t* yield_tcb = get_tcb_by_id(yield_tid);
-    if (yield_tcb) {
-        disable_interrupts();
-        switch_context_ppd(tcb, yield_tcb);
-        enable_interrupts();
-        return 0;
+    // Thou shalt not yield to threads which don't exist
+    if (yield_tcb == NULL) {
+        return -1;
     }
-    return -1;
+    // Thou shalt not yield to the idle thread
+    if(yield_tcb->id == scheduler.idle->id){
+        return -1;
+    }
+    // Thou shalt not yield to threads which cannot currently be run
+    if(yield_tcb->state != RUNNABLE){
+        return -1;
+    }
+    disable_interrupts();
+    switch_context_ppd(tcb, yield_tcb);
+    enable_interrupts();
+    return 0;
 }

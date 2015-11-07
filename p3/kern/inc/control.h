@@ -15,6 +15,7 @@
 typedef enum state {
     NOTYET,
     RUNNABLE,
+    SUSPENDED,
     EXITED
 } state_t;
 
