@@ -10,12 +10,10 @@
 
 #include <variable_queue.h>
 
-/** @brief Structure for a list of threads */
-Q_NEW_HEAD(runnable_queue_t, tcb);
-
-void init_scheduler();
+void init_scheduler(tcb_t *idle, tcb_t *first);
 void run_next();
 void schedule(tcb_t *tcb);
 void deschedule(tcb_t *tcb);
+void deschedule_and_drop(tcb_t *tcb, mutex_t *mp);
 
 #endif // SCHEDULER_H_

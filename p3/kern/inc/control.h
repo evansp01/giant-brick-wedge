@@ -67,6 +67,7 @@ tcb_t *create_tcb_entry(pcb_t *parent_pcb);
 void *allocate_kernel_stack();
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child);
 tcb_t *get_tcb();
+tcb_t* get_tcb_by_id(int tid);
 int get_thread_count(pcb_t *pcb);
 
 #endif // CONTROL_H_

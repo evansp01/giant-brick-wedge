@@ -60,11 +60,8 @@ void cond_wait(cond_t* cv, mutex_t* mp)
     Q_INSERT_TAIL(&cv->waiting, &node, node_link);
     mutex_unlock(mp);
     
-    // atomically
-    disable_interrupts();
-    mutex_unlock(&cv->m);
-    deschedule(tcb); // deschedule re-enables interrupts before returning
-    // end atomically
+    // function is atomic
+    deschedule_and_drop(tcb, &cv->m); 
     
     mutex_lock(mp);
 }

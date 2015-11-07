@@ -14,21 +14,46 @@
 #include <simics.h>
 #include <asm.h>
 #include <contracts.h>
- 
+
+#define YIELD_MODE 0
+#define SCHEDULE_MODE 1
+
+/** @brief Structure for a list of threads */
+Q_NEW_HEAD(runnable_queue_t, tcb);
+
 // Global scheduler list of runnable threads
-runnable_queue_t runnable;
-tcb_t *scheduled_tcb;
- 
+struct {
+    tcb_t* idle;
+    runnable_queue_t runnable;
+} scheduler = { 0 };
+
 /** @brief Initializes the scheduler
  *
  *  @return void
  */
-void init_scheduler()
+void init_scheduler(tcb_t* idle, tcb_t* first)
 {
-    Q_INIT_HEAD(&runnable);
-    scheduled_tcb = NULL;
+    Q_INIT_HEAD(&scheduler.runnable);
+    scheduler.idle = idle;
+    Q_INSERT_TAIL(&scheduler.runnable, first, runnable_threads);
 }
- 
+
+void switch_to_next(tcb_t* current, int schedule)
+{
+    if (!Q_IS_EMPTY(&scheduler.runnable)) {
+        tcb_t* next = Q_GET_FRONT(&scheduler.runnable);
+        if (schedule) {
+            Q_REMOVE(&scheduler.runnable, next, runnable_threads);
+            Q_INSERT_TAIL(&scheduler.runnable, next, runnable_threads);
+        }
+        if (current->id != next->id) {
+            switch_context_ppd(current, next);
+        }
+    } else {
+        // no runnable threads, should run idle
+    }
+}
+
 /** @brief Runs the next thread in the runnable queue
  *  
  *  Interrupts need to be disabled since run_next() can be called in yield()
@@ -39,20 +64,8 @@ void init_scheduler()
 void run_next()
 {
     disable_interrupts();
-    if (!Q_IS_EMPTY(&runnable)) {
-        tcb_t *curr_tcb = get_tcb();
-        if(scheduled_tcb == NULL){
-            schedule(curr_tcb);
-        } else {
-            schedule(scheduled_tcb);
-        }
-        tcb_t *next_tcb = Q_GET_FRONT(&runnable);
-        scheduled_tcb = next_tcb;
-        Q_REMOVE(&runnable, next_tcb, runnable_threads);
-        if(curr_tcb->id != next_tcb->id){
-            switch_context_ppd(curr_tcb, next_tcb);
-        }
-    }
+    tcb_t* tcb = get_tcb();
+    switch_to_next(tcb, SCHEDULE_MODE);
     enable_interrupts();
 }
 
@@ -61,13 +74,12 @@ void run_next()
  *  @param tcb Pointer to tcb of thread to schedule
  *  @return void
  */
-void schedule(tcb_t *tcb)
+void schedule(tcb_t* tcb)
 {
-    // TODO: Need to disable interrupts when adding to queue?
-    //       Or maybe switch to using a mutex to lock?    
-    disable_interrupts();
+    // TODO: Neeed mutex to access state
     tcb->state = RUNNABLE;
-    Q_INSERT_TAIL(&runnable, tcb, runnable_threads);
+    disable_interrupts();
+    Q_INSERT_TAIL(&scheduler.runnable, tcb, runnable_threads);
     enable_interrupts();
 }
 
@@ -77,26 +89,49 @@ void schedule(tcb_t *tcb)
  *
  *  @return void
  */
-void deschedule(tcb_t *tcb)
+void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 {
-    // interrupts are disabled before call to deschedule
-    if (!Q_IS_EMPTY(&runnable)) {
-        tcb_t *curr_tcb = get_tcb();
-        if ((scheduled_tcb != NULL)&&(scheduled_tcb != curr_tcb)) {
-            schedule(scheduled_tcb);
-        }
-        // Remove thread from runnable list (if it happens to be queued)
-        Q_REMOVE(&runnable, curr_tcb, runnable_threads);
-        
-        tcb_t *next_tcb = Q_GET_FRONT(&runnable);
-        Q_REMOVE(&runnable, next_tcb, runnable_threads);
-        scheduled_tcb = next_tcb;
-        ASSERT(curr_tcb->id != next_tcb->id);
-        switch_context_ppd(curr_tcb, next_tcb);
-    }
-    // Descheduling the last thread, switch to idle thread
-    else {
-        // TODO: Switch to idle thread
-    }
+    disable_interrupts();
+    mutex_unlock(mp);
+    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+    switch_to_next(tcb, SCHEDULE_MODE);
     enable_interrupts();
+}
+
+void deschedule(tcb_t* tcb)
+{
+    disable_interrupts();
+    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+    switch_to_next(tcb, SCHEDULE_MODE);
+    enable_interrupts();
+}
+
+/** @brief Yields execution to another thread
+ *
+ *  @param yield_tid Thread id of thread to yield to
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int yield(int yield_tid)
+{
+    tcb_t* tcb = get_tcb();
+    // User has requested to yield to the currently running thread
+    if (yield_tid == tcb->id) {
+        return 0;
+    }
+    // Get scheduler to choose next thread to run if tid is -1
+    if (yield_tid == -1) {
+        disable_interrupts();
+        switch_to_next(tcb, YIELD_MODE);
+        enable_interrupts();
+        return 0;
+    }
+    // Yield to a specific thread
+    tcb_t* yield_tcb = get_tcb_by_id(yield_tid);
+    if (yield_tcb) {
+        disable_interrupts();
+        switch_context_ppd(tcb, yield_tcb);
+        enable_interrupts();
+        return 0;
+    }
+    return -1;
 }

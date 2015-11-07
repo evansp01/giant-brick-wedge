@@ -46,9 +46,9 @@ int get_next_id()
  *  @param parent_pcb PCB entry for the parent process
  *  @return Pointer to the new tcb entry for the process thread
  **/
-tcb_t *create_pcb_entry(pcb_t *parent_pcb)
+tcb_t* create_pcb_entry(pcb_t* parent_pcb)
 {
-    pcb_t *entry = (pcb_t *)malloc(sizeof(pcb_t));
+    pcb_t* entry = (pcb_t*)malloc(sizeof(pcb_t));
 
     if (parent_pcb != NULL) {
         INIT_ELEM(entry, siblings);
@@ -75,16 +75,15 @@ tcb_t *create_pcb_entry(pcb_t *parent_pcb)
         entry->parent_id = 0;
 
     // create first process
-    tcb_t *tcb = create_tcb_entry(entry);
+    tcb_t* tcb = create_tcb_entry(entry);
 
     return tcb;
 }
 
-
-int get_thread_count(pcb_t *pcb)
+int get_thread_count(pcb_t* pcb)
 {
     mutex_lock(&pcb->threads_mutex);
-    int thread_count =  pcb->num_threads;
+    int thread_count = pcb->num_threads;
     mutex_unlock(&pcb->threads_mutex);
     return thread_count;
 }
@@ -95,59 +94,70 @@ int get_thread_count(pcb_t *pcb)
  *  @param stack Pointer to the kernel stack for the thread
  *  @return Pointer to the new pcb entry
  **/
-tcb_t *create_tcb_entry(pcb_t *parent_pcb)
+tcb_t* create_tcb_entry(pcb_t* parent_pcb)
 {
-    tcb_t *entry = (tcb_t *)smalloc(sizeof(tcb_t));
-    if(entry == NULL){
+    tcb_t* entry = (tcb_t*)smalloc(sizeof(tcb_t));
+    if (entry == NULL) {
         return NULL;
     }
     uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
     if (mem == 0) {
         return NULL;
     }
-    void *stack = (void *)(mem + PAGE_SIZE - (2*sizeof(int)));
+    void* stack = (void*)(mem + PAGE_SIZE - (2 * sizeof(int)));
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
     Q_INIT_ELEM(entry, runnable_threads);
-    
+
     // Scheduler thread list
     mutex_lock(&kernel_state.threads_mutex);
     INSERT(&kernel_state.threads, entry, all_threads);
     mutex_unlock(&kernel_state.threads_mutex);
-    
+
     // Parent thread list
     mutex_lock(&parent_pcb->threads_mutex);
     INSERT(&parent_pcb->threads, entry, pcb_threads);
     mutex_unlock(&parent_pcb->threads_mutex);
-    
+
     if (parent_pcb->num_threads == 0)
         entry->id = parent_pcb->id;
     else
         entry->id = get_next_id();
-    
+
     mutex_lock(&parent_pcb->num_threads_mutex);
     parent_pcb->num_threads++;
     mutex_unlock(&parent_pcb->num_threads_mutex);
-    
+
     entry->parent = parent_pcb;
     entry->kernel_stack = stack;
     entry->state = NOTYET;
 
     // Store pointer to tcb at the top of the kernel stack
-    *((tcb_t **)stack) = entry;
-    
+    *((tcb_t**)stack) = entry;
+
     return entry;
 }
-
 
 /** @brief Gets the tcb from the top of the kernel stack
  *
  *  @param An address on the current kernel stack
  *  @return Pointer to the tcb for the current kernel thread
  **/
-tcb_t *get_tcb()
+tcb_t* get_tcb()
 {
-    uint32_t tcb_addr = (get_esp()&0xFFFFF000)|0xFF8;
-    return *(tcb_t **)tcb_addr;
+    uint32_t tcb_addr = (get_esp() & 0xFFFFF000) | 0xFF8;
+    return *(tcb_t**)tcb_addr;
+}
+
+tcb_t* get_tcb_by_id(int tid)
+{
+    tcb_t* tcb;
+    Q_FOREACH(tcb, &kernel_state.threads, all_threads)
+    {
+        if (tcb->id == tid) {
+            return tcb;
+        }
+    }
+    return NULL;
 }

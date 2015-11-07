@@ -61,23 +61,24 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     initialize_devices(timer);
     install_syscalls();
     init_virtual_memory();
-    init_malloc();
-    init_scheduler();
     init_kernel_state();
-
-    // TODO: Is it ok not to have interrupts yet here?
-    //       
-
-
-    // Run kernel tests (TODO: Free/reallocate frames)
-    //vm_diagnose(dir);
-    //test_process_vm();
-
-    // Create 1st idle process
-    tcb_t *tcb = new_program("coolness", 0, NULL);
-    if (tcb == NULL)
+    // Create idle process
+    tcb_t *idle = new_program("idle", 0, NULL);
+    if (idle == NULL) {
         panic("Cannot create first process. Kernel is sad");
-
+    }
+    // Allow for correct context switching to idle
+    setup_for_switch(idle);
+    // Create main program kernel will run
+    tcb_t *tcb = new_program("coolness", 0, NULL);
+    if (tcb == NULL) {
+        panic("Cannot create first process. Kernel is sad");
+    }
+    init_scheduler(idle, tcb);
+    // Switch to thread safe malloc
+    // this **MUST** be done after all other initialization has been performed
+    // otherwise semaphores can randomly enable interrupts
+    init_malloc();
     // Switch to 1st idle thread
     // Interrupts cannot yet be enabled, as they will trigger a fault since
     // there is no pcb entry for this kernel stack
