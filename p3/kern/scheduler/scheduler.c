@@ -71,8 +71,7 @@ void switch_to_next(tcb_t* current, int schedule)
 void run_next()
 {
     disable_interrupts();
-    tcb_t* tcb = get_tcb();
-    switch_to_next(tcb, SCHEDULE_MODE);
+    switch_to_next(get_tcb(), SCHEDULE_MODE);
     enable_interrupts();
 }
 
@@ -142,6 +141,7 @@ int yield(int yield_tid)
     }
     // Thou shalt not yield to the idle thread
     if(yield_tcb->id == scheduler.idle->id){
+        lprintf("Attempted to yield to idle process");
         return -1;
     }
     // Thou shalt not yield to threads which cannot currently be run
