@@ -43,7 +43,7 @@
  *  @param Q_ELEM_TYPE the type of the structure containing the link
  **/
 #define Q_NEW_LINK(Q_ELEM_TYPE) \
-    struct link { \
+    struct { \
         struct Q_ELEM_TYPE *next; \
         struct Q_ELEM_TYPE *prev; \
     }

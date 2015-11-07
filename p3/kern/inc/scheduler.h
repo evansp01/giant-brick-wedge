@@ -16,5 +16,6 @@ Q_NEW_HEAD(runnable_queue_t, tcb);
 void init_scheduler();
 void run_next();
 void schedule(tcb_t *tcb);
+void deschedule(tcb_t *tcb);
 
 #endif // SCHEDULER_H_

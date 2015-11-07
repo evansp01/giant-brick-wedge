@@ -24,7 +24,7 @@ int cond_init(cond_t* cv)
     if (mutex_init(&cv->m) < 0) {
         return -1;
     }
-    QUEUE_INIT(&cv->waiting);
+    Q_INIT_HEAD(&cv->waiting);
     return 0;
 }
 
@@ -38,10 +38,9 @@ int cond_init(cond_t* cv)
 void cond_destroy(cond_t* cv)
 {
     mutex_destroy(&cv->m);
-    if (!QUEUE_EMPTY(&cv->waiting)) {
+    if (Q_GET_FRONT(&cv->waiting) != NULL) {
         EXIT_ERROR("condition variable destroyed, but queue not empty");
     }
-    QUEUE_FREE(&cv->waiting);
 }
 
 /** @brief Wait on a condition variable until signaled by cond_signal
@@ -52,14 +51,15 @@ void cond_destroy(cond_t* cv)
  **/
 void cond_wait(cond_t* cv, mutex_t* mp)
 {
-    int dontreject = 0;
+    node_t node;
+    node.tid = thr_getid();
+    node.reject = 0;
+    Q_INIT_ELEM(&node, node_link);
     mutex_lock(&cv->m);
-    QUEUE_ADD(&cv->waiting, thr_getid());
+    Q_INSERT_TAIL(&cv->waiting, &node, node_link);
     mutex_unlock(mp);
-    //atomically
     mutex_unlock(&cv->m);
-    deschedule(&dontreject);
-    //end atomically
+    deschedule(&node.reject);
     mutex_lock(mp);
 }
 
@@ -70,15 +70,12 @@ void cond_wait(cond_t* cv, mutex_t* mp)
  **/
 void cond_signal(cond_t* cv)
 {
-    int tid;
     mutex_lock(&cv->m);
     // if nobody is waiting, just return
-    if (!QUEUE_EMPTY(&cv->waiting)) {
-        tid = QUEUE_REMOVE(&cv->waiting);
-        while (make_runnable(tid) < 0) {
-            //the other guy must not have fallen asleep yet, let's encourage
-            yield(tid);
-        }
+    if (Q_GET_FRONT(&cv->waiting) != NULL) {
+        node_t *node = Q_GET_FRONT(&cv->waiting);
+        Q_REMOVE(&cv->waiting, node, node_link);
+        node->reject = make_runnable(node->tid);
     }
     mutex_unlock(&cv->m);
 }
@@ -90,15 +87,12 @@ void cond_signal(cond_t* cv)
  **/
 void cond_broadcast(cond_t* cv)
 {
-    int tid;
     mutex_lock(&cv->m);
     // if nobody is waiting, just return
-    while (!QUEUE_EMPTY(&cv->waiting)) {
-        tid = QUEUE_REMOVE(&cv->waiting);
-        while (make_runnable(tid) < 0) {
-            //the other guy must not have fallen asleep yet, let's encourage
-            yield(tid);
-        }
+    while (Q_GET_FRONT(&cv->waiting) != NULL) {
+        node_t *node = Q_GET_FRONT(&cv->waiting);
+        Q_REMOVE(&cv->waiting, node, node_link);
+        node->reject = make_runnable(node->tid);
     }
     mutex_unlock(&cv->m);
 }

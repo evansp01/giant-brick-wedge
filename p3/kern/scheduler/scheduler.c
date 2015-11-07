@@ -13,6 +13,7 @@
 #include <variable_queue.h>
 #include <simics.h>
 #include <asm.h>
+#include <contracts.h>
  
 // Global scheduler list of runnable threads
 runnable_queue_t runnable;
@@ -70,3 +71,32 @@ void schedule(tcb_t *tcb)
     enable_interrupts();
 }
 
+/** @brief Deschedules the current thread
+ *  
+ *  Runs the next thread without re-scheduling the current thread
+ *
+ *  @return void
+ */
+void deschedule(tcb_t *tcb)
+{
+    // interrupts are disabled before call to deschedule
+    if (!Q_IS_EMPTY(&runnable)) {
+        tcb_t *curr_tcb = get_tcb();
+        if ((scheduled_tcb != NULL)&&(scheduled_tcb != curr_tcb)) {
+            schedule(scheduled_tcb);
+        }
+        // Remove thread from runnable list (if it happens to be queued)
+        Q_REMOVE(&runnable, curr_tcb, runnable_threads);
+        
+        tcb_t *next_tcb = Q_GET_FRONT(&runnable);
+        Q_REMOVE(&runnable, next_tcb, runnable_threads);
+        scheduled_tcb = next_tcb;
+        ASSERT(curr_tcb->id != next_tcb->id);
+        switch_context_ppd(curr_tcb, next_tcb);
+    }
+    // Descheduling the last thread, switch to idle thread
+    else {
+        // TODO: Switch to idle thread
+    }
+    enable_interrupts();
+}

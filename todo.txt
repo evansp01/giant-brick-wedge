@@ -9,6 +9,11 @@ Stuff to do:
     copy_frame function to handle all types of copying
     move local headers from inc to local folder
     
+    p3 semaphores
+    change malloc (ret, mutexes->semaphores)
+    error handling
+    readline
+    
 Stuff to do:
     
     locking
