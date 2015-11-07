@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "variable_queue.h"
+#include <variable_queue.h>
 
 typedef struct node {
     Q_NEW_LINK(node) link;
@@ -267,6 +267,37 @@ void test_iterate()
     }
 }
 
+void test_iterate_safe()
+{
+    list_t list;
+
+    Q_INIT_HEAD(&list);
+
+    node_t nodes[LIST_LEN];
+
+    int i;
+    for (i = 0; i < LIST_LEN; i++) {
+        Q_INIT_ELEM(&nodes[i], link);
+        nodes[i].data = i;
+        Q_INSERT_FRONT(&list, &nodes[i], link);
+    }
+
+    assert(Q_GET_FRONT(&list) == &nodes[LIST_LEN - 1]);
+    assert(Q_GET_TAIL(&list) == &nodes[0]);
+
+    node_t* cur, *tmp;
+
+    int list_of_nums[LIST_LEN] = {0};
+    Q_FOREACH_SAFE(cur, tmp, &list, link) {
+        list_of_nums[cur->data] = 1;
+    }
+    //make sure all nodes were touched
+    for(i=0;i<LIST_LEN;i++){
+        assert(list_of_nums[i] == 1);
+    }
+}
+
+
 #define RUN_TEST(t)                    \
     do {                               \
         printf("Running " #t "()..."); \
@@ -285,5 +316,6 @@ int main()
     RUN_TEST(test_remove);
     RUN_TEST(test_removes);
     RUN_TEST(test_iterate);
+    RUN_TEST(test_iterate_safe);
     return 0;
 }
