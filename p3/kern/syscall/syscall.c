@@ -218,14 +218,8 @@ void readline_syscall(ureg_t state)
     
     /*
     // Error: buf is not a valid memory address
-    if (??) {
+    if (vm_user_can_write(ppd_t* ppd, void* start, uint32_t size)) {
         state.eax = -1;
-        return;
-    }
-    
-    // Error: buf is in a read-only memory area
-    if (??) {
-        state.eax = -2;
         return;
     }
     */

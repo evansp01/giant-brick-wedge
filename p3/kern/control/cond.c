@@ -58,7 +58,6 @@ void cond_wait(cond_t* cv, mutex_t* mp)
     mutex_unlock(mp);
     
     // function is atomic
-    lprintf("Descheduling tcb id %d", tcb->id);
     deschedule_and_drop(tcb, &cv->m); 
     
     mutex_lock(mp);
@@ -76,7 +75,6 @@ void cond_signal(cond_t* cv)
     if (!Q_IS_EMPTY(&cv->waiting)) {
         tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
         Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
-        lprintf("Scheduling tcb id %d", tcb_to_schedule->id);
         schedule(tcb_to_schedule);
     }
     mutex_unlock(&cv->m);
