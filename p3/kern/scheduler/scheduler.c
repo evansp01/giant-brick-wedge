@@ -121,7 +121,7 @@ int schedule(tcb_t* tcb)
 void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
-    mutex_unlock(mp);
+    scheduler_mutex_unlock(mp);
     tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
@@ -149,7 +149,7 @@ int deschedule(tcb_t* tcb, uint32_t esi)
     if (reject != 0) {
         return 0;
     }
-    mutex_unlock(&ppd->lock);
+    scheduler_mutex_unlock(&ppd->lock);
     tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);

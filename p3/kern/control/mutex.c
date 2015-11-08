@@ -102,3 +102,20 @@ void mutex_unlock(mutex_t* mp)
         mp->lock = UNLOCKED;
     }
 }
+
+
+/** @brief Unlock a mutex
+ *  Unlocks the given mutex. It is illegal for a thread other than the thread
+ *  which called lock to unlock a mutex
+ *
+ *  @param mp The mutex to unlock
+ *  @return void
+ **/
+void scheduler_mutex_unlock(mutex_t* mp)
+{
+    if (mp->lock == LOCKED && mp->owner == UNSPECIFIED) {
+        panic("cannot unlock kernel mutex which is destroyed or not owned");
+    }
+    mp->owner = UNSPECIFIED;
+    mp->lock = UNLOCKED;
+}
