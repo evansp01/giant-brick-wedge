@@ -156,16 +156,6 @@ tcb_t* create_tcb_entry(int id)
     return entry;
 }
 
-void register_tcb(tcb_t* child, pcb_t* parent)
-{
-    pcb_t* pcb = child->parent;
-    if (parent != NULL) {
-        pcb_add_child(parent, pcb);
-    }
-    // Kernel thread list
-    kernel_add_thread(child);
-}
-
 /** @brief Gets the tcb from the top of the kernel stack
  *
  *  @param An address on the current kernel stack

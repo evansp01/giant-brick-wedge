@@ -96,19 +96,20 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
 
     // Create copy of pcb & tcb
     tcb_t* tcb_child = create_pcb_entry();
-
+    if(tcb_child == NULL){
+        return NULL;
+    }
     // Copy tcb data
     calc_saved_esp(tcb_parent, tcb_child, state);
 
     // Copy memory regions
     if(init_ppd_from(&tcb_child->parent->directory, &pcb_parent->directory)){
-        // NEED TO FREE tcb_child and associated *stuff*
+        // TODO: NEED TO FREE tcb_child and associated *stuff*
         lprintf("cannot copy program");
         return NULL;
     }
-    // Now that we know things worked, add parents list
+    // Now that we know things worked, add to lists
     pcb_add_child(pcb_parent, tcb_child->parent);
-    // Kernel thread list
     kernel_add_thread(tcb_child);
 
     return tcb_child;
