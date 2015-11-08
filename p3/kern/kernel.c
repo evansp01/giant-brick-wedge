@@ -35,6 +35,7 @@
 #include <loader.h>
 #include <mode_switch.h>
 #include <scheduler.h>
+#include <switch.h>
 
 /** @brief Tick function, to be called by the timer interrupt handler
  *
