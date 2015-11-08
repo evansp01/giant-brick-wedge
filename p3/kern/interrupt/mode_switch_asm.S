@@ -26,7 +26,7 @@
 /**  @brief Restores state to user mode */
 .macro RESTORE_STATE
     pushl %esp                          # provide a stack address to get tcb
-    call set_regs                       # set esp0 and cr3
+    call set_regs                       # set esp0
     add $4, %esp                        # clean up function call stack
     add $8, %esp                        # clean up ureg arguments
     popl %ds
@@ -71,8 +71,8 @@
 .endm
 
 /* Assembly function for entering user mode for the first time */
-.global first_entry_user_mode
-first_entry_user_mode:
+.global go_to_user_mode
+go_to_user_mode:
     movl 4(%esp), %esp      # switch stack pointers
     RESTORE_STATE           # perform the mode switch
 

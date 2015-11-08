@@ -23,24 +23,6 @@
         PUT_STACK(stack, value, type);         \
     } while (0)
 
-#define STACK_ALIGN 0xFFFFFFF0
-
-/* --- Structs --- */
-
-typedef struct context_stack {
-    void *edi;
-    void *esi;
-    void *ebp;
-    void *esp;
-    void *ebx;
-    void *edx;
-    void *ecx;
-    void *eax;
-    void *func_addr;
-    void *dummy;
-    void *saved_esp;
-} context_stack_t;
-
 /* --- Prototypes --- */
 
 tcb_t *create_idle();

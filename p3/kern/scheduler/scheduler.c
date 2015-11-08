@@ -25,6 +25,7 @@ Q_NEW_HEAD(runnable_queue_t, tcb);
 struct {
     tcb_t* idle;
     runnable_queue_t runnable;
+    tcb_t* switched_from;
 } scheduler = { 0 };
 
 /** @brief Initializes the scheduler
@@ -36,6 +37,25 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
     Q_INIT_HEAD(&scheduler.runnable);
     scheduler.idle = idle;
     Q_INSERT_TAIL(&scheduler.runnable, first, runnable_threads);
+}
+
+void finalize_exit(tcb_t* tcb)
+{
+}
+
+void scheduler_pre_switch(tcb_t* from, tcb_t* to)
+{
+    scheduler.switched_from = from;
+    switch_ppd(&to->parent->directory);
+}
+
+void scheduler_post_switch()
+{
+    tcb_t* switched_from = scheduler.switched_from;
+    enable_interrupts();
+    if (switched_from->state == EXITED) {
+        finalize_exit(switched_from);
+    }
 }
 
 /** @brief Switches to the next thread to be run
@@ -53,12 +73,12 @@ void switch_to_next(tcb_t* current, int schedule)
             Q_INSERT_TAIL(&scheduler.runnable, next, runnable_threads);
         }
         if (current->id != next->id) {
-            switch_context_ppd(current, next);
+            context_switch(current, next);
         }
     } else {
         // no runnable threads, should run idle
         if (current->id != scheduler.idle->id) {
-            switch_context_ppd(current, scheduler.idle);
+            context_switch(current, scheduler.idle);
         }
     }
 }
@@ -74,7 +94,6 @@ void run_next()
 {
     disable_interrupts();
     switch_to_next(get_tcb(), SCHEDULE_MODE);
-    enable_interrupts();
 }
 
 /** @brief Schedules the thread to be run
@@ -86,7 +105,7 @@ int schedule(tcb_t* tcb)
 {
     // TODO: Neeed mutex to access state
     disable_interrupts();
-    if(tcb->state != SUSPENDED){
+    if (tcb->state != SUSPENDED) {
         enable_interrupts();
         return -1;
     }
@@ -109,26 +128,24 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
     tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
-    enable_interrupts();
 }
 
 int deschedule(tcb_t* tcb, uint32_t esi)
 {
-    ppd_t *ppd = &tcb->parent->directory;
+    ppd_t* ppd = &tcb->parent->directory;
     mutex_lock(&ppd->lock);
     disable_interrupts();
     int reject;
-    if(vm_read(ppd, &reject, (void*)esi, sizeof(esi)) < 0){
+    if (vm_read(ppd, &reject, (void*)esi, sizeof(esi)) < 0) {
         return -1;
-    }   
-    if(reject != 0){
+    }
+    if (reject != 0) {
         return 0;
     }
     mutex_unlock(&ppd->lock);
     tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
-    enable_interrupts();
     return 0;
 }
 
@@ -148,7 +165,6 @@ int yield(int yield_tid)
     if (yield_tid == -1) {
         disable_interrupts();
         switch_to_next(tcb, YIELD_MODE);
-        enable_interrupts();
         return 0;
     }
     // Yield to a specific thread
@@ -158,16 +174,15 @@ int yield(int yield_tid)
         return -1;
     }
     // Thou shalt not yield to the idle thread
-    if(yield_tcb->id == scheduler.idle->id){
+    if (yield_tcb->id == scheduler.idle->id) {
         lprintf("Attempted to yield to idle process");
         return -1;
     }
     // Thou shalt not yield to threads which cannot currently be run
-    if(yield_tcb->state != RUNNABLE){
+    if (yield_tcb->state != RUNNABLE) {
         return -1;
     }
     disable_interrupts();
-    switch_context_ppd(tcb, yield_tcb);
-    enable_interrupts();
+    context_switch(tcb, yield_tcb);
     return 0;
 }

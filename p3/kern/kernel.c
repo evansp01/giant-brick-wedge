@@ -34,7 +34,6 @@
 #include <kernel_tests.h>
 #include <loader.h>
 #include <mode_switch.h>
-#include <cr.h>
 #include <scheduler.h>
 
 /** @brief Tick function, to be called by the timer interrupt handler
@@ -80,12 +79,12 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // otherwise semaphores can randomly enable interrupts
     init_malloc();
     //  Switch to ppd of first thread
-    switch_ppd(&tcb->parent->directory);
     // Switch to 1st idle thread
     // Interrupts cannot yet be enabled, as they will trigger a fault since
     // there is no pcb entry for this kernel stack
     // Interrupts will be enabled upon switching to user mode
-    first_entry_user_mode(tcb->saved_esp);
+    scheduler_pre_switch(NULL, tcb);
+    go_to_user_mode(tcb->saved_esp);
 
     while (1) {
         panic("Kernel has wandered into limbo.");

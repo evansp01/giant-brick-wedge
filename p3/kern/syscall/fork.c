@@ -108,20 +108,3 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
     }
     return tcb_child;
 }
-
-/** @brief Sets up a given thread stack for entry via context switch
- *
- *  @param tcb Thread whose stack is to be set up for context switch entry
- *  @return void
- **/
-void setup_for_switch(tcb_t *tcb)
-{
-    void *saved_esp = tcb->saved_esp;
-
-    context_stack_t context_stack = {
-        .func_addr = first_entry_user_mode,
-        .saved_esp = saved_esp,
-    };
-
-    PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);
-}

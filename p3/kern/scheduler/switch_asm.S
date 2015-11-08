@@ -5,8 +5,8 @@
  *  @bug No known bugs
  **/
  
-.global switch_context
-switch_context:
+.global switch_stack_and_regs
+switch_stack_and_regs:
     pusha                   # save registers
     mov 40(%esp), %eax      # get pointer to tcb
     mov %esp, %ecx          # save stack pointer
@@ -17,7 +17,7 @@ switch_context:
     mov 36(%esp), %esp      # switch esp to other kernel stack
     popa                    # restore registers     (different thread)
     ret                     # return                (different thread)
-    
+
 .global get_esp
 get_esp:
     movl %esp, %eax
