@@ -61,10 +61,7 @@ void task_vanish_syscall(ureg_t state)
 void wait_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called wait. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    state.eax = wait(tcb->parent, (int*)state.esi);
 }
 
 /** @brief The gettid syscall

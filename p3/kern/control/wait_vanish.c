@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <contracts.h>
 
+void cleanup_process(pcb_t *pcb){
+    free_ppd(&pcb->directory);
+    free_pcb(pcb);
+}
+
 int wait(pcb_t* pcb, int *status_ptr)
 {
     mutex_lock(&pcb->children_mutex);
@@ -30,7 +35,7 @@ int wait(pcb_t* pcb, int *status_ptr)
     }
     Q_REMOVE(&pcb->children, child, siblings);
     pcb->num_children--;
-    free_pcb(child);
+    cleanup_process(child);
     mutex_unlock(&pcb->children_mutex);
     return pid;
 }
@@ -50,7 +55,7 @@ void pcb_inform_children(pcb_t* pcb)
         child->parent = NULL;
         if(child->state == EXITED){
             // Child is done, we aren't going to wait since we are dying
-            free_pcb(child);
+            cleanup_process(child);
         }
         mutex_unlock(&pcb->children_mutex);
         mutex_unlock(&child->parent_mutex);
@@ -75,7 +80,7 @@ void finalize_exit(tcb_t* tcb)
     pcb_t* parent = process->parent;
     if (parent == NULL) {
         // nobody is going to wait for you ;(
-        free(process);
+        cleanup_process(process);
         return;
     }
     mutex_lock(&parent->children_mutex);
