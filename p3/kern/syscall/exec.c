@@ -292,7 +292,9 @@ tcb_t* new_program(char* fname, int argc, char** argv)
         argspace += strlen(argv[i]) + 1;
     }
     if (exec(tcb_entry, fname, argc, argv, argspace) < 0) {
-        //TODO: free tcb
+        pcb_t *proc = tcb_entry->parent;
+        free_tcb(tcb_entry);
+        free_pcb(proc);
         return NULL;
     }
     // Add the newly created thread to the thread list

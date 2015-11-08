@@ -104,8 +104,9 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
 
     // Copy memory regions
     if(init_ppd_from(&tcb_child->parent->directory, &pcb_parent->directory)){
-        // TODO: NEED TO FREE tcb_child and associated *stuff*
-        lprintf("cannot copy program");
+        pcb_t *proc = tcb_child->parent;
+        free_tcb(tcb_child);
+        free_pcb(proc);
         return NULL;
     }
     // Now that we know things worked, add to lists

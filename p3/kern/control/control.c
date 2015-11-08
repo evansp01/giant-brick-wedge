@@ -156,6 +156,17 @@ tcb_t* create_tcb_entry(int id)
     return entry;
 }
 
+void free_tcb(tcb_t* tcb)
+{
+    sfree(tcb->kernel_stack, PAGE_SIZE);
+    free(tcb);
+}
+
+void free_pcb(pcb_t* pcb)
+{
+    free(pcb);
+}
+
 /** @brief Gets the tcb from the top of the kernel stack
  *
  *  @param An address on the current kernel stack
