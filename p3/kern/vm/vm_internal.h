@@ -81,6 +81,7 @@ int allocate_pages(ppd_t *ppd, void* start, uint32_t size, entry_t model);
 int page_bytes_left(void* address);
 int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent);
 
+int vm_free_alloc(ppd_t* ppd, uint32_t start, uint32_t size);
 
 int is_user(entry_t* table, entry_t* dir);
 int is_write(entry_t* table);

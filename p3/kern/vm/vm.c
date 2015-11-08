@@ -199,11 +199,6 @@ page_directory_t* alloc_page_directory()
     return dir;
 }
 
-void free_page_directory(page_directory_t* dir)
-{
-    //TODO: actually free the page directroy
-}
-
 /** @brief Allocate and initialize a page table
  *  @return the page table
  **/
@@ -332,3 +327,19 @@ int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent)
     }
     return 0;
 }
+
+void free_page_directory(page_directory_t* dir)
+{
+    int i;
+    for (i = 0; i < TABLES_PER_DIR; i++) {
+        // Check if it is a present user directory entry
+        entry_t* dir_entry = &dir->tables[i];
+        if (!is_present_user(dir_entry)) {
+            continue;
+        }
+        void *addr = get_entry_address(*dir_entry);
+        sfree(addr, PAGE_SIZE);
+    }
+    sfree(dir, PAGE_SIZE);
+}
+
