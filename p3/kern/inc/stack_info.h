@@ -11,7 +11,7 @@
         *((type*)(stack)) = (type)(value);     \
     } while (0)
 
-#define K_STACK_SHIFT PAGE_SHIFT
+#define K_STACK_SHIFT (PAGE_SHIFT + 1)
 #define K_STACK_SIZE (1 << K_STACK_SHIFT)
 #define K_STACK_ADDR_MASK ((uint32_t)K_STACK_SIZE - 1)
 #define K_STACK_BASE_MASK (~K_STACK_ADDR_MASK)

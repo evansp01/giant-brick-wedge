@@ -91,7 +91,7 @@ void pcb_add_child(pcb_t* parent, pcb_t* child)
  **/
 tcb_t* create_pcb_entry()
 {
-    pcb_t* entry = (pcb_t*)malloc(sizeof(pcb_t));
+    pcb_t* entry = (pcb_t*)smalloc(sizeof(pcb_t));
     Q_INIT_ELEM(entry, siblings);
 
     /* scheduler lists */
@@ -160,12 +160,12 @@ tcb_t* create_tcb_entry(int id)
 void free_tcb(tcb_t* tcb)
 {
     sfree(tcb->kernel_stack, K_STACK_SIZE);
-    free(tcb);
+    sfree(tcb, sizeof(tcb_t));
 }
 
 void free_pcb(pcb_t* pcb)
 {
-    free(pcb);
+    sfree(pcb, sizeof(pcb_t));
 }
 
 /** @brief Gets the tcb from the top of the kernel stack
