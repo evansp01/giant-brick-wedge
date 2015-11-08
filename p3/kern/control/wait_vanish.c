@@ -6,7 +6,7 @@
 
 void cleanup_process(pcb_t *pcb)
 {
-    pcb_t *current = get_tcb()->parent;
+    pcb_t *current = get_tcb()->process;
     free_ppd(&pcb->directory, &current->directory);
     free_pcb(pcb);
 }
@@ -66,7 +66,7 @@ void pcb_inform_children(pcb_t* pcb)
 
 void finalize_exit(tcb_t* tcb)
 {
-    pcb_t* process = tcb->parent;
+    pcb_t* process = tcb->process;
     pcb_remove_thread(process, tcb);
     kernel_remove_thread(tcb);
     free_tcb(tcb);

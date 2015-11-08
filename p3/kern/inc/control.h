@@ -55,7 +55,7 @@ typedef struct tcb {
     Q_NEW_LINK(tcb) runnable_threads;
     Q_NEW_LINK(tcb) suspended_threads;
     int id;
-    pcb_t *parent;
+    pcb_t *process;
     void *kernel_stack;
     void *saved_esp;
     state_t state;

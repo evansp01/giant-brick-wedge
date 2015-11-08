@@ -43,7 +43,7 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
 void scheduler_pre_switch(tcb_t* from, tcb_t* to)
 {
     scheduler.switched_from = from;
-    switch_ppd(&to->parent->directory);
+    switch_ppd(&to->process->directory);
 }
 
 void scheduler_post_switch()
@@ -139,7 +139,7 @@ void kill_thread(tcb_t* tcb)
 
 int deschedule(tcb_t* tcb, uint32_t esi)
 {
-    ppd_t* ppd = &tcb->parent->directory;
+    ppd_t* ppd = &tcb->process->directory;
     mutex_lock(&ppd->lock);
     disable_interrupts();
     int reject;

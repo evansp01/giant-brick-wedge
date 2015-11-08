@@ -44,7 +44,7 @@ void init_syscall_sem()
 void set_status_syscall(ureg_t state)
 {
     tcb_t *tcb = get_tcb();
-    pcb_t *pcb = tcb->parent;
+    pcb_t *pcb = tcb->process;
     // No mutex needed
     pcb->exit_status = state.esi;
 }
@@ -79,7 +79,7 @@ void task_vanish_syscall(ureg_t state)
 void wait_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    state.eax = wait(tcb->parent, (int*)state.esi);
+    state.eax = wait(tcb->process, (int*)state.esi);
 }
 
 /** @brief The gettid syscall
@@ -168,7 +168,7 @@ void new_pages_syscall(ureg_t state)
     } packet;
 
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->parent->directory;
+    ppd_t *ppd = &tcb->process->directory;
     mutex_lock(&ppd->lock);
     if(vm_read(ppd, &packet, (void *)state.esi, sizeof(packet)) < 0){
         goto return_fail;
@@ -197,7 +197,7 @@ return_fail:
 void remove_pages_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->parent->directory;
+    ppd_t *ppd = &tcb->process->directory;
     mutex_lock(&ppd->lock);
     int result = vm_free(ppd, (void*)state.esi);
     mutex_unlock(&ppd->lock);

@@ -28,7 +28,7 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     int vm_status;
     state->cr2 = get_cr2();
-    ppd_t* ppd = &tcb->parent->directory;
+    ppd_t* ppd = &tcb->process->directory;
     mutex_lock(&ppd->lock);
     vm_status = vm_resolve_pagefault(ppd, state->cr2, state->error_code);
     mutex_unlock(&ppd->lock);

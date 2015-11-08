@@ -49,10 +49,10 @@ void exec_syscall(ureg_t state)
     } packet;
 
     tcb_t* tcb = get_tcb();
-    if(get_thread_count(tcb->parent) > 1){
+    if(get_thread_count(tcb->process) > 1){
         goto return_fail;
     }
-    ppd_t *dir = &tcb->parent->directory;
+    ppd_t *dir = &tcb->process->directory;
     // TODO: kill all other threads
     if (vm_read(dir, &packet, (void*)state.esi, sizeof(packet)) < 0) {
         goto return_fail;
@@ -266,7 +266,7 @@ int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
         return -1;
     }
     elf_load_helper(&elf, fname);
-    pcb_t* pcb = tcb->parent;
+    pcb_t* pcb = tcb->process;
     if(init_ppd(&pcb->directory) < 0){
         return -3;
     }
@@ -293,7 +293,7 @@ tcb_t* new_program(char* fname, int argc, char** argv)
         argspace += strlen(argv[i]) + 1;
     }
     if (exec(tcb_entry, fname, argc, argv, argspace) < 0) {
-        pcb_t *proc = tcb_entry->parent;
+        pcb_t *proc = tcb_entry->process;
         free_tcb(tcb_entry);
         free_pcb(proc);
         return NULL;
@@ -301,7 +301,7 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     // Add the newly created thread to the thread list
     kernel_add_thread(tcb_entry);
     // Register process for simics user space debugging
-    sim_reg_process(tcb_entry->parent->directory.dir, fname);
+    sim_reg_process(tcb_entry->process->directory.dir, fname);
     
     return tcb_entry;
 }
@@ -333,14 +333,14 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         k_str_current += copied;
     }
     //we have copied all the arguments to kernel space -- now try to exec
-    ppd_t old_dir = tcb->parent->directory;
+    ppd_t old_dir = tcb->process->directory;
     int status = exec(tcb, k_space, argc, k_argv, arglen);
     if (status < 0) {
         // if we failed make sure to restore the old page directory
-        tcb->parent->directory = old_dir;
+        tcb->process->directory = old_dir;
         switch_ppd(&old_dir);
     } else {
-        ppd_t *new_dir = &tcb->parent->directory;
+        ppd_t *new_dir = &tcb->process->directory;
         // De-register the previously running process in simics
         sim_unreg_process(old_dir.dir);
         sim_reg_process(new_dir->dir, k_space);

@@ -61,7 +61,7 @@ void pcb_add_thread(pcb_t* pcb, tcb_t* tcb)
     mutex_lock(&pcb->threads_mutex);
     Q_INSERT_TAIL(&pcb->threads, tcb, pcb_threads);
     pcb->num_threads++;
-    tcb->parent = pcb;
+    tcb->process = pcb;
     mutex_unlock(&pcb->threads_mutex);
 }
 

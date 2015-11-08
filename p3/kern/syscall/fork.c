@@ -32,7 +32,7 @@ void fork_syscall(ureg_t state)
 {
     tcb_t* tcb_parent = get_tcb();
     //cant call fork with more than one thread
-    if(get_thread_count(tcb_parent->parent) > 1){
+    if(get_thread_count(tcb_parent->process) > 1){
         state.eax = -1;
         return;
     }
@@ -51,8 +51,8 @@ void fork_syscall(ureg_t state)
     // Schedule the child
     schedule(tcb_child);
     // Register child process for simics user space debugging
-    sim_reg_child(tcb_child->parent->directory.dir,
-                  tcb_parent->parent->directory.dir);
+    sim_reg_child(tcb_child->process->directory.dir,
+                  tcb_parent->process->directory.dir);
     // Return child tid to parent
     state.eax = tcb_child->id;
 
@@ -91,7 +91,7 @@ void calc_saved_esp(tcb_t* parent, tcb_t *child, void *state)
  **/
 tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state)
 {
-    pcb_t* pcb_parent = tcb_parent->parent;
+    pcb_t* pcb_parent = tcb_parent->process;
 
     // Create copy of pcb & tcb
     tcb_t* tcb_child = create_pcb_entry();
@@ -102,14 +102,14 @@ tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state)
     calc_saved_esp(tcb_parent, tcb_child, state);
 
     // Copy memory regions
-    if(init_ppd_from(&tcb_child->parent->directory, &pcb_parent->directory)){
-        pcb_t *proc = tcb_child->parent;
+    if(init_ppd_from(&tcb_child->process->directory, &pcb_parent->directory)){
+        pcb_t *proc = tcb_child->process;
         free_tcb(tcb_child);
         free_pcb(proc);
         return NULL;
     }
     // Now that we know things worked, add to lists
-    pcb_add_child(pcb_parent, tcb_child->parent);
+    pcb_add_child(pcb_parent, tcb_child->process);
     kernel_add_thread(tcb_child);
 
     state->eax = 0;
