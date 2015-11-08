@@ -153,7 +153,7 @@ tcb_t* create_tcb_entry(int id)
     Q_INIT_ELEM(entry, pcb_threads);
     Q_INIT_ELEM(entry, runnable_threads);
     entry->id = id;
-    entry->state = SUSPENDED;
+    entry->state = NOT_YET;
     return entry;
 }
 

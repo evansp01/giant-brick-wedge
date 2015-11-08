@@ -102,7 +102,7 @@ int schedule(tcb_t* tcb)
 {
     // TODO: Neeed mutex to access state
     disable_interrupts();
-    if (tcb->state != SUSPENDED) {
+    if (tcb->state != SUSPENDED && tcb->state != NOT_YET) {
         enable_interrupts();
         return -1;
     }

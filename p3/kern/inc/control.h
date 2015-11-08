@@ -14,6 +14,7 @@
 #include <cond.h>
 
 typedef enum state {
+    NOT_YET,
     RUNNABLE,
     SUSPENDED,
     EXITED
