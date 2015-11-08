@@ -286,7 +286,7 @@ int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
 
 tcb_t* new_program(char* fname, int argc, char** argv)
 {
-    tcb_t* tcb_entry = create_pcb_entry(NULL);
+    tcb_t* tcb_entry = create_pcb_entry();
     int i, argspace = 0;
     for (i = 0; i < argc; i++) {
         argspace += strlen(argv[i]) + 1;
@@ -295,7 +295,8 @@ tcb_t* new_program(char* fname, int argc, char** argv)
         //TODO: free tcb
         return NULL;
     }
-    
+    // Add the newly created thread to the thread list
+    kernel_add_thread(tcb_entry);
     // Register process for simics user space debugging
     sim_reg_process(tcb_entry->parent->directory.dir, fname);
     

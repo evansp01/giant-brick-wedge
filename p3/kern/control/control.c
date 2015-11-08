@@ -55,7 +55,8 @@ void kernel_remove_thread(tcb_t* tcb)
     mutex_unlock(&kernel_state.threads_mutex);
 }
 
-void pcb_add_thread(pcb_t *pcb, tcb_t *tcb){
+void pcb_add_thread(pcb_t* pcb, tcb_t* tcb)
+{
     mutex_lock(&pcb->threads_mutex);
     Q_INSERT_TAIL(&pcb->threads, tcb, pcb_threads);
     pcb->num_threads++;
@@ -63,15 +64,16 @@ void pcb_add_thread(pcb_t *pcb, tcb_t *tcb){
     mutex_unlock(&pcb->threads_mutex);
 }
 
-void pcb_remove_thread(pcb_t *pcb, tcb_t* tcb){
+void pcb_remove_thread(pcb_t* pcb, tcb_t* tcb)
+{
     mutex_lock(&pcb->threads_mutex);
     Q_REMOVE(&pcb->threads, tcb, pcb_threads);
     pcb->num_threads--;
     mutex_unlock(&pcb->threads_mutex);
-
 }
 
-void pcb_add_child(pcb_t *parent, pcb_t *child){
+void pcb_add_child(pcb_t* parent, pcb_t* child)
+{
     mutex_lock(&child->parent_mutex);
     mutex_lock(&parent->children_mutex);
     Q_INSERT_TAIL(&parent->children, child, siblings);
@@ -86,7 +88,7 @@ void pcb_add_child(pcb_t *parent, pcb_t *child){
  *  @param parent_pcb PCB entry for the parent process
  *  @return Pointer to the new tcb entry for the process thread
  **/
-tcb_t* create_pcb_entry(pcb_t* parent_pcb)
+tcb_t* create_pcb_entry()
 {
     pcb_t* entry = (pcb_t*)malloc(sizeof(pcb_t));
     Q_INIT_ELEM(entry, siblings);
@@ -108,14 +110,12 @@ tcb_t* create_pcb_entry(pcb_t* parent_pcb)
     entry->parent = NULL;
 
     // create first process
-    tcb_t* tcb = create_tcb_entry(entry);
-    if(tcb == NULL){
+    tcb_t* tcb = create_tcb_entry(entry->id);
+    if (tcb == NULL) {
         free(entry);
         return NULL;
     }
-    if (parent_pcb != NULL) {
-        pcb_add_child(parent_pcb, entry);
-    }
+    pcb_add_thread(entry, tcb);
     return tcb;
 }
 
@@ -133,7 +133,7 @@ int get_thread_count(pcb_t* pcb)
  *  @param stack Pointer to the kernel stack for the thread
  *  @return Pointer to the new pcb entry
  **/
-tcb_t* create_tcb_entry(pcb_t* parent_pcb)
+tcb_t* create_tcb_entry(int id)
 {
     tcb_t* entry = (tcb_t*)smalloc(sizeof(tcb_t));
     if (entry == NULL) {
@@ -151,19 +151,19 @@ tcb_t* create_tcb_entry(pcb_t* parent_pcb)
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
     Q_INIT_ELEM(entry, runnable_threads);
-
-    if (parent_pcb->num_threads == 0)
-        entry->id = parent_pcb->id;
-    else
-        entry->id = get_next_id();
+    entry->id = id;
     entry->state = SUSPENDED;
-
-    // Parent thread list
-    pcb_add_thread(parent_pcb, entry);
-    // Kernel thread list
-    kernel_add_thread(entry);
-
     return entry;
+}
+
+void register_tcb(tcb_t* child, pcb_t* parent)
+{
+    pcb_t* pcb = child->parent;
+    if (parent != NULL) {
+        pcb_add_child(parent, pcb);
+    }
+    // Kernel thread list
+    kernel_add_thread(child);
 }
 
 /** @brief Gets the tcb from the top of the kernel stack

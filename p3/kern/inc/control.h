@@ -70,8 +70,8 @@ typedef struct kernel_state {
 // Headers regarding create process
 kernel_state_t *get_kernel_state();
 void init_kernel_state();
-tcb_t *create_pcb_entry(pcb_t *parent_pcb);
-tcb_t *create_tcb_entry(pcb_t *parent_pcb);
+tcb_t *create_pcb_entry();
+tcb_t *create_tcb_entry(int id);
 void *allocate_kernel_stack();
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child);
 tcb_t *get_tcb();
