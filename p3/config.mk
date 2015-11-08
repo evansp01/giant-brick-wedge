@@ -142,7 +142,7 @@ KERNEL_OBJS +=${KERN_VM}
 410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper knife \
 	merchant peon coolness getpid_test1 loader_test1 loader_test2 \
     exec_nonexist mem_permissions new_pages remove_pages_test1 \
-	remove_pages_test2
+	remove_pages_test2 deschedule_hang
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

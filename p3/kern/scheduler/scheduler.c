@@ -57,7 +57,9 @@ void switch_to_next(tcb_t* current, int schedule)
         }
     } else {
         // no runnable threads, should run idle
-        switch_context_ppd(current, scheduler.idle);
+        if (current->id != scheduler.idle->id) {
+            switch_context_ppd(current, scheduler.idle);
+        }
     }
 }
 
