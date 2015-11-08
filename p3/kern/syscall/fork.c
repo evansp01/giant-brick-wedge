@@ -21,6 +21,7 @@
 #include <vm.h>
 #include <asm.h> //temp
 
+tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state);
 
 /** @brief Handler function for fork()
  *
@@ -43,8 +44,6 @@ void fork_syscall(ureg_t state)
         return;
     }
     // Copy kernel stack with return value of 0 for child
-    state.eax = 0;
-    copy_kernel_stack(tcb_parent, tcb_child);
     // TODO: Copy software exception handler (if installed)
     // Setup stack for re-entry via context_switch
     setup_for_switch(tcb_child);
@@ -90,7 +89,7 @@ void calc_saved_esp(tcb_t* parent, tcb_t *child, void *state)
  *
  *  @return Pointer to tcb on success, null on failure
  **/
-tcb_t *create_copy(tcb_t *tcb_parent, void *state)
+tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state)
 {
     pcb_t* pcb_parent = tcb_parent->parent;
 
@@ -112,6 +111,9 @@ tcb_t *create_copy(tcb_t *tcb_parent, void *state)
     // Now that we know things worked, add to lists
     pcb_add_child(pcb_parent, tcb_child->parent);
     kernel_add_thread(tcb_child);
+
+    state->eax = 0;
+    copy_kernel_stack(tcb_parent, tcb_child);
 
     return tcb_child;
 }

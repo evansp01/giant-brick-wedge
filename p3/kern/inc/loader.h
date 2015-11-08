@@ -26,7 +26,6 @@
 /* --- Prototypes --- */
 
 tcb_t *create_idle();
-tcb_t *create_copy(tcb_t *tcb_parent, void *state);
 int getbytes( const char *filename, int offset, int size, char *buf );
 void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
 int load_program(tcb_t* tcb, char* filename, int argc, char **argv);
