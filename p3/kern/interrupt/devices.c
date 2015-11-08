@@ -121,17 +121,6 @@ int keyboard_count = 0;
  *  */
 void keyboard_interrupt(ureg_t state)
 {
-    // Temporarily use keyboard interrupts to trigger context switchers
-    inb(KEYBOARD_PORT);
-    outb(INT_CTL_PORT, INT_ACK_CURRENT);
-    
-    if (keyboard_count % 2) {
-        yield(-1);
-    }
-    keyboard_count++;
-    
-    
-    /*
     //if we aren't about to run into the consumer
     if (next_index(keyboard.producer) != keyboard.consumer) {
         keyboard.buffer[keyboard.producer] = inb(KEYBOARD_PORT);
@@ -141,10 +130,8 @@ void keyboard_interrupt(ureg_t state)
         //the program is more than KEYBOARD_BUFFER_SIZE characters behind
         //so it's probably okay.
     }
-    
     //ack interrupt
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
-    */
 }
 
 int readchar(void)

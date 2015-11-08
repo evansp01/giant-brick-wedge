@@ -61,22 +61,20 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     initialize_devices(timer);
     install_syscalls();
     init_virtual_memory();
-    init_malloc();
     init_scheduler();
     init_kernel_state();
-
-    // TODO: Is it ok not to have interrupts yet here?
-    //       
-
 
     // Run kernel tests (TODO: Free/reallocate frames)
     //vm_diagnose(dir);
     //test_process_vm();
 
     // Create 1st idle process
-    tcb_t *tcb = new_program("coolness", 0, NULL);
+    tcb_t *tcb = new_program("shell", 0, NULL);
     if (tcb == NULL)
         panic("Cannot create first process. Kernel is sad");
+    
+    // Switch to multi-threaded mode
+    init_malloc();
 
     // Switch to 1st idle thread
     // Interrupts cannot yet be enabled, as they will trigger a fault since

@@ -11,10 +11,12 @@
 #include <malloc_internal.h>
 #include <sem.h>
 
+int threaded = 0;
 sem_t sem;
 
 void init_malloc()
 {
+    threaded = 1;
     sem_init(&sem, 1);
 }
 
@@ -25,6 +27,9 @@ void init_malloc()
  **/
 void* malloc(size_t size)
 {
+    if (!threaded) {
+        return _malloc(size);
+    }
     sem_wait(&sem);
     void* stuff = _malloc(size);
     sem_signal(&sem);
@@ -39,6 +44,9 @@ void* malloc(size_t size)
  **/
 void* memalign(size_t alignment, size_t size)
 {
+    if (!threaded) {
+        return _memalign(alignment, size);
+    }
     sem_wait(&sem);
     void* stuff = _memalign(alignment, size);
     sem_signal(&sem);
@@ -53,6 +61,9 @@ void* memalign(size_t alignment, size_t size)
  **/
 void* calloc(size_t nelt, size_t eltsize)
 {
+    if (!threaded) {
+        return _calloc(nelt, eltsize);
+    }
     sem_wait(&sem);
     void* stuff = _calloc(nelt, eltsize);
     sem_signal(&sem);
@@ -67,6 +78,9 @@ void* calloc(size_t nelt, size_t eltsize)
  **/
 void* realloc(void* buf, size_t new_size)
 {
+    if (!threaded) {
+        return _realloc(buf, new_size);
+    }
     sem_wait(&sem);
     void* stuff = _realloc(buf, new_size);
     sem_signal(&sem);
@@ -80,6 +94,10 @@ void* realloc(void* buf, size_t new_size)
  **/
 void free(void* buf)
 {
+    if (!threaded) {
+        _free(buf);
+        return;
+    }
     sem_wait(&sem);
     _free(buf);
     sem_signal(&sem);
@@ -92,6 +110,9 @@ void free(void* buf)
  **/
 void* smalloc(size_t size)
 {
+    if (!threaded) {
+        return _smalloc(size);
+    }
     sem_wait(&sem);
     void* stuff = _smalloc(size);
     sem_signal(&sem);
@@ -106,6 +127,9 @@ void* smalloc(size_t size)
  **/
 void* smemalign(size_t alignment, size_t size)
 {
+    if (!threaded) {
+        return _smemalign(alignment, size);
+    }
     sem_wait(&sem);
     void* stuff = _smemalign(alignment, size);
     sem_signal(&sem);
@@ -120,6 +144,10 @@ void* smemalign(size_t alignment, size_t size)
  **/
 void sfree(void* buf, size_t size)
 {
+    if (!threaded) {
+        _sfree(buf, size);
+        return;
+    }
     sem_wait(&sem);
     _sfree(buf, size);
     sem_signal(&sem);

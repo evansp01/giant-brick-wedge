@@ -16,6 +16,7 @@
 #include <setup_idt.h>
 #include <syscall_int.h>
 #include <asm.h>
+#include <sem.h>
 
 /** @brief Struct for Interrupt Descriptor Table (IDT) entries
  */
@@ -82,6 +83,11 @@ void install_syscalls()
     set_idt_syscall(NAME_ASM(new_pages_syscall), NEW_PAGES_INT);
     set_idt_syscall(NAME_ASM(remove_pages_syscall), REMOVE_PAGES_INT);
 
+    extern sem_t read_sem;
+    extern sem_t print_sem;
+    sem_init(&read_sem, 1);
+    sem_init(&print_sem, 1);
+    
     set_idt_syscall(NAME_ASM(getchar_syscall), GETCHAR_INT);
     set_idt_syscall(NAME_ASM(readline_syscall), READLINE_INT);
     set_idt_syscall(NAME_ASM(print_syscall), PRINT_INT);

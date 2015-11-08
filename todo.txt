@@ -9,7 +9,9 @@ Stuff to do:
     copy_frame function to handle all types of copying
     move local headers from inc to local folder
     
-    readline
+    readline/print error checking
+    multithreaded readline
+    multithreaded print
     
 Stuff to do:
     

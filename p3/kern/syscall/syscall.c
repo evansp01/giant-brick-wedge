@@ -17,7 +17,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <asm.h>
+#include <sem.h>
+#include <devices.h>
+#include <console.h>
+#include <video_defines.h>
 
+// TODO: Decide on arbitrary max length
+#define MAX_LEN 1024
+#define INVALID_COLOR 0x90
+sem_t read_sem;
+sem_t print_sem;
+
+/** @brief Initializes the semaphores used in the console syscalls
+ *  @return void
+ */
+void init_syscall_sem()
+{
+    sem_init(&read_sem, 1);
+    sem_init(&print_sem, 1);
+}
 
 /** @brief The set_status syscall
  *  @param state The current state in user mode
@@ -193,30 +211,79 @@ void remove_pages_syscall(ureg_t state)
     state.eax = result;
 }
 
-/** @brief The getchar syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void getchar_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called getchar. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
-}
-
 /** @brief The readline syscall
  *  @param state The current state in user mode
  *  @return void
  */
 void readline_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called readline. Not yet implemented", tcb->id);
-    while(1) {
+    typedef struct args {
+        int len;
+        char *buf;
+    } args_t;
+    args_t *arg = (args_t *)state.esi;
+    
+    /*
+    // Error: buf is not a valid memory address
+    if (??) {
+        state.eax = -1;
+        return;
+    }
+    
+    // Error: buf is in a read-only memory area
+    if (??) {
+        state.eax = -2;
+        return;
+    }
+    */
+    
+    // Error: len is unreasonably large
+    if (arg->len > MAX_LEN) {
+        state.eax = -3;
+        return;
+    }
+    
+    sem_wait(&read_sem);
+    char c;
+    int i = 0;
+    char temp[arg->len];
+    while (i < arg->len) {
+        if ((c = readchar()) == -1) {
+            continue;
+        }
+        putbyte(c);
+        
+        // Backspace character
+        if (c == '\b') {
+            i--;
+        }
+        // Standard character
+        else {
+            temp[i] = c;
+            i++;
+            if (c == '\n')
+                break;
+        }
+    }
+    sem_signal(&read_sem);
+    
+    memcpy(arg->buf, temp, i);
+    state.eax = i;
+}
+
+/** @brief The getchar syscall
+ *  @param state The current state in user mode
+ *  @return void
+ */
+void getchar_syscall(ureg_t state)
+{
+    char c;
+    sem_wait(&read_sem);
+    while ((c = readchar()) == -1) {
         continue;
     }
+    sem_signal(&read_sem);
+    state.eax = c;
 }
 
 /** @brief The print syscall
@@ -225,11 +292,30 @@ void readline_syscall(ureg_t state)
  */
 void print_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called print. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    typedef struct args {
+        int len;
+        char *buf;
+    } args_t;
+    args_t *arg = (args_t *)state.esi;
+    
+    /*
+    // Error: buf is not a valid memory address
+    if (??) {
+        state.eax = -1;
+        return;
     }
+    
+    // Error: len is unreasonably large
+    if (arg->len > MAX_LEN) {
+        state.eax = -2;
+        return;
+    }
+    */
+    
+    sem_wait(&print_sem);
+    putbytes(arg->buf, arg->len);
+    sem_signal(&print_sem);
+    state.eax = 0;
 }
 
 /** @brief The set_term_color syscall
@@ -238,11 +324,16 @@ void print_syscall(ureg_t state)
  */
 void set_term_color_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called set_term_color. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    int color = (int)state.esi;
+    
+    // Error: color is not valid
+    if (color >= INVALID_COLOR) {
+        state.eax = -1;
+        return;
     }
+    
+    set_term_color(color);
+    state.eax = 0;
 }
 
 /** @brief The set_cursor_pos syscall
@@ -251,11 +342,13 @@ void set_term_color_syscall(ureg_t state)
  */
 void set_cursor_pos_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called set_cursor_pos. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    typedef struct args {
+        int row;
+        int col;
+    } args_t;
+    args_t *arg = (args_t *)state.esi;
+    
+    state.eax = set_cursor(arg->row, arg->col);
 }
 
 /** @brief The get_cursor_pos syscall
@@ -264,11 +357,21 @@ void set_cursor_pos_syscall(ureg_t state)
  */
 void get_cursor_pos_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called get_cursor_pos. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    typedef struct args {
+        int *row;
+        int *col;
+    } args_t;
+    args_t *arg = (args_t *)state.esi;
+    
+    // Error: arguments are invalid
+    // TODO: Check if pointers are on user-writable memory?
+    if ((arg->row == NULL)||(arg->col == NULL)) {
+        state.eax = -1;
+        return;
     }
+    
+    get_cursor(arg->row, arg->col);
+    state.eax = 0;
 }
 
 /** @brief The halt syscall

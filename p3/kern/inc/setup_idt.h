@@ -21,5 +21,6 @@ void set_idt(void* handler, int segment, int type, int privilege, int index);
 void install_exceptions();
 void install_syscalls();
 void install_devices();
+void init_syscall_sem();
 
 #endif // IDT_H_
