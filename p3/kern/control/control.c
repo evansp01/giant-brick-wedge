@@ -113,7 +113,7 @@ tcb_t* create_pcb_entry()
     // create first process
     tcb_t* tcb = create_tcb_entry(entry->id);
     if (tcb == NULL) {
-        free(entry);
+        free_pcb(entry);
         return NULL;
     }
     pcb_add_thread(entry, tcb);
@@ -142,7 +142,7 @@ tcb_t* create_tcb_entry(int id)
     }
     uint32_t mem = (uint32_t)smemalign(K_STACK_SIZE, K_STACK_SIZE);
     if (mem == 0) {
-        free(entry);
+        free_tcb(entry);
         return NULL;
     }
     entry->kernel_stack = (void*) K_STACK_TOP(mem);
@@ -159,7 +159,7 @@ tcb_t* create_tcb_entry(int id)
 
 void free_tcb(tcb_t* tcb)
 {
-    sfree(tcb->kernel_stack, K_STACK_SIZE);
+    sfree((void*)K_STACK_BASE(tcb->kernel_stack), K_STACK_SIZE);
     sfree(tcb, sizeof(tcb_t));
 }
 
