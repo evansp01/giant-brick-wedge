@@ -30,7 +30,7 @@ int wait(pcb_t* pcb, int *status_ptr)
     }
     Q_REMOVE(&pcb->children, child, siblings);
     pcb->num_children--;
-    free(child);
+    free_pcb(child);
     mutex_unlock(&pcb->children_mutex);
     return pid;
 }
@@ -50,7 +50,7 @@ void pcb_inform_children(pcb_t* pcb)
         child->parent = NULL;
         if(child->state == EXITED){
             // Child is done, we aren't going to wait since we are dying
-            free(child);
+            free_pcb(child);
         }
         mutex_unlock(&pcb->children_mutex);
         mutex_unlock(&child->parent_mutex);
@@ -62,8 +62,7 @@ void finalize_exit(tcb_t* tcb)
     pcb_t* process = tcb->parent;
     pcb_remove_thread(process, tcb);
     kernel_remove_thread(tcb);
-    sfree(tcb->kernel_stack, PAGE_SIZE);
-    free(tcb);
+    free_tcb(tcb);
     // More threads, so we get off easy
     if (get_thread_count(process) != 0) {
         return;

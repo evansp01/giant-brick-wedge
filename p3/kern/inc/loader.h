@@ -14,15 +14,6 @@
 #include <elf_410.h>
 #include <control.h>
 
-#define PUT_STACK(stack, value, type) \
-    *((type*)(stack)) = (type)(value)
-
-#define PUSH_STACK(stack, value, type)         \
-    do {                                       \
-        stack = (void*)(((type*)(stack)) - 1); \
-        PUT_STACK(stack, value, type);         \
-    } while (0)
-
 /* --- Prototypes --- */
 
 int getbytes( const char *filename, int offset, int size, char *buf );

@@ -20,6 +20,7 @@
 #include <scheduler.h>
 #include <vm.h>
 #include <asm.h> //temp
+#include <stack_info.h>
 
 tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state);
 
@@ -65,11 +66,10 @@ void fork_syscall(ureg_t state)
  **/
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
 {
-    //TODO: name this constant it shows up lots of places
-    uint32_t child_addr = (uint32_t)tcb_child->kernel_stack & 0xFFFFF000;
-    uint32_t parent_addr = (uint32_t)tcb_parent->kernel_stack & 0xFFFFF000;
+    uint32_t child_addr = K_STACK_BASE(tcb_child->kernel_stack);
+    uint32_t parent_addr = K_STACK_BASE(tcb_parent->kernel_stack);
     // PAGE_SIZE-8 ensures that the pointer to tcb is not overwritten
-    memcpy((void*)child_addr, (void*)parent_addr, PAGE_SIZE-8);
+    memcpy((void*)child_addr, (void*)parent_addr, K_STACK_SPACE);
 }
 
 

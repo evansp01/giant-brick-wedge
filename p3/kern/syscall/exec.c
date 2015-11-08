@@ -9,7 +9,6 @@
 /* --- Includes --- */
 #include <string.h>
 #include <stdio.h>
-#include <malloc.h>
 #include <exec2obj.h>
 #include <loader.h>
 #include <elf_410.h>
@@ -22,6 +21,8 @@
 #include <mode_switch.h>
 #include <limits.h>
 #include <eflags.h>
+#include <stack_info.h>
+#include <stdlib.h>
 
 #define STACK_HIGH 0xFFFFFFF0
 #define USER_STACK_SIZE PAGE_SIZE

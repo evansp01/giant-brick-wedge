@@ -29,6 +29,7 @@ uint32_t get_esp();
 void store_esp(void *saved_esp, tcb_t *tcb);
 void context_switch(tcb_t *from, tcb_t *to);
 void first_context_switch(void *iret_ptr);
+void setup_for_switch(tcb_t* tcb);
 
 
 #endif // SWITCH_H_

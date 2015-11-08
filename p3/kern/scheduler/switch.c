@@ -14,6 +14,7 @@
 #include <asm.h>
 #include <loader.h>
 #include <mode_switch.h>
+#include <stack_info.h>
 
 /* --- Structs --- */
 typedef struct context_stack {

@@ -14,6 +14,7 @@
 #include <string.h>
 #include <switch.h>
 #include <mutex.h>
+#include <stack_info.h>
 
 // Global kernel state with process and thread info
 kernel_state_t kernel_state;
@@ -139,12 +140,12 @@ tcb_t* create_tcb_entry(int id)
     if (entry == NULL) {
         return NULL;
     }
-    uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
+    uint32_t mem = (uint32_t)smemalign(K_STACK_SIZE, K_STACK_SIZE);
     if (mem == 0) {
         free(entry);
         return NULL;
     }
-    entry->kernel_stack = (void*)(mem + PAGE_SIZE - (2 * sizeof(int)));
+    entry->kernel_stack = (void*) K_STACK_TOP(mem);
     // Store pointer to tcb at the top of the kernel stack
     *((tcb_t**)entry->kernel_stack) = entry;
 
@@ -158,7 +159,7 @@ tcb_t* create_tcb_entry(int id)
 
 void free_tcb(tcb_t* tcb)
 {
-    sfree(tcb->kernel_stack, PAGE_SIZE);
+    sfree(tcb->kernel_stack, K_STACK_SIZE);
     free(tcb);
 }
 
@@ -174,7 +175,7 @@ void free_pcb(pcb_t* pcb)
  **/
 tcb_t* get_tcb()
 {
-    uint32_t tcb_addr = (get_esp() & 0xFFFFF000) | 0xFF8;
+    uint32_t tcb_addr = K_STACK_TOP(K_STACK_BASE(get_esp()));
     return *(tcb_t**)tcb_addr;
 }
 
