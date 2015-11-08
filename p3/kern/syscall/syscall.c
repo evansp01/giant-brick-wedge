@@ -99,12 +99,10 @@ void gettid_syscall(ureg_t state)
  */
 void yield_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called yield. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    int tid = (int)state.esi;
+    state.eax = yield(tid);
 }
+
 
 /** @brief The deschedule syscall
  *  @param state The current state in user mode
