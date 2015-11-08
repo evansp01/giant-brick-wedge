@@ -41,6 +41,46 @@ int get_next_id()
     return id;
 }
 
+void kernel_add_thread(tcb_t* tcb)
+{
+    mutex_lock(&kernel_state.threads_mutex);
+    Q_INSERT_TAIL(&kernel_state.threads, tcb, all_threads);
+    mutex_unlock(&kernel_state.threads_mutex);
+}
+
+void kernel_remove_thread(tcb_t* tcb)
+{
+    mutex_lock(&kernel_state.threads_mutex);
+    Q_REMOVE(&kernel_state.threads, tcb, all_threads);
+    mutex_unlock(&kernel_state.threads_mutex);
+}
+
+void pcb_add_thread(pcb_t *pcb, tcb_t *tcb){
+    mutex_lock(&pcb->threads_mutex);
+    Q_INSERT_TAIL(&pcb->threads, tcb, pcb_threads);
+    pcb->num_threads++;
+    tcb->parent = pcb;
+    mutex_unlock(&pcb->threads_mutex);
+}
+
+void pcb_remove_thread(pcb_t *pcb, tcb_t* tcb){
+    mutex_lock(&pcb->threads_mutex);
+    Q_REMOVE(&pcb->threads, tcb, pcb_threads);
+    pcb->num_threads--;
+    mutex_unlock(&pcb->threads_mutex);
+
+}
+
+void pcb_add_child(pcb_t *parent, pcb_t *child){
+    mutex_lock(&child->parent_mutex);
+    mutex_lock(&parent->children_mutex);
+    Q_INSERT_TAIL(&parent->children, child, siblings);
+    child->parent = parent;
+    parent->num_children++;
+    mutex_unlock(&parent->children_mutex);
+    mutex_unlock(&child->parent_mutex);
+}
+
 /** @brief Creates a new pcb entry for the current process
  *
  *  @param parent_pcb PCB entry for the parent process
@@ -49,35 +89,33 @@ int get_next_id()
 tcb_t* create_pcb_entry(pcb_t* parent_pcb)
 {
     pcb_t* entry = (pcb_t*)malloc(sizeof(pcb_t));
-
-    if (parent_pcb != NULL) {
-        INIT_ELEM(entry, siblings);
-        mutex_lock(&parent_pcb->children_mutex);
-        INSERT(&parent_pcb->children, entry, siblings);
-        mutex_unlock(&parent_pcb->children_mutex);
-    }
+    Q_INIT_ELEM(entry, siblings);
 
     /* scheduler lists */
     INIT_STRUCT(&entry->children);
     INIT_STRUCT(&entry->threads);
+    mutex_init(&entry->parent_mutex);
     mutex_init(&entry->children_mutex);
     mutex_init(&entry->threads_mutex);
+    cond_init(&entry->wait);
 
     entry->id = get_next_id();
     entry->exit_status = 0;
     // TODO; this is strange
     entry->state = RUNNABLE;
     entry->num_threads = 0;
-    mutex_init(&entry->num_threads_mutex);
-
-    if (parent_pcb != NULL)
-        entry->parent_id = parent_pcb->id;
-    else
-        entry->parent_id = 0;
+    entry->num_children = 0;
+    entry->parent = NULL;
 
     // create first process
     tcb_t* tcb = create_tcb_entry(entry);
-
+    if(tcb == NULL){
+        free(entry);
+        return NULL;
+    }
+    if (parent_pcb != NULL) {
+        pcb_add_child(parent_pcb, entry);
+    }
     return tcb;
 }
 
@@ -103,39 +141,27 @@ tcb_t* create_tcb_entry(pcb_t* parent_pcb)
     }
     uint32_t mem = (uint32_t)smemalign(PAGE_SIZE, PAGE_SIZE);
     if (mem == 0) {
+        free(entry);
         return NULL;
     }
-    void* stack = (void*)(mem + PAGE_SIZE - (2 * sizeof(int)));
+    entry->kernel_stack = (void*)(mem + PAGE_SIZE - (2 * sizeof(int)));
+    // Store pointer to tcb at the top of the kernel stack
+    *((tcb_t**)entry->kernel_stack) = entry;
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
     Q_INIT_ELEM(entry, runnable_threads);
 
-    // Scheduler thread list
-    mutex_lock(&kernel_state.threads_mutex);
-    INSERT(&kernel_state.threads, entry, all_threads);
-    mutex_unlock(&kernel_state.threads_mutex);
-
-    // Parent thread list
-    mutex_lock(&parent_pcb->threads_mutex);
-    INSERT(&parent_pcb->threads, entry, pcb_threads);
-    mutex_unlock(&parent_pcb->threads_mutex);
-
     if (parent_pcb->num_threads == 0)
         entry->id = parent_pcb->id;
     else
         entry->id = get_next_id();
-
-    mutex_lock(&parent_pcb->num_threads_mutex);
-    parent_pcb->num_threads++;
-    mutex_unlock(&parent_pcb->num_threads_mutex);
-
-    entry->parent = parent_pcb;
-    entry->kernel_stack = stack;
     entry->state = SUSPENDED;
 
-    // Store pointer to tcb at the top of the kernel stack
-    *((tcb_t**)stack) = entry;
+    // Parent thread list
+    pcb_add_thread(parent_pcb, entry);
+    // Kernel thread list
+    kernel_add_thread(entry);
 
     return entry;
 }
@@ -156,7 +182,7 @@ tcb_t* get_tcb_by_id(int tid)
     tcb_t* tcb;
     Q_FOREACH(tcb, &kernel_state.threads, all_threads)
     {
-        if (tcb->id == tid) {
+        if (tcb->id == tid && tcb->state != EXITED) {
             return tcb;
         }
     }

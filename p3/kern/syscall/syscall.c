@@ -27,6 +27,7 @@ void set_status_syscall(ureg_t state)
 {
     tcb_t *tcb = get_tcb();
     pcb_t *pcb = tcb->parent;
+    // No mutex needed
     pcb->exit_status = state.esi;
 }
 
@@ -37,10 +38,7 @@ void set_status_syscall(ureg_t state)
 void vanish_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called vanish. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    kill_thread(tcb);
 }
 
 /** @brief The task_vanish syscall

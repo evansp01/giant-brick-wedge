@@ -39,9 +39,6 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
     Q_INSERT_TAIL(&scheduler.runnable, first, runnable_threads);
 }
 
-void finalize_exit(tcb_t* tcb)
-{
-}
 
 void scheduler_pre_switch(tcb_t* from, tcb_t* to)
 {
@@ -129,6 +126,16 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
+
+
+void kill_thread(tcb_t* tcb)
+{
+    disable_interrupts();
+    tcb->state = EXITED;
+    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+    switch_to_next(tcb, SCHEDULE_MODE);
+}
+
 
 int deschedule(tcb_t* tcb, uint32_t esi)
 {
