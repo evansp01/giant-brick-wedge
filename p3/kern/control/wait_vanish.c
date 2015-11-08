@@ -3,9 +3,12 @@
 #include <variable_queue.h>
 #include <stdlib.h>
 #include <contracts.h>
+#include <simics.h>
 
-void cleanup_process(pcb_t *pcb){
-    free_ppd(&pcb->directory);
+void cleanup_process(pcb_t *pcb)
+{
+    pcb_t *current = get_tcb()->parent;
+    free_ppd(&pcb->directory, &current->directory);
     free_pcb(pcb);
 }
 
@@ -20,6 +23,7 @@ int wait(pcb_t* pcb, int *status_ptr)
     pcb_t* child = Q_GET_FRONT(&pcb->children);
     if(child->state != EXITED){
         pcb->waiting++;
+        lprintf("Waiting %d", pcb->id);
         cond_wait(&pcb->wait, &pcb->children_mutex);
         child = Q_GET_FRONT(&pcb->children);
     }
@@ -84,12 +88,14 @@ void finalize_exit(tcb_t* tcb)
         return;
     }
     mutex_lock(&parent->children_mutex);
+    lprintf("Exiting %d", process->id);
     process->state = EXITED;
     // Exited people always at front of list for efficient wait
     Q_REMOVE(&parent->children, process, siblings);
     Q_INSERT_FRONT(&parent->children, process, siblings);
     if(parent->waiting > 0){
         parent->waiting--;
+        lprintf("Signaling %d", parent->id);
         cond_signal(&parent->wait);
     }
     mutex_unlock(&parent->children_mutex);

@@ -345,10 +345,7 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         sim_unreg_process(old_dir.dir);
         sim_reg_process(new_dir->dir, k_space);
         //if we succeeded free the old directory
-        switch_ppd(&old_dir);
-        free_ppd(&old_dir);
-        switch_ppd(new_dir);
-
+        free_ppd(&old_dir, new_dir);
     }
     free(k_space);
     return status;

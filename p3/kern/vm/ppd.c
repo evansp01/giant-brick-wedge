@@ -50,17 +50,19 @@ int vm_free(ppd_t* ppd, void* start)
     return 0;
 }
 
-int free_ppd(ppd_t* ppd)
+int free_ppd(ppd_t* to_free, ppd_t *current)
 {
     alloc_t* alloc;
     alloc_t* tmp;
-    Q_FOREACH_SAFE(alloc, tmp, &ppd->allocations, list)
+    switch_ppd(to_free);
+    Q_FOREACH_SAFE(alloc, tmp, &to_free->allocations, list)
     {
-        Q_REMOVE(&ppd->allocations, alloc, list);
-        vm_free_alloc(ppd, alloc->start, alloc->size);
+        Q_REMOVE(&to_free->allocations, alloc, list);
+        vm_free_alloc(to_free, alloc->start, alloc->size);
         free(alloc);
     }
-    free_page_directory(ppd->dir);
+    free_page_directory(to_free->dir);
+    switch_ppd(current);
     return 0;
 }
 

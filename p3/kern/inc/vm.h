@@ -28,7 +28,7 @@ void init_virtual_memory();
 
 int init_ppd(ppd_t* ppd);
 int init_ppd_from(ppd_t *ppd, ppd_t *from);
-int free_ppd(ppd_t* ppd);
+int free_ppd(ppd_t* to_free, ppd_t *current);
 void switch_ppd(ppd_t* ppd);
 
 int vm_alloc_readwrite(ppd_t *ppd, void *start, uint32_t size);
