@@ -12,8 +12,8 @@
 
 void init_scheduler(tcb_t *idle, tcb_t *first);
 void run_next();
-void schedule(tcb_t *tcb);
-void deschedule(tcb_t *tcb);
+int schedule(tcb_t *tcb);
+int deschedule(tcb_t* tcb, uint32_t esi);
 void deschedule_and_drop(tcb_t *tcb, mutex_t *mp);
 
 #endif // SCHEDULER_H_

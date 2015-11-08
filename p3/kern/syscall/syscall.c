@@ -100,10 +100,7 @@ void yield_syscall(ureg_t state)
 void deschedule_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called deschedule. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    state.eax = deschedule(tcb, state.esi);
 }
 
 /** @brief The make_runnable syscall
@@ -112,10 +109,11 @@ void deschedule_syscall(ureg_t state)
  */
 void make_runnable_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called make_runnable. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    tcb_t *make_runnable = get_tcb_by_id(state.esi);
+    if(make_runnable == NULL){
+        state.eax = -1;
+    } else {
+        state.eax = schedule(make_runnable);
     }
 }
 

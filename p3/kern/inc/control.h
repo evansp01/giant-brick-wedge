@@ -13,7 +13,6 @@
 #include <mutex.h>
 
 typedef enum state {
-    NOTYET,
     RUNNABLE,
     SUSPENDED,
     EXITED

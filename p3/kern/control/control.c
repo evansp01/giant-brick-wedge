@@ -65,7 +65,8 @@ tcb_t* create_pcb_entry(pcb_t* parent_pcb)
 
     entry->id = get_next_id();
     entry->exit_status = 0;
-    entry->state = NOTYET;
+    // TODO; this is strange
+    entry->state = RUNNABLE;
     entry->num_threads = 0;
     mutex_init(&entry->num_threads_mutex);
 
@@ -131,7 +132,7 @@ tcb_t* create_tcb_entry(pcb_t* parent_pcb)
 
     entry->parent = parent_pcb;
     entry->kernel_stack = stack;
-    entry->state = NOTYET;
+    entry->state = SUSPENDED;
 
     // Store pointer to tcb at the top of the kernel stack
     *((tcb_t**)stack) = entry;

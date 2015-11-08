@@ -80,13 +80,18 @@ void run_next()
  *  @param tcb Pointer to tcb of thread to schedule
  *  @return void
  */
-void schedule(tcb_t* tcb)
+int schedule(tcb_t* tcb)
 {
     // TODO: Neeed mutex to access state
     disable_interrupts();
+    if(tcb->state != SUSPENDED){
+        enable_interrupts();
+        return -1;
+    }
     tcb->state = RUNNABLE;
     Q_INSERT_TAIL(&scheduler.runnable, tcb, runnable_threads);
     enable_interrupts();
+    return 0;
 }
 
 /** @brief Deschedules the current thread
@@ -105,13 +110,24 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
     enable_interrupts();
 }
 
-void deschedule(tcb_t* tcb)
+int deschedule(tcb_t* tcb, uint32_t esi)
 {
+    ppd_t *ppd = &tcb->parent->directory;
+    mutex_lock(&ppd->lock);
     disable_interrupts();
+    int reject;
+    if(vm_read(ppd, &reject, (void*)esi, sizeof(esi)) < 0){
+        return -1;
+    }   
+    if(reject != 0){
+        return 0;
+    }
+    mutex_unlock(&ppd->lock);
     tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
     enable_interrupts();
+    return 0;
 }
 
 /** @brief Yields execution to another thread
