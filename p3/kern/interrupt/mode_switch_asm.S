@@ -74,7 +74,6 @@
 .global first_entry_user_mode
 first_entry_user_mode:
     movl 4(%esp), %esp      # switch stack pointers
-    call first_user_c
     RESTORE_STATE           # perform the mode switch
 
 /* Assembly wrappers for device interrupts */

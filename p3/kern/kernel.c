@@ -70,7 +70,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // Allow for correct context switching to idle
     setup_for_switch(idle);
     // Create main program kernel will run
-    tcb_t *tcb = new_program("deschedule_hang", 0, NULL);
+    tcb_t *tcb = new_program("coolness", 0, NULL);
     if (tcb == NULL) {
         panic("Cannot create first process. Kernel is sad");
     }
@@ -79,6 +79,8 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // this **MUST** be done after all other initialization has been performed
     // otherwise semaphores can randomly enable interrupts
     init_malloc();
+    //  Switch to ppd of first thread
+    switch_ppd(&tcb->parent->directory);
     // Switch to 1st idle thread
     // Interrupts cannot yet be enabled, as they will trigger a fault since
     // there is no pcb entry for this kernel stack
