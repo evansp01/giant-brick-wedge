@@ -105,7 +105,7 @@ AUTOSTACK_OBJS = autostack.o
 KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o
 KERN_CONTROL = control/control.o control/mutex.o control/atomic.o \
-               control/cond.o control/sem.o
+               control/cond.o control/sem.o control/wait_vanish.o
 KERN_INTERRUPT = interrupt/debug.o interrupt/devices.o interrupt/fault.o \
 				 interrupt/console.o interrupt/mode_switch.o \
 				 interrupt/mode_switch_asm.o interrupt/setup_idt.o
@@ -142,7 +142,7 @@ KERNEL_OBJS +=${KERN_VM}
 410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper knife \
 	merchant peon coolness getpid_test1 loader_test1 loader_test2 \
     exec_nonexist mem_permissions new_pages remove_pages_test1 \
-	remove_pages_test2 readline_basic print_basic
+	remove_pages_test2 readline_basic print_basic deschedule_hang
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

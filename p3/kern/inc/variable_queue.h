@@ -306,6 +306,46 @@
          CURRENT_ELEM = Q_GET_NEXT(CURRENT_ELEM, LINK_NAME) \
         )
 
+/** @def Q_FOREACH_SAFE(CURRENT_ELEM, SWAP, Q_HEAD, LINK_NAME)
+ *
+ *  @brief Constructs an iterator block (like a for block) that operates
+ *         on each element in Q_HEAD, in order.
+ *
+ *  Q_FOREACH constructs the head of a block of code that will iterate through
+ *  each element in the queue headed by Q_HEAD. Each time through the loop,
+ *  the variable named by CURRENT_ELEM will be set to point to a subsequent
+ *  element in the queue.
+ *
+ *  The safe version adds the proprerty that CURRENT_ELEM may safely be modified
+ *  during iteration
+ *
+ *  Usage:<br>
+ *  Q_FOREACH(CURRENT_ELEM, Q_HEAD, LINK_NAME)<br>
+ *  {<br>
+ *  ... operate on the variable CURRENT_ELEM ... <br>
+ *  }
+ *
+ *  If LINK_NAME is not used to organize the queue headed by Q_HEAD, then
+ *  the behavior of this macro is undefined.
+ *
+ *  @param CURRENT_ELEM name of the variable to use for iteration. On each
+ *         loop through the Q_FOREACH block, CURRENT_ELEM will point to the
+ *         current element in the queue. CURRENT_ELEM should be an already-
+ *         defined variable name, and its type should be a pointer to
+ *         the type of data organized by Q_HEAD
+ *  @param SWAP same type as CURRENT_ELEM should not be touched by the user
+ *  @param Q_HEAD Pointer to the head of the queue to iterate through
+ *  @param LINK_NAME The name of the link used to organize the queue headed
+ *         by Q_HEAD.
+ **/
+
+#define Q_FOREACH_SAFE(ITR, NXT, Q_HEAD, LINK_NAME)                           \
+    for(ITR = Q_GET_FRONT(Q_HEAD),                                            \
+        NXT = (ITR == NULL ? NULL : Q_GET_NEXT(ITR, LINK_NAME));              \
+        ITR != NULL;                                                          \
+        ITR = NXT, (NXT = ITR == NULL ? NULL : Q_GET_NEXT(ITR, LINK_NAME))    \
+       )
+
 /** @def Q_IS_EMPTY(Q_HEAD, Q_INQ, Q_TOINSERT, LINK_NAME)
  *
  *  @brief Returns 1 if queue is empty, 0 if there are elements

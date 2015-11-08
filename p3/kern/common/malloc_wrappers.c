@@ -11,13 +11,13 @@
 #include <malloc_internal.h>
 #include <sem.h>
 
-int threaded = 0;
-sem_t sem;
+static sem_t sem;
+static int initialized = 0;
 
 void init_malloc()
 {
-    threaded = 1;
     sem_init(&sem, 1);
+    initialized = 1;
 }
 
 /** @brief Allocates memory of size bytes
@@ -27,12 +27,14 @@ void init_malloc()
  **/
 void* malloc(size_t size)
 {
-    if (!threaded) {
-        return _malloc(size);
+    void* stuff;
+    if (initialized) {
+        sem_wait(&sem);
+        stuff = _malloc(size);
+        sem_signal(&sem);
+    } else {
+        stuff = _malloc(size);
     }
-    sem_wait(&sem);
-    void* stuff = _malloc(size);
-    sem_signal(&sem);
     return stuff;
 }
 
@@ -44,12 +46,14 @@ void* malloc(size_t size)
  **/
 void* memalign(size_t alignment, size_t size)
 {
-    if (!threaded) {
-        return _memalign(alignment, size);
+    void* stuff;
+    if (initialized) {
+        sem_wait(&sem);
+        stuff = _memalign(alignment, size);
+        sem_signal(&sem);
+    } else {
+        stuff = _memalign(alignment, size);
     }
-    sem_wait(&sem);
-    void* stuff = _memalign(alignment, size);
-    sem_signal(&sem);
     return stuff;
 }
 
@@ -61,12 +65,14 @@ void* memalign(size_t alignment, size_t size)
  **/
 void* calloc(size_t nelt, size_t eltsize)
 {
-    if (!threaded) {
-        return _calloc(nelt, eltsize);
+    void* stuff;
+    if (initialized) {
+        sem_wait(&sem);
+        stuff = _calloc(nelt, eltsize);
+        sem_signal(&sem);
+    } else {
+        stuff = _calloc(nelt, eltsize);
     }
-    sem_wait(&sem);
-    void* stuff = _calloc(nelt, eltsize);
-    sem_signal(&sem);
     return stuff;
 }
 
@@ -78,12 +84,14 @@ void* calloc(size_t nelt, size_t eltsize)
  **/
 void* realloc(void* buf, size_t new_size)
 {
-    if (!threaded) {
-        return _realloc(buf, new_size);
+    void* stuff;
+    if (initialized) {
+        sem_wait(&sem);
+        stuff = _realloc(buf, new_size);
+        sem_signal(&sem);
+    } else {
+        stuff = _realloc(buf, new_size);
     }
-    sem_wait(&sem);
-    void* stuff = _realloc(buf, new_size);
-    sem_signal(&sem);
     return stuff;
 }
 
@@ -94,13 +102,13 @@ void* realloc(void* buf, size_t new_size)
  **/
 void free(void* buf)
 {
-    if (!threaded) {
+    if (initialized) {
+        sem_wait(&sem);
         _free(buf);
-        return;
+        sem_signal(&sem);
+    } else {
+        _free(buf);
     }
-    sem_wait(&sem);
-    _free(buf);
-    sem_signal(&sem);
 }
 
 /** @brief Safe version of malloc
@@ -110,12 +118,14 @@ void free(void* buf)
  **/
 void* smalloc(size_t size)
 {
-    if (!threaded) {
-        return _smalloc(size);
+    void* stuff;
+    if (initialized) {
+        sem_wait(&sem);
+        stuff = _smalloc(size);
+        sem_signal(&sem);
+    } else {
+        stuff = _smalloc(size);
     }
-    sem_wait(&sem);
-    void* stuff = _smalloc(size);
-    sem_signal(&sem);
     return stuff;
 }
 
@@ -127,12 +137,14 @@ void* smalloc(size_t size)
  **/
 void* smemalign(size_t alignment, size_t size)
 {
-    if (!threaded) {
-        return _smemalign(alignment, size);
+    void* stuff;
+    if (initialized) {
+        sem_wait(&sem);
+        stuff = _smemalign(alignment, size);
+        sem_signal(&sem);
+    } else {
+        stuff = _smemalign(alignment, size);
     }
-    sem_wait(&sem);
-    void* stuff = _smemalign(alignment, size);
-    sem_signal(&sem);
     return stuff;
 }
 
@@ -144,11 +156,11 @@ void* smemalign(size_t alignment, size_t size)
  **/
 void sfree(void* buf, size_t size)
 {
-    if (!threaded) {
+    if (initialized) {
+        sem_wait(&sem);
         _sfree(buf, size);
-        return;
+        sem_signal(&sem);
+    } else {
+        _sfree(buf, size);
     }
-    sem_wait(&sem);
-    _sfree(buf, size);
-    sem_signal(&sem);
 }

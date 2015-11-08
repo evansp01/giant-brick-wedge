@@ -10,7 +10,7 @@
 #include <atomic.h>
 #include <stdlib.h>
 #include <control.h>
-#include <switch.h>
+#include <scheduler.h>
 
 #define LOCKED 1
 #define UNLOCKED 0

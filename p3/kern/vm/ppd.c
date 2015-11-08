@@ -4,6 +4,7 @@
 #include <cr.h>
 #include "vm_internal.h"
 #include <stdlib.h>
+#include <malloc.h>
 
 int init_ppd(ppd_t* ppd)
 {
@@ -22,13 +23,14 @@ int add_alloc(ppd_t* ppd, void* start, uint32_t size)
     if (new_alloc == NULL) {
         return -1;
     }
+    Q_INIT_ELEM(new_alloc, list);
     new_alloc->start = (uint32_t)start;
     new_alloc->size = size;
     Q_INSERT_TAIL(&ppd->allocations, new_alloc, list);
     return 0;
 }
 
-int remove_alloc(ppd_t* ppd, void* start, uint32_t* size)
+int vm_free(ppd_t* ppd, void* start)
 {
     alloc_t* alloc;
     int found = 0;
@@ -42,13 +44,23 @@ int remove_alloc(ppd_t* ppd, void* start, uint32_t* size)
     if (!found) {
         return -1;
     }
-    *size = alloc->size;
     Q_REMOVE(&ppd->allocations, alloc, list);
+    vm_free_alloc(ppd, alloc->start, alloc->size);
+    free(alloc);
     return 0;
 }
 
 int free_ppd(ppd_t* ppd)
 {
+    alloc_t* alloc;
+    alloc_t* tmp;
+    Q_FOREACH_SAFE(alloc, tmp, &ppd->allocations, list)
+    {
+        Q_REMOVE(&ppd->allocations, alloc, list);
+        vm_free_alloc(ppd, alloc->start, alloc->size);
+        free(alloc);
+    }
+    free_page_directory(ppd->dir);
     return 0;
 }
 
@@ -75,6 +87,7 @@ int init_ppd_from(ppd_t* ppd, ppd_t* from)
     Q_FOREACH(alloc, &from->allocations, list)
     {
         alloc_t* copy = malloc(sizeof(alloc_t));
+        Q_INIT_ELEM(copy, list);
         if (copy == NULL) {
             return -1;
         }

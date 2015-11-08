@@ -18,8 +18,7 @@
  *  @param tcb TCB of current thread to save esp
  *  @return Void
  **/
-void switch_context(void *stack, tcb_t *tcb);
-void switch_context_ppd(tcb_t* from, tcb_t* to);
+void switch_stack_and_regs(void *stack, tcb_t *tcb);
 
 /** @brief Get the current value of esp
  *  @return The value of esp
@@ -27,8 +26,10 @@ void switch_context_ppd(tcb_t* from, tcb_t* to);
 uint32_t get_esp();
 
 // C functions
-int yield(int yield_tid);
 void store_esp(void *saved_esp, tcb_t *tcb);
+void context_switch(tcb_t *from, tcb_t *to);
+void first_context_switch(void *iret_ptr);
+void setup_for_switch(tcb_t* tcb);
 
 
 #endif // SWITCH_H_

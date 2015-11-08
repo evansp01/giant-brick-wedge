@@ -42,7 +42,7 @@
  *  @param esp Stack pointer with values to be restored
  *  @return Void
  **/
-void first_entry_user_mode(void *esp);
+void go_to_user_mode(void *esp);
 
 
 // C headers

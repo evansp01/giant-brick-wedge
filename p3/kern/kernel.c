@@ -34,8 +34,8 @@
 #include <kernel_tests.h>
 #include <loader.h>
 #include <mode_switch.h>
-#include <cr.h>
 #include <scheduler.h>
+#include <switch.h>
 
 /** @brief Tick function, to be called by the timer interrupt handler
  *
@@ -61,26 +61,31 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     initialize_devices(timer);
     install_syscalls();
     init_virtual_memory();
-    init_scheduler();
     init_kernel_state();
-
-    // Run kernel tests (TODO: Free/reallocate frames)
-    //vm_diagnose(dir);
-    //test_process_vm();
-
-    // Create 1st idle process
-    tcb_t *tcb = new_program("shell", 0, NULL);
-    if (tcb == NULL)
+    // Create idle process
+    tcb_t *idle = new_program("idle", 0, NULL);
+    if (idle == NULL) {
         panic("Cannot create first process. Kernel is sad");
-    
-    // Switch to multi-threaded mode
+    }
+    // Allow for correct context switching to idle
+    setup_for_switch(idle);
+    // Create main program kernel will run
+    tcb_t *tcb = new_program("shell", 0, NULL);
+    if (tcb == NULL) {
+        panic("Cannot create first process. Kernel is sad");
+    }
+    init_scheduler(idle, tcb);
+    // Switch to thread safe malloc
+    // this **MUST** be done after all other initialization has been performed
+    // otherwise semaphores can randomly enable interrupts
     init_malloc();
-
+    //  Switch to ppd of first thread
     // Switch to 1st idle thread
     // Interrupts cannot yet be enabled, as they will trigger a fault since
     // there is no pcb entry for this kernel stack
     // Interrupts will be enabled upon switching to user mode
-    first_entry_user_mode(tcb->saved_esp);
+    scheduler_pre_switch(NULL, tcb);
+    go_to_user_mode(tcb->saved_esp);
 
     while (1) {
         panic("Kernel has wandered into limbo.");

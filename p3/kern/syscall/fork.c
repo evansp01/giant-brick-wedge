@@ -20,7 +20,9 @@
 #include <scheduler.h>
 #include <vm.h>
 #include <asm.h> //temp
+#include <stack_info.h>
 
+tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state);
 
 /** @brief Handler function for fork()
  *
@@ -43,8 +45,6 @@ void fork_syscall(ureg_t state)
         return;
     }
     // Copy kernel stack with return value of 0 for child
-    state.eax = 0;
-    copy_kernel_stack(tcb_parent, tcb_child);
     // TODO: Copy software exception handler (if installed)
     // Setup stack for re-entry via context_switch
     setup_for_switch(tcb_child);
@@ -66,11 +66,10 @@ void fork_syscall(ureg_t state)
  **/
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
 {
-    //TODO: name this constant it shows up lots of places
-    uint32_t child_addr = (uint32_t)tcb_child->kernel_stack & 0xFFFFF000;
-    uint32_t parent_addr = (uint32_t)tcb_parent->kernel_stack & 0xFFFFF000;
+    uint32_t child_addr = K_STACK_BASE(tcb_child->kernel_stack);
+    uint32_t parent_addr = K_STACK_BASE(tcb_parent->kernel_stack);
     // PAGE_SIZE-8 ensures that the pointer to tcb is not overwritten
-    memcpy((void*)child_addr, (void*)parent_addr, PAGE_SIZE-8);
+    memcpy((void*)child_addr, (void*)parent_addr, K_STACK_SPACE);
 }
 
 
@@ -90,38 +89,31 @@ void calc_saved_esp(tcb_t* parent, tcb_t *child, void *state)
  *
  *  @return Pointer to tcb on success, null on failure
  **/
-tcb_t *create_copy(tcb_t *tcb_parent, void *state)
+tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state)
 {
     pcb_t* pcb_parent = tcb_parent->parent;
 
-    // Reject calls to fork for processes with more than one thread
     // Create copy of pcb & tcb
-    tcb_t* tcb_child = create_pcb_entry(pcb_parent);
-
+    tcb_t* tcb_child = create_pcb_entry();
+    if(tcb_child == NULL){
+        return NULL;
+    }
     // Copy tcb data
     calc_saved_esp(tcb_parent, tcb_child, state);
 
     // Copy memory regions
     if(init_ppd_from(&tcb_child->parent->directory, &pcb_parent->directory)){
-        lprintf("cannot copy program");
+        pcb_t *proc = tcb_child->parent;
+        free_tcb(tcb_child);
+        free_pcb(proc);
         return NULL;
     }
+    // Now that we know things worked, add to lists
+    pcb_add_child(pcb_parent, tcb_child->parent);
+    kernel_add_thread(tcb_child);
+
+    state->eax = 0;
+    copy_kernel_stack(tcb_parent, tcb_child);
+
     return tcb_child;
-}
-
-/** @brief Sets up a given thread stack for entry via context switch
- *
- *  @param tcb Thread whose stack is to be set up for context switch entry
- *  @return void
- **/
-void setup_for_switch(tcb_t *tcb)
-{
-    void *saved_esp = tcb->saved_esp;
-
-    context_stack_t context_stack = {
-        .func_addr = first_entry_user_mode,
-        .saved_esp = saved_esp,
-    };
-
-    PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);
 }

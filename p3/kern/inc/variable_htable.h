@@ -199,6 +199,30 @@ uint32_t hash_int(uint32_t x);
         }                                               \
     } while(0)
 
+
+/** @def H_DEBUG_BUCKETS(table, key_field, link, info)
+ *
+ *  @brief A debugging function that allows the user some access to the hash
+ *         tables internals
+ *
+ *  @param table The table to get information about
+ *  @param key_field The field where the key is stored in the element
+ *  @param link The name of the link used to organize the bucket lists
+ *  @param info A funciton accepting two integers which will be called with the
+ *         index and size of every bucket
+ *  @return void
+ **/
+#define H_FOREACH_SAFE(i, current, swap, table, link)               \
+    for (i = 0; i < _H_CAP(table); i++)                             \
+        Q_FOREACH_SAFE(current, swap, _H_BUCKET(table, i), link)
+
+
+
+#define H_FOREACH(i, current, swap, table, link)                    \
+    for (i = 0; i < _H_CAP(table); i++)                             \
+        Q_FOREACH(current, swap, _H_BUCKET(table, i), link)
+
+
 /****************************************************************
  ***************** PRIVATE HELPER MACROS ************************
  ****************************************************************/
@@ -340,7 +364,7 @@ uint32_t hash_int(uint32_t x);
                     _H_BUCKET_INSERT((_tmp + _hash), _search, link);          \
                 }                                                             \
             }                                                                 \
-            free(_H_TABLE(table));                                            \
+            H_FREE_TABLE(table);                                              \
             _H_TABLE(table) = _tmp;                                           \
             _H_CAP(table) = _new_cap;                                         \
         }                                                                     \

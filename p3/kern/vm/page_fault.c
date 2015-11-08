@@ -71,6 +71,7 @@ int vm_resolve_pagefault(ppd_t* ppd, uint32_t cr2, int error_code)
         return 0;
     }
     if (!table->zfod) {
+        lprintf("%d", table->write);
         lprintf("Process tried to write to read only page at %lx", cr2);
         return -1;
     }

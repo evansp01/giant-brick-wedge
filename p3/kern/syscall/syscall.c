@@ -45,6 +45,7 @@ void set_status_syscall(ureg_t state)
 {
     tcb_t *tcb = get_tcb();
     pcb_t *pcb = tcb->parent;
+    // No mutex needed
     pcb->exit_status = state.esi;
 }
 
@@ -55,10 +56,7 @@ void set_status_syscall(ureg_t state)
 void vanish_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called vanish. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    kill_thread(tcb);
 }
 
 /** @brief The task_vanish syscall
@@ -81,10 +79,7 @@ void task_vanish_syscall(ureg_t state)
 void wait_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called wait. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    state.eax = wait(tcb->parent, (int*)state.esi);
 }
 
 /** @brief The gettid syscall
@@ -118,10 +113,7 @@ void yield_syscall(ureg_t state)
 void deschedule_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called deschedule. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    state.eax = deschedule(tcb, state.esi);
 }
 
 /** @brief The make_runnable syscall
@@ -130,10 +122,11 @@ void deschedule_syscall(ureg_t state)
  */
 void make_runnable_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called make_runnable. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    tcb_t *make_runnable = get_tcb_by_id(state.esi);
+    if(make_runnable == NULL){
+        state.eax = -1;
+    } else {
+        state.eax = schedule(make_runnable);
     }
 }
 

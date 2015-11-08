@@ -12,45 +12,24 @@
 #include <simics.h>
 #include <scheduler.h>
 #include <asm.h>
+#include <loader.h>
+#include <mode_switch.h>
+#include <stack_info.h>
 
-void switch_context_ppd(tcb_t* from, tcb_t* to)
-{
-    switch_ppd(&to->parent->directory);
-    switch_context(to->saved_esp, from);
-}
-
-/** @brief Yields execution to another thread
- *
- *  @param yield_tid Thread id of thread to yield to
- *  @return Zero on success, an integer less than zero on failure
- **/
-int yield(int yield_tid)
-{
-    // Get scheduler to choose next thread to run if tid is -1
-    if (yield_tid == -1) {
-        run_next();
-        return 0;
-    }
-
-    tcb_t* p_tcb = get_tcb();
-
-    // User has requested to yield to the currently running thread
-    if (yield_tid == p_tcb->id) {
-        return 0;
-    }
-
-    extern kernel_state_t kernel_state;
-    tcb_t* tcb;
-    Q_FOREACH(tcb, &kernel_state.threads, all_threads) {
-        if (tcb->id == yield_tid) {
-            disable_interrupts();
-            switch_context_ppd(p_tcb, tcb);
-            enable_interrupts();
-            return 0;
-        }
-    }
-    return -1;
-}
+/* --- Structs --- */
+typedef struct context_stack {
+    void* edi;
+    void* esi;
+    void* ebp;
+    void* esp;
+    void* ebx;
+    void* edx;
+    void* ecx;
+    void* eax;
+    void* func_addr;
+    void* dummy;
+    void* saved_esp;
+} context_stack_t;
 
 /** @brief Stores the saved_esp into the tcb
  *
@@ -61,4 +40,38 @@ int yield(int yield_tid)
 void store_esp(void* saved_esp, tcb_t* tcb)
 {
     tcb->saved_esp = saved_esp;
+}
+
+/** @brief Context switch from one thread to another
+ *
+ *  @param from The thread to switch from
+ *  @param to The thread to switch to
+ *  @return void
+ **/
+void context_switch(tcb_t* from, tcb_t* to)
+{
+    scheduler_pre_switch(from, to);
+    switch_stack_and_regs(to->saved_esp, from);
+    scheduler_post_switch();
+}
+
+void first_context_switch(void* iret_ptr)
+{
+    scheduler_post_switch();
+    go_to_user_mode(iret_ptr);
+}
+
+/** @brief Sets up a given thread stack for entry via context switch
+ *
+ *  @param tcb Thread whose stack is to be set up for context switch entry
+ *  @return void
+ **/
+void setup_for_switch(tcb_t* tcb)
+{
+    void* saved_esp = tcb->saved_esp;
+    context_stack_t context_stack = {
+        .func_addr = first_context_switch,
+        .saved_esp = saved_esp,
+    };
+    PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);
 }

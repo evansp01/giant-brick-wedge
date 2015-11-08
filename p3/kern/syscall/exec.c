@@ -9,7 +9,6 @@
 /* --- Includes --- */
 #include <string.h>
 #include <stdio.h>
-#include <malloc.h>
 #include <exec2obj.h>
 #include <loader.h>
 #include <elf_410.h>
@@ -22,6 +21,8 @@
 #include <mode_switch.h>
 #include <limits.h>
 #include <eflags.h>
+#include <stack_info.h>
+#include <stdlib.h>
 
 #define STACK_HIGH 0xFFFFFFF0
 #define USER_STACK_SIZE PAGE_SIZE
@@ -286,16 +287,19 @@ int exec(tcb_t* tcb, char* fname, int argc, char** argv, int argspace)
 
 tcb_t* new_program(char* fname, int argc, char** argv)
 {
-    tcb_t* tcb_entry = create_pcb_entry(NULL);
+    tcb_t* tcb_entry = create_pcb_entry();
     int i, argspace = 0;
     for (i = 0; i < argc; i++) {
         argspace += strlen(argv[i]) + 1;
     }
     if (exec(tcb_entry, fname, argc, argv, argspace) < 0) {
-        //TODO: free tcb
+        pcb_t *proc = tcb_entry->parent;
+        free_tcb(tcb_entry);
+        free_pcb(proc);
         return NULL;
     }
-    
+    // Add the newly created thread to the thread list
+    kernel_add_thread(tcb_entry);
     // Register process for simics user space debugging
     sim_reg_process(tcb_entry->parent->directory.dir, fname);
     
@@ -336,11 +340,15 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         tcb->parent->directory = old_dir;
         switch_ppd(&old_dir);
     } else {
+        ppd_t *new_dir = &tcb->parent->directory;
         // De-register the previously running process in simics
         sim_unreg_process(old_dir.dir);
-        sim_reg_process(tcb->parent->directory.dir, k_space);
+        sim_reg_process(new_dir->dir, k_space);
         //if we succeeded free the old directory
+        switch_ppd(&old_dir);
         free_ppd(&old_dir);
+        switch_ppd(new_dir);
+
     }
     free(k_space);
     return status;

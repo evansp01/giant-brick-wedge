@@ -1,5 +1,6 @@
 #include <vm.h>
 #include <utilities.h>
+#include <contracts.h>
 #include <string.h>
 #include "vm_internal.h"
 
@@ -106,7 +107,7 @@ int is_user(entry_t* table, entry_t* dir)
 
 int is_write(entry_t* table)
 {
-    return table->write || table->zfod;
+    return table->write || (is_zfod(table) && table->zfod);
 }
 
 int is_zfod(entry_t* table)
@@ -182,9 +183,11 @@ int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
         if (is_zfod(table)) {
             // set the zfod write bit
             table->zfod = 1;
+            ASSERT(table->write == 0);
         } else {
             // set the write bit
             table->write = 1;
+            ASSERT(table->zfod == 0);
         }
         invalidate_page(AS_TYPE(addr, void*));
     }
@@ -196,9 +199,14 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
     if (!is_user(table, dir)) {
         return -3;
     }
-    // no worries about zfod stuff
-    if (table->write) {
-        table->write = 0;
+    if (is_write(table)) {
+        if (is_zfod(table)) {
+            table->zfod = 0;
+            ASSERT(table->write == 0);
+        } else {
+            table->write = 0;
+            ASSERT(table->zfod == 0);
+        }
         invalidate_page(AS_TYPE(addr, void*));
     }
     return 0;
@@ -309,7 +317,7 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
     return 0;
 }
 
-int vm_free_h(entry_t* table, entry_t* dir, address_t addr)
+int vm_free_alloc_h(entry_t* table, entry_t* dir, address_t addr)
 {
     // everything we are freeing should be user mapped
     if (!is_user(table, dir)) {
@@ -324,6 +332,8 @@ int vm_free_h(entry_t* table, entry_t* dir, address_t addr)
     }
     // mark as kernel only to eliminate race conditions
     table->user = 0;
+    // make sure we can write to the page
+    table->write = 1;
     invalidate_page(virtual);
     free_frame(virtual, get_entry_address(*table));
     *table = e_unmapped;
@@ -331,11 +341,7 @@ int vm_free_h(entry_t* table, entry_t* dir, address_t addr)
     return 0;
 }
 
-int vm_free(ppd_t* ppd, void* start)
+int vm_free_alloc(ppd_t* ppd, uint32_t start, uint32_t size)
 {
-    uint32_t size;
-    if (remove_alloc(ppd, start, &size) < 0) {
-        return -1;
-    }
-    return vm_map_pages(ppd, start, size, vm_free_h);
+    return vm_map_pages(ppd, (void*)start, size, vm_free_alloc_h);
 }
