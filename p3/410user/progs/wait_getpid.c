@@ -30,14 +30,19 @@ int main()
   
   if (pid == 0) {
     pid = gettid();
+    lprintf("child is exiting %d", pid);
     exit(pid);
     report_end(END_FAIL);
   }
-  if (wait(&status) != pid) {
+  int ret;
+  if ((ret = wait(&status)) != pid) {
+    lprintf("parent wait returned wrong pid %d", ret);
     report_end(END_FAIL);
     exit(-1);
   }
 
+  lprintf("parent wait returned right pid");
+  
   if (status != pid) {
     report_end(END_FAIL);
     exit(-1);

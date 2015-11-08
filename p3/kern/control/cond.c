@@ -52,15 +52,13 @@ void cond_destroy(cond_t* cv)
 void cond_wait(cond_t* cv, mutex_t* mp)
 {
     tcb_t *tcb = get_tcb();
-    node_t node;
-    node.tid = tcb->id;
-    node.reject = 0;
-    Q_INIT_ELEM(&node, node_link);
+    Q_INIT_ELEM(tcb, suspended_threads);
     mutex_lock(&cv->m);
-    Q_INSERT_TAIL(&cv->waiting, &node, node_link);
+    Q_INSERT_TAIL(&cv->waiting, tcb, suspended_threads);
     mutex_unlock(mp);
     
     // function is atomic
+    lprintf("Descheduling tcb id %d", tcb->id);
     deschedule_and_drop(tcb, &cv->m); 
     
     mutex_lock(mp);
@@ -73,13 +71,13 @@ void cond_wait(cond_t* cv, mutex_t* mp)
  **/
 void cond_signal(cond_t* cv)
 {
-    tcb_t *tcb = get_tcb();
     mutex_lock(&cv->m);
     // if nobody is waiting, just return
     if (!Q_IS_EMPTY(&cv->waiting)) {
-        node_t *node = Q_GET_FRONT(&cv->waiting);
-        Q_REMOVE(&cv->waiting, node, node_link);
-        schedule(tcb);
+        tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
+        Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
+        lprintf("Scheduling tcb id %d", tcb_to_schedule->id);
+        schedule(tcb_to_schedule);
     }
     mutex_unlock(&cv->m);
 }
@@ -91,13 +89,12 @@ void cond_signal(cond_t* cv)
  **/
 void cond_broadcast(cond_t* cv)
 {
-    tcb_t *tcb = get_tcb();
     mutex_lock(&cv->m);
     // if nobody is waiting, just return
     while (!Q_IS_EMPTY(&cv->waiting)) {
-        node_t *node = Q_GET_FRONT(&cv->waiting);
-        Q_REMOVE(&cv->waiting, node, node_link);
-        schedule(tcb);
+        tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
+        Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
+        schedule(tcb_to_schedule);
     }
     mutex_unlock(&cv->m);
 }
