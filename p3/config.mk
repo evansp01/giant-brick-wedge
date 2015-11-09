@@ -34,7 +34,13 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory.
 #
-410TESTS =
+410TESTS = fork_test1 exec_basic exec_basic_helper knife \
+           merchant peon coolness getpid_test1 loader_test1 loader_test2 \
+           exec_nonexist mem_permissions new_pages remove_pages_test1 \
+           remove_pages_test2 readline_basic print_basic deschedule_hang \
+           wait_getpid actual_wait fork_wait fork_wait_bomb fork_exit_bomb \
+           stack_test1 swexn_basic_test swexn_cookie_monster swexn_dispatch \
+           swexn_regs swexn_stands_for_swextensible swexn_uninstall_test
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -139,11 +145,7 @@ KERNEL_OBJS +=${KERN_VM}
 # or init unless you are writing your own, and don't do that unless
 # you have a really good reason to do so.
 #
-410REQPROGS = idle init shell fork_test1 exec_basic exec_basic_helper knife \
-	merchant peon coolness getpid_test1 loader_test1 loader_test2 \
-    exec_nonexist mem_permissions new_pages remove_pages_test1 \
-	remove_pages_test2 readline_basic print_basic deschedule_hang \
-    wait_getpid actual_wait fork_wait
+410REQPROGS = idle init shell
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

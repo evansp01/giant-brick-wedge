@@ -93,7 +93,7 @@ void scroll()
   }
   /* Blank out last line */
   for (i = COPY_LINES_MAX; i < END_CONSOLE; i+=2) {
-    *(char *)i = '\0';
+    *(char *)i = ' ';
   }
 }
 

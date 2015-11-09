@@ -13,9 +13,9 @@ Stuff to do:
     multithreaded readline
     multithreaded print
     readline max buffer size = screensize - 1 line
-    console scroll flashing thingy
-    print has an extra char
-    scroll needs to clear last line
+    console scroll flashing
+    
+    wait/vanish race condition
     
 Stuff to do:
     
