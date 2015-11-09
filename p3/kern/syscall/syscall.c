@@ -66,7 +66,7 @@ void vanish_syscall(ureg_t state)
 void task_vanish_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called task_vanish. Not yet implemented", tcb->id);
+    lprintf("Thread %d called task_vanish. Not needed for p3", tcb->id);
     while(1) {
         continue;
     }
@@ -262,6 +262,12 @@ void readline_syscall(ureg_t state)
  */
 void getchar_syscall(ureg_t state)
 {
+    tcb_t* tcb = get_tcb();
+    lprintf("Thread %d called getchar. Not needed for p3", tcb->id);
+    while(1) {
+        continue;
+    }
+    /*
     char c;
     sem_wait(&read_sem);
     while ((c = readchar()) == -1) {
@@ -269,6 +275,7 @@ void getchar_syscall(ureg_t state)
     }
     sem_signal(&read_sem);
     state.eax = c;
+    */
 }
 
 /** @brief The print syscall

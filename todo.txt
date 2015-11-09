@@ -12,6 +12,10 @@ Stuff to do:
     readline/print error checking
     multithreaded readline
     multithreaded print
+    readline max buffer size = screensize - 1 line
+    console scroll flashing thingy
+    print has an extra char
+    scroll needs to clear last line
     
 Stuff to do:
     
@@ -46,4 +50,15 @@ Stuff to do:
         3. kill the kernel
         
         check for failure case in malloc calls
+    
+    sleep
+        hash table of lists
+        new scheduler queue for wakeup threads
+        interface for sleep
+    
+    keyboard
+        readline thread should go to sleep until chars are ready
+        keyboard interrupt handler runs on other threads to process scancodes
+        
+    
         
