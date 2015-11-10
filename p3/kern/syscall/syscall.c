@@ -21,12 +21,14 @@
 #include <devices.h>
 #include <console.h>
 #include <video_defines.h>
+#include <setup_idt.h>
 
 // TODO: Decide on arbitrary max length
 #define MAX_LEN 1024
 #define INVALID_COLOR 0x90
 sem_t read_sem;
 sem_t print_sem;
+swexn_t swexn = { 0 };
 
 /** @brief Initializes the semaphores used in the console syscalls
  *  @return void
@@ -180,6 +182,7 @@ void new_pages_syscall(ureg_t state)
         goto return_fail;
     }
     mutex_unlock(&ppd->lock);
+    lprintf("New pages suceeded %lx %lx", (uint32_t)packet.start, packet.size);
     state.eax = 0;
     return;
 
@@ -414,9 +417,50 @@ void misbehave_syscall(ureg_t state)
  */
 void swexn_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called swexn. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    typedef struct args {
+        void *esp3;
+        swexn_handler_t eip;
+        void *arg;
+        ureg_t *newureg;
+    } args_t;
+    args_t *arg = (args_t *)state.esi;
+    
+    // Deregister handler if one is registered
+    if ((arg->esp3 == 0)||(arg->eip == 0)) {
+        deregister_swexn();
     }
+    
+    // Register a new software exception handler
+    else {
+        uint32_t stack = (uint32_t)arg->esp3 - 4;
+        register_swexn(arg->eip, arg->arg, (void *)stack);
+    }
+    
+    // Adopt specific register values
+    if (arg->newureg != NULL) {
+        state = *(arg->newureg);
+    }
+    
+    // TODO: If either request cannot be carried out, both requests must fail
+    
+}
+
+/** @brief Registers a software exception handler
+ *  @return void
+ */
+void register_swexn(swexn_handler_t handler, void *arg, void *stack)
+{
+    swexn.handler = handler;
+    swexn.arg = arg;
+    swexn.stack = stack;
+}
+
+/** @brief Deregisters the software exception handler
+ *  @return void
+ */
+void deregister_swexn()
+{
+    swexn.handler = NULL;
+    swexn.arg = NULL;
+    swexn.stack = NULL;
 }

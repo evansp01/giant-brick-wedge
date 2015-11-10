@@ -15,6 +15,10 @@
 #include <control.h>
 #include <stdlib.h>
 #include <cr.h>
+#include <setup_idt.h>
+#include <stack_info.h>
+#include <loader.h>
+#include <mode_switch.h>
 
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {
@@ -37,6 +41,40 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
     }
 }
 
+/** @brief Swexn handler
+ *
+ *  @param state Struct containing saved register state before exception
+ *  @param tcb TCB of current thread
+ *  @return void
+ **/
+void swexn_handler(ureg_t* state, tcb_t* tcb)
+{
+    // Copy then deregister current software exception handler
+    extern swexn_t swexn;
+    swexn_t s = swexn;
+    deregister_swexn();
+    
+    // Setup exception stack
+    swexn_stack_t swexn_stack;
+    swexn_stack.ret_addr = 0;
+    swexn_stack.arg = s.arg;
+    swexn_stack.ureg = (void *)((uint32_t)s.stack - sizeof(ureg_t));
+    swexn_stack.state = *state;
+    void *start = (void *)((uint32_t)s.stack - sizeof(swexn_stack_t));
+    vm_write(&tcb->process->directory, &swexn_stack, start, 
+        sizeof(swexn_stack_t));
+    
+    // Setup context to switch to exception handler
+    void *new_esp = create_context((uint32_t)tcb->kernel_stack,
+        (uint32_t)start, (uint32_t)s.handler);
+        
+    // Run software exception handler
+    go_to_user_mode(new_esp);
+    
+    // Should never reach here
+    panic("We are lost in the depths of swexn");
+}
+
 /** @brief Generic fault handler
  *
  *  @param state Struct containing saved register state before exception
@@ -45,6 +83,11 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
 void fault_handler(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
+    
+    extern swexn_t swexn;
+    if (swexn.handler != NULL) {
+        swexn_handler(&state, tcb);
+    }
 
     switch (state.cause) {
     //page faults

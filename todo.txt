@@ -15,8 +15,6 @@ Stuff to do:
     readline max buffer size = screensize - 1 line
     console scroll flashing
     
-    wait/vanish race condition
-    
 Stuff to do:
     
     locking
