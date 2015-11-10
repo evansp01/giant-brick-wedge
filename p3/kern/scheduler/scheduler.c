@@ -26,6 +26,7 @@ struct {
     tcb_t* idle;
     runnable_queue_t runnable;
     tcb_t* switched_from;
+    uint32_t ticks;
 } scheduler = { 0 };
 
 /** @brief Initializes the scheduler
@@ -87,9 +88,10 @@ void switch_to_next(tcb_t* current, int schedule)
  *
  *  @return void
  */
-void run_next()
+void run_scheduler(unsigned int ticks)
 {
     disable_interrupts();
+    scheduler.ticks = ticks;
     switch_to_next(get_tcb(), SCHEDULE_MODE);
 }
 

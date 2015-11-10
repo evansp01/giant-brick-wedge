@@ -11,7 +11,7 @@
 
 int yield(int yield_tid);
 void init_scheduler(tcb_t *idle, tcb_t *first);
-void run_next();
+void run_scheduler(unsigned int ticks);
 int schedule(tcb_t *tcb);
 void kill_thread(tcb_t* tcb, pcb_t *pcb);
 int deschedule(tcb_t* tcb, uint32_t esi);

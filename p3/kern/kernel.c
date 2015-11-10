@@ -37,16 +37,6 @@
 #include <scheduler.h>
 #include <switch.h>
 
-/** @brief Tick function, to be called by the timer interrupt handler
- *
- *  @param ticks Number of ticks sent by timer
- *  @return Void
- **/
-void timer(unsigned int ticks)
-{
-    return;
-}
-
 void init_malloc();
 
 /** @brief Kernel entrypoint.
@@ -58,7 +48,7 @@ void init_malloc();
 int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
 {
     install_exceptions();
-    initialize_devices(timer);
+    initialize_devices();
     install_syscalls();
     init_virtual_memory();
     init_kernel_state();
