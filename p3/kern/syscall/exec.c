@@ -23,6 +23,7 @@
 #include <eflags.h>
 #include <stack_info.h>
 #include <stdlib.h>
+#include <mutex.h>
 
 #define STACK_HIGH 0xFFFFFFF0
 #define USER_STACK_SIZE PAGE_SIZE
@@ -338,6 +339,8 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
     if (status < 0) {
         // if we failed make sure to restore the old page directory
         tcb->process->directory = old_dir;
+        // re initialize mutex since it was copied
+        mutex_init(&tcb->process->directory.lock);
         switch_ppd(&old_dir);
     } else {
         ppd_t *new_dir = &tcb->process->directory;

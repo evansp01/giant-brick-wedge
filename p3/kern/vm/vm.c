@@ -340,6 +340,5 @@ void free_page_directory(page_directory_t* dir)
         void *addr = get_entry_address(*dir_entry);
         sfree(addr, PAGE_SIZE);
     }
-    sfree(dir, PAGE_SIZE);
 }
 

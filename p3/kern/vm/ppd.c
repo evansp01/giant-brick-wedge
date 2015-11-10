@@ -5,6 +5,7 @@
 #include "vm_internal.h"
 #include <stdlib.h>
 #include <malloc.h>
+#include <control.h>
 
 int init_ppd(ppd_t* ppd)
 {
@@ -53,16 +54,23 @@ int vm_free(ppd_t* ppd, void* start)
 int free_ppd(ppd_t* to_free, ppd_t *current)
 {
     alloc_t* alloc;
-    alloc_t* tmp;
+    alloc_t* swap;
+    page_directory_t* tmp = current->dir;
+    // switch safely so context switch can't muck things up
+    current->dir = to_free->dir;
     switch_ppd(to_free);
-    Q_FOREACH_SAFE(alloc, tmp, &to_free->allocations, list)
+    Q_FOREACH_SAFE(alloc, swap, &to_free->allocations, list)
     {
         Q_REMOVE(&to_free->allocations, alloc, list);
         vm_free_alloc(to_free, alloc->start, alloc->size);
         free(alloc);
     }
     free_page_directory(to_free->dir);
+    // restore and switch back
+    current->dir = tmp;
     switch_ppd(current);
+    //free the actual directory now that it is safely switched out
+    sfree(to_free->dir, PAGE_SIZE);
     return 0;
 }
 
