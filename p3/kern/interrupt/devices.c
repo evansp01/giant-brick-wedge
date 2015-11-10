@@ -58,9 +58,6 @@ static keyboard_struct keyboard = {
     .consumer = 0
 };
 
-/** @brief The current tick callback as set in handler_install */
-static void (*tick_handler)(unsigned int);
-
 /** @brief The number of ticks which have occured so far */
 static unsigned int ticks_so_far;
 
@@ -72,9 +69,8 @@ static unsigned int ticks_so_far;
  *
  *  @return void
  *  */
-int initialize_devices(void (*tickback)(unsigned int))
+int initialize_devices()
 {
-    tick_handler = tickback;
     uint16_t frequency = 1 + (TIMER_RATE / TIMER_INTERRUPT_FREQUENCY);
     outb(TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)frequency);
@@ -92,11 +88,8 @@ int initialize_devices(void (*tickback)(unsigned int))
 void timer_interrupt()
 {
     ticks_so_far++;
-    tick_handler(ticks_so_far);
+    run_scheduler(ticks_so_far);
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
-    
-    // let timer trigger the scheduler
-    run_next();
 }
 
 /** @brief The next index in the circular keyboard buffer
@@ -108,6 +101,9 @@ static int next_index(int index)
     return (index + 1) % KEYBOARD_BUFFER_SIZE;
 }
 
+// TODO??: Should we move the timer interrupt to the scheduler and the
+//         keyboard interrupt to readline? It seems like that is more where
+//         they belong than in this file.
 // TODO: Remove once testing is complete
 int keyboard_count = 0;
 

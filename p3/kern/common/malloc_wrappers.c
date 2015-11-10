@@ -27,7 +27,7 @@ void acquire_malloc()
 
 void release_malloc()
 {
-    mutex_unlock(&mutex);
+    scheduler_mutex_unlock(&mutex);
 }
 
 /** @brief Allocates memory of size bytes
