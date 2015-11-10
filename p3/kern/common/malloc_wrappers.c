@@ -9,15 +9,25 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <malloc_internal.h>
-#include <sem.h>
+#include <mutex.h>
 
-static sem_t sem;
+static mutex_t mutex;
 static int initialized = 0;
 
 void init_malloc()
 {
-    sem_init(&sem, 1);
+    mutex_init(&mutex);
     initialized = 1;
+}
+
+void acquire_malloc()
+{
+    mutex_lock(&mutex);
+}
+
+void release_malloc()
+{
+    mutex_unlock(&mutex);
 }
 
 /** @brief Allocates memory of size bytes
@@ -29,9 +39,9 @@ void* malloc(size_t size)
 {
     void* stuff;
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         stuff = _malloc(size);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         stuff = _malloc(size);
     }
@@ -48,9 +58,9 @@ void* memalign(size_t alignment, size_t size)
 {
     void* stuff;
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         stuff = _memalign(alignment, size);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         stuff = _memalign(alignment, size);
     }
@@ -67,9 +77,9 @@ void* calloc(size_t nelt, size_t eltsize)
 {
     void* stuff;
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         stuff = _calloc(nelt, eltsize);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         stuff = _calloc(nelt, eltsize);
     }
@@ -86,9 +96,9 @@ void* realloc(void* buf, size_t new_size)
 {
     void* stuff;
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         stuff = _realloc(buf, new_size);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         stuff = _realloc(buf, new_size);
     }
@@ -103,9 +113,9 @@ void* realloc(void* buf, size_t new_size)
 void free(void* buf)
 {
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         _free(buf);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         _free(buf);
     }
@@ -120,9 +130,9 @@ void* smalloc(size_t size)
 {
     void* stuff;
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         stuff = _smalloc(size);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         stuff = _smalloc(size);
     }
@@ -139,9 +149,9 @@ void* smemalign(size_t alignment, size_t size)
 {
     void* stuff;
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         stuff = _smemalign(alignment, size);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         stuff = _smemalign(alignment, size);
     }
@@ -157,9 +167,9 @@ void* smemalign(size_t alignment, size_t size)
 void sfree(void* buf, size_t size)
 {
     if (initialized) {
-        sem_wait(&sem);
+        acquire_malloc();
         _sfree(buf, size);
-        sem_signal(&sem);
+        release_malloc();
     } else {
         _sfree(buf, size);
     }

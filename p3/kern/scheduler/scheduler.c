@@ -128,10 +128,12 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 }
 
 
-void kill_thread(tcb_t* tcb)
+void kill_thread(tcb_t* tcb, pcb_t *pcb)
 {
     disable_interrupts();
     tcb->state = EXITED;
+    // store the process to free in the tcb
+    tcb->process = pcb;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
 }

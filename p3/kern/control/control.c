@@ -65,12 +65,14 @@ void pcb_add_thread(pcb_t* pcb, tcb_t* tcb)
     mutex_unlock(&pcb->threads_mutex);
 }
 
-void pcb_remove_thread(pcb_t* pcb, tcb_t* tcb)
+int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb)
 {
     mutex_lock(&pcb->threads_mutex);
     Q_REMOVE(&pcb->threads, tcb, pcb_threads);
     pcb->num_threads--;
+    int threads = pcb->num_threads;
     mutex_unlock(&pcb->threads_mutex);
+    return threads;
 }
 
 void pcb_add_child(pcb_t* parent, pcb_t* child)

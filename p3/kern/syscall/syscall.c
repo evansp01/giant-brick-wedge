@@ -56,7 +56,9 @@ void set_status_syscall(ureg_t state)
 void vanish_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    kill_thread(tcb);
+    pcb_t* to_free = thread_exit(tcb);
+    acquire_malloc();
+    kill_thread(tcb, to_free);
 }
 
 /** @brief The task_vanish syscall

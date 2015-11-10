@@ -70,7 +70,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // Allow for correct context switching to idle
     setup_for_switch(idle);
     // Create main program kernel will run
-    tcb_t *tcb = new_program("init", 0, NULL);
+    tcb_t *tcb = new_program("fork_exit_bomb", 0, NULL);
     if (tcb == NULL) {
         panic("Cannot create first process. Kernel is sad");
     }

@@ -3,6 +3,7 @@
 #include <variable_queue.h>
 #include <stdlib.h>
 #include <contracts.h>
+#include <simics.h>
 
 void cleanup_process(pcb_t *pcb)
 {
@@ -64,15 +65,15 @@ void pcb_inform_children(pcb_t* pcb)
     }
 }
 
-void finalize_exit(tcb_t* tcb)
+
+pcb_t *thread_exit(tcb_t *tcb)
 {
     pcb_t* process = tcb->process;
-    pcb_remove_thread(process, tcb);
     kernel_remove_thread(tcb);
-    free_tcb(tcb);
+    int thread_count = pcb_remove_thread(process, tcb);
     // More threads, so we get off easy
-    if (get_thread_count(process) != 0) {
-        return;
+    if (thread_count != 0) {
+        return NULL;
     }
     //We are cleaning up the last thread
     //now we want to see what our parent has to say
@@ -82,8 +83,7 @@ void finalize_exit(tcb_t* tcb)
     pcb_t* parent = process->parent;
     if (parent == NULL) {
         // nobody is going to wait for you ;(
-        cleanup_process(process);
-        return;
+        return process;
     }
     mutex_lock(&parent->children_mutex);
     process->state = EXITED;
@@ -96,4 +96,15 @@ void finalize_exit(tcb_t* tcb)
     }
     mutex_unlock(&parent->children_mutex);
     mutex_unlock(&process->parent_mutex);
+    return NULL;
+}
+
+void finalize_exit(tcb_t* tcb)
+{
+    // we only needed malloc to make sure our thread didn't have it
+    release_malloc();
+    if(tcb->process != NULL){
+        cleanup_process(tcb->process);
+    }
+    free_tcb(tcb);
 }
