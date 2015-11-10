@@ -21,14 +21,12 @@
 #include <devices.h>
 #include <console.h>
 #include <video_defines.h>
-#include <setup_idt.h>
 
 // TODO: Decide on arbitrary max length
 #define MAX_LEN 1024
 #define INVALID_COLOR 0x90
 sem_t read_sem;
 sem_t print_sem;
-swexn_t swexn = { 0 };
 
 /** @brief Initializes the semaphores used in the console syscalls
  *  @return void
@@ -417,6 +415,8 @@ void misbehave_syscall(ureg_t state)
  */
 void swexn_syscall(ureg_t state)
 {
+    tcb_t* tcb = get_tcb();
+    
     typedef struct args {
         void *esp3;
         swexn_handler_t eip;
@@ -427,13 +427,13 @@ void swexn_syscall(ureg_t state)
     
     // Deregister handler if one is registered
     if ((arg->esp3 == 0)||(arg->eip == 0)) {
-        deregister_swexn();
+        deregister_swexn(tcb);
     }
     
     // Register a new software exception handler
     else {
         uint32_t stack = (uint32_t)arg->esp3 - 4;
-        register_swexn(arg->eip, arg->arg, (void *)stack);
+        register_swexn(tcb, arg->eip, arg->arg, (void *)stack);
     }
     
     // Adopt specific register values
@@ -443,24 +443,4 @@ void swexn_syscall(ureg_t state)
     
     // TODO: If either request cannot be carried out, both requests must fail
     
-}
-
-/** @brief Registers a software exception handler
- *  @return void
- */
-void register_swexn(swexn_handler_t handler, void *arg, void *stack)
-{
-    swexn.handler = handler;
-    swexn.arg = arg;
-    swexn.stack = stack;
-}
-
-/** @brief Deregisters the software exception handler
- *  @return void
- */
-void deregister_swexn()
-{
-    swexn.handler = NULL;
-    swexn.arg = NULL;
-    swexn.stack = NULL;
 }

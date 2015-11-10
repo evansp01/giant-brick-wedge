@@ -50,23 +50,22 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
 void swexn_handler(ureg_t* state, tcb_t* tcb)
 {
     // Copy then deregister current software exception handler
-    extern swexn_t swexn;
-    swexn_t s = swexn;
-    deregister_swexn();
+    swexn_t swexn = tcb->swexn;
+    deregister_swexn(tcb);
     
     // Setup exception stack
     swexn_stack_t swexn_stack;
     swexn_stack.ret_addr = 0;
-    swexn_stack.arg = s.arg;
-    swexn_stack.ureg = (void *)((uint32_t)s.stack - sizeof(ureg_t));
+    swexn_stack.arg = swexn.arg;
+    swexn_stack.ureg = (void *)((uint32_t)swexn.stack - sizeof(ureg_t));
     swexn_stack.state = *state;
-    void *start = (void *)((uint32_t)s.stack - sizeof(swexn_stack_t));
+    void *start = (void *)((uint32_t)swexn.stack - sizeof(swexn_stack_t));
     vm_write(&tcb->process->directory, &swexn_stack, start, 
         sizeof(swexn_stack_t));
     
     // Setup context to switch to exception handler
     void *new_esp = create_context((uint32_t)tcb->kernel_stack,
-        (uint32_t)start, (uint32_t)s.handler);
+        (uint32_t)start, (uint32_t)swexn.handler);
         
     // Run software exception handler
     go_to_user_mode(new_esp);
@@ -84,8 +83,7 @@ void fault_handler(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
     
-    extern swexn_t swexn;
-    if (swexn.handler != NULL) {
+    if (tcb->swexn.handler != NULL) {
         swexn_handler(&state, tcb);
     }
 

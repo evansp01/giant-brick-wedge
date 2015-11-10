@@ -156,6 +156,7 @@ tcb_t* create_tcb_entry(int id)
     Q_INIT_ELEM(entry, runnable_threads);
     entry->id = id;
     entry->state = NOT_YET;
+    entry->swexn.handler = NULL;
     return entry;
 }
 
@@ -191,4 +192,24 @@ tcb_t* get_tcb_by_id(int tid)
         }
     }
     return NULL;
+}
+
+/** @brief Registers a software exception handler
+ *  @return void
+ */
+void register_swexn(tcb_t *tcb, swexn_handler_t handler, void *arg, void *stack)
+{
+    tcb->swexn.handler = handler;
+    tcb->swexn.arg = arg;
+    tcb->swexn.stack = stack;
+}
+
+/** @brief Deregisters the software exception handler
+ *  @return void
+ */
+void deregister_swexn(tcb_t *tcb)
+{
+    tcb->swexn.handler = NULL;
+    tcb->swexn.arg = NULL;
+    tcb->swexn.stack = NULL;
 }

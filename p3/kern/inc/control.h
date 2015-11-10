@@ -12,6 +12,8 @@
 #include <interface.h>
 #include <mutex.h>
 #include <cond.h>
+#include <setup_idt.h>
+#include <ureg.h>
 
 typedef enum state {
     NOT_YET,
@@ -19,6 +21,19 @@ typedef enum state {
     SUSPENDED,
     EXITED
 } state_t;
+
+typedef void (*swexn_handler_t)(void *arg, ureg_t *ureg);
+typedef struct swexn {
+    swexn_handler_t handler;
+    void *arg;
+    void *stack;
+} swexn_t;
+typedef struct swexn_stack {
+    void *ret_addr;
+    void *arg;
+    void *ureg;
+    ureg_t state;
+} swexn_stack_t;
 
 /** @brief Structure for a list of processes */
 Q_NEW_HEAD(pcb_ds_t, pcb);
@@ -59,6 +74,7 @@ typedef struct tcb {
     void *kernel_stack;
     void *saved_esp;
     state_t state;
+    swexn_t swexn;
 } tcb_t;
 
 /** @brief Structure for the overall kernel state */
@@ -91,5 +107,7 @@ void kernel_add_thread(tcb_t* tcb);
 pcb_t *thread_exit(tcb_t *tcb);
 void acquire_malloc();
 void release_malloc();
+void register_swexn(tcb_t *tcb,swexn_handler_t handler,void *arg,void *stack);
+void deregister_swexn(tcb_t *tcb);
 
 #endif // CONTROL_H_

@@ -14,6 +14,12 @@ Stuff to do:
     multithreaded print
     readline max buffer size = screensize - 1 line
     console scroll flashing
+    console backspace past "410-shell"
+    
+    swexn error checking
+    
+    fork_exit_bomb does not return to shell
+    stack_test1 fails to get pagetable/dir at fffeffa8
     
 Stuff to do:
     
