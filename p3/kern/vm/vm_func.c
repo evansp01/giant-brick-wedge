@@ -326,12 +326,12 @@ int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
  *  @param addr The virtual address of the current page
  *  @return Zero to continue, less than zero to stop iteration and return false
  **/
-int vm_back_h(entry_t *table, entry_t *dir, address_t addr)
+int vm_back_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (!is_user(table, dir)) {
         return -3;
     }
-    if(is_zfod(table) && is_write(table)){
+    if (is_zfod(table) && is_write(table)) {
         return alloc_frame(AS_TYPE(addr, void*), table, e_write_page);
     }
     return 0;
@@ -444,6 +444,10 @@ int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
 int vm_write(ppd_t* ppd, void* buffer, void* start, uint32_t size)
 {
     if (vm_user_can_write(ppd, start, size)) {
+        if (vm_back(ppd, (uint32_t)start, size) < 0) {
+            return -1;
+        }
+        // at this point we should not page fault
         memcpy(start, buffer, size);
         return 0;
     }
@@ -485,9 +489,9 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
  *  @param size The size of the section to check
  *  @return Zero on success, an integer less than zero on failure
  **/
-int vm_back(ppd_t *ppd, uint32_t start, uint32_t size)
+int vm_back(ppd_t* ppd, uint32_t start, uint32_t size)
 {
-    return vm_map_pages(ppd, (void *)start, size, vm_back_h);
+    return vm_map_pages(ppd, (void*)start, size, vm_back_h);
 }
 
 /** @brief Free a previously allocated a section of userspace memory
