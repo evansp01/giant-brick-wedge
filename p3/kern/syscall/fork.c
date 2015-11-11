@@ -45,7 +45,6 @@ void fork_syscall(ureg_t state)
         return;
     }
     // Copy kernel stack with return value of 0 for child
-    // TODO: Copy software exception handler (if installed)
     // Setup stack for re-entry via context_switch
     setup_for_switch(tcb_child);
     // Schedule the child
@@ -100,6 +99,9 @@ tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state)
     }
     // Copy tcb data
     calc_saved_esp(tcb_parent, tcb_child, state);
+    
+    // Copy swexn
+    tcb_child->swexn = tcb_parent->swexn;
 
     // Copy memory regions
     if(init_ppd_from(&tcb_child->process->directory, &pcb_parent->directory)){

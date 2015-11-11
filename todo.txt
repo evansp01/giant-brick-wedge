@@ -34,9 +34,6 @@ Stuff to do:
         copy user input into kernel space
         validate user input
         replace the currently running program (similar to loader code)
-    
-    fork system call
-        copy software exception handler
         
     scheduler
         runnable queue
