@@ -58,17 +58,11 @@ const entry_t e_zfod_page = {
 
 const entry_t e_unmapped = { 0 };
 
-void print_entry(entry_t* entry)
-{
-    lprintf("present:%d, write:%d, user:%d, write_through:%d",
-            entry->present, entry->write, entry->user, entry->write_through);
-    lprintf("cache_disable:%d, accessed:%d, dirty:%d, page_size:%d, global:%d",
-            entry->cache_disable, entry->accessed, entry->dirty,
-            entry->page_size, entry->global);
-    lprintf("unused:%d, address:%d",
-            entry->unused, entry->address);
-}
-
+/** @brief Create an entry from a model and an address
+ *
+ *  @param address The address to assign to the entry
+ *  @param model The model to create the entry from
+ **/
 entry_t create_entry(void* address, entry_t model)
 {
     entry_t entry = model;
@@ -245,11 +239,12 @@ page_directory_t* alloc_kernel_directory()
     return dir;
 }
 
-int is_present_user(entry_t* entry)
-{
-    return entry->present && entry->user;
-}
-
+/** @brief Duplicate a frame correctly
+ *
+ *  @param child_entry The page table entry to clone the frame to
+ *  @param parent_entry The page table entry to clone the frame from
+ *  @return Zero on success an integer less than zero on failure
+ **/
 int copy_frame(entry_t* child_entry, entry_t* parent_entry)
 {
     if (is_zfod(parent_entry)) {
@@ -328,6 +323,10 @@ int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent)
     return 0;
 }
 
+/** @brief Free a page directory
+ *  @param dir The page directory to free
+ *  @return void
+ **/
 void free_page_directory(page_directory_t* dir)
 {
     int i;
@@ -374,5 +373,3 @@ int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
     // at this point the allocation has committed and must be performed
     return 0;
 }
-
-

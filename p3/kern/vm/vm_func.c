@@ -4,6 +4,16 @@
 #include <string.h>
 #include "vm_internal.h"
 
+/** @brief Is this page present and user accessable
+ *
+ *  @param entry The page table entry for the page
+ *  @return an integer boolean
+ **/
+int is_present_user(entry_t* entry)
+{
+    return entry->present && entry->user;
+}
+
 /** @brief Is this page user accessable
  *
  *  @param table The page table entry for this page

@@ -86,6 +86,7 @@ int vm_free_alloc(ppd_t* ppd, uint32_t start, uint32_t size);
 int is_user(entry_t* table, entry_t* dir);
 int is_write(entry_t* table);
 int is_zfod(entry_t* table);
+int is_present_user(entry_t* entry);
 int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir);
 //page table manipulation
 //headers for frame alloc
