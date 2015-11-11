@@ -242,14 +242,17 @@ void readline_syscall(ureg_t state)
         if ((c = readchar()) == -1) {
             continue;
         }
-        putbyte(c);
         
         // Backspace character
         if (c == '\b') {
-            i--;
+            if (i != 0) {
+                putbyte(c);
+                i--;
+            }
         }
         // Standard character
         else {
+            putbyte(c);
             temp[i] = c;
             i++;
             if (c == '\n')
