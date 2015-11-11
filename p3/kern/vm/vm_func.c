@@ -47,10 +47,11 @@ int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)
 {
     int i, j;
     page_directory_t* dir = ppd->dir;
-    char* end = ((char*)start) + size;
+    char* end = ((char*)start) + size - 1;
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
     if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
+        lprintf("Something");
         return 0;
     }
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {

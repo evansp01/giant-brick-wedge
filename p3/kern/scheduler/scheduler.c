@@ -44,6 +44,7 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
     Q_INIT_HEAD(&scheduler.runnable);
     scheduler.idle = idle;
     Q_INSERT_TAIL(&scheduler.runnable, first, runnable_threads);
+    init_sleep();
 }
 
 
@@ -98,6 +99,8 @@ void run_scheduler(uint32_t ticks)
 {
     disable_interrupts();
     scheduler.ticks = ticks;
+    schedule_sleepers(ticks);
+    disable_interrupts();
     switch_to_next(get_tcb(), SCHEDULE_MODE);
 }
 

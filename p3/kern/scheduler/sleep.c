@@ -3,6 +3,7 @@
 #include <control.h>
 #include <scheduler.h>
 #include <asm.h>
+#include <simics.h>
 
 H_NEW_TABLE(sleep_hash_t, tcb_ds_t);
 
@@ -32,10 +33,11 @@ uint32_t add_sleeper(tcb_t* tcb, uint32_t ticks)
     release_malloc();
 
     uint32_t until = get_ticks() + ticks;
-    tcb->wake_tick = until;
+    lprintf("%lu until", until);
     while (H_CONTAINS(&table, until, wake_tick, suspended_threads)) {
         until++;
     }
+    tcb->wake_tick = until;
     H_INSERT(&table, tcb, wake_tick, suspended_threads);
     deschedule(tcb);
     enable_interrupts();

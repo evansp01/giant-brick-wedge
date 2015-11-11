@@ -26,6 +26,9 @@ typedef struct ppd {
 
 void init_virtual_memory();
 
+
+uint32_t page_align(uint32_t address);
+
 int init_ppd(ppd_t* ppd);
 int init_ppd_from(ppd_t *ppd, ppd_t *from);
 int free_ppd(ppd_t* to_free, ppd_t *current);

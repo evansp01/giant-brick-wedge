@@ -179,6 +179,7 @@ void new_pages_syscall(ureg_t state)
         goto return_fail;
     }
     if(!vm_user_can_alloc(ppd, packet.start, packet.size)){
+        lprintf("Space no allocable");
         goto return_fail;
     }
     if(vm_alloc_readwrite(ppd, packet.start, packet.size) < 0){

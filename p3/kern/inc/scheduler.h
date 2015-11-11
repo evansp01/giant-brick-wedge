@@ -23,6 +23,7 @@ void scheduler_post_switch();
 void scheduler_pre_switch(tcb_t* from, tcb_t* to);
 
 
+int init_sleep();
 uint32_t add_sleeper(tcb_t* tcb, uint32_t ticks);
 void schedule_sleepers(uint32_t current);
 void release_sleeper(uint32_t slept);

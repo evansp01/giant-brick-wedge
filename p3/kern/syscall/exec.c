@@ -293,7 +293,7 @@ int exec(tcb_t* tcb, simple_elf_t *elf, int argc, char** argv, int argspace, int
     if (create_proc_pagedir(elf, &pcb->directory, zfod) < 0) {
         return -1;
     }
-    uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
+    uint32_t stack_low = page_align(STACK_HIGH - stack_space(argspace, argc)) - PAGE_SIZE;
     if (allocate_stack(&pcb->directory, stack_low, zfod) < 0) {
         return -1;
     }
