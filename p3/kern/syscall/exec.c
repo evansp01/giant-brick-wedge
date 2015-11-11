@@ -331,6 +331,8 @@ tcb_t* new_program(char* fname, int argc, char** argv)
 
 #define EXEC_MAX_BYTES (4 * PAGE_SIZE)
 
+//TODO: this has become a function of DOOM, should be broken up, but 
+//      everything has so many arguments
 int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int arglen)
 {
     size_t flen_space = flen * sizeof(char);

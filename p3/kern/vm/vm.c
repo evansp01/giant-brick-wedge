@@ -342,3 +342,37 @@ void free_page_directory(page_directory_t* dir)
     }
 }
 
+/** @brief Allocates all page tables from start address to start+size
+ *  @param cr3 The address of the page table
+ *  @param start The virtual address to begin allocation at
+ *  @param size The amount of virtual memory to allocate pages for
+ *  @return zero on success less than zero on failure
+ **/
+int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
+{
+    int i;
+    page_directory_t* dir = ppd->dir;
+    char* end = ((char*)start) + size - 1;
+    address_t vm_start = AS_TYPE(start, address_t);
+    address_t vm_end = AS_TYPE(end, address_t);
+    if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
+        return -1;
+    }
+    // allocate all relevant page tables
+    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
+        entry_t* dir_entry = &dir->tables[i];
+        if (dir_entry->present) {
+            continue;
+        }
+        void* frame = alloc_page_table();
+        if (frame == NULL) {
+            lprintf("Ran out of kernel memory for page tables");
+            return -1;
+        }
+        *dir_entry = create_entry(frame, e_user_dir);
+    }
+    // at this point the allocation has committed and must be performed
+    return 0;
+}
+
+

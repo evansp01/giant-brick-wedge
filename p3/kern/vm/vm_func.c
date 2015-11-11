@@ -4,8 +4,48 @@
 #include <string.h>
 #include "vm_internal.h"
 
+/** @brief Is this page user accessable
+ *
+ *  @param table The page table entry for this page
+ *  @param dir The page directory entry for the page table
+ *  @return a boolean integer
+ **/
+int is_user(entry_t* table, entry_t* dir)
+{
+    return table->present && table->user && dir->user;
+}
+
+/** @brief Is this page write accessable
+ *
+ *  @param table The page table entry for this page
+ *  @return a boolean integer
+ **/
+int is_write(entry_t* table)
+{
+    return table->write || (is_zfod(table) && table->zfod);
+}
+
+/** @brief Is this page the zfod page
+ *
+ *  @param table The page table entry for this page
+ *  @return a boolean integer
+ **/
+int is_zfod(entry_t* table)
+{
+    return (get_entry_address(*table) == get_zero_page());
+}
+
+/** @brief mapper for map pages */
 typedef int (*vm_operator)(entry_t*, entry_t*, address_t);
 
+/** @brief Map a mapper function across a range of pages
+ *
+ *  @ppd The page directory to map across
+ *  @start The starting address to map from
+ *  @size The size to map
+ *  @op The vm mapper to run
+ *  @return Zero on success an integer less than zero on failure
+ **/
 int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
 {
     int i, j, value = 0;
@@ -42,7 +82,13 @@ int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
     }
     return value;
 }
-
+/** @brief Determine if a set of pages is allocatable
+ *
+ *  @ppd The page directory to map across
+ *  @start The starting address to map from
+ *  @size The size to map
+ *  @return an integer boolean
+ **/
 int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)
 {
     int i, j;
@@ -84,6 +130,14 @@ int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)
     return 1;
 }
 
+/** @brief Get all the information about an address present in the page table
+ *
+ *  @param ppd The page directory to get information from
+ *  @param addr The address to get information about
+ *  @param table A pointer which will point to the address's page table entry
+ *  @param dir A pointer which will point to the address's page directory entry
+ *  @return Zero on success an integer less than zero on failure
+ **/
 int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir)
 {
     page_directory_t* page_dir = ppd->dir;
@@ -101,21 +155,12 @@ int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir)
     return page_bytes_left(addr);
 }
 
-int is_user(entry_t* table, entry_t* dir)
-{
-    return table->present && table->user && dir->user;
-}
-
-int is_write(entry_t* table)
-{
-    return table->write || (is_zfod(table) && table->zfod);
-}
-
-int is_zfod(entry_t* table)
-{
-    return (get_entry_address(*table) == get_zero_page());
-}
-
+/** @brief Safely calculate the length of a userspace string
+ *
+ *  @param ppd The page directory of the userspace program
+ *  @param start The starting address of the string
+ *  @return The length of the string on success, less than zero on failure
+ **/
 int vm_user_strlen(ppd_t* ppd, char* start)
 {
     entry_t* table, *dir;
@@ -137,6 +182,12 @@ int vm_user_strlen(ppd_t* ppd, char* start)
     }
 }
 
+/** @brief Safely calculate the length of a userspace string array
+ *
+ *  @param ppd The page directory of the userspace program
+ *  @param start The starting address of the string array
+ *  @return The length of the string on success, less than zero on failure
+ **/
 int vm_user_arrlen(ppd_t* ppd, char** start)
 {
     entry_t* table, *dir;
@@ -158,6 +209,13 @@ int vm_user_arrlen(ppd_t* ppd, char** start)
     }
 }
 
+/** @brief A vm_operator to determine if pages are user writeable 
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
+ **/
 int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr)
 {
 
@@ -167,6 +225,13 @@ int vm_user_write_h(entry_t* table, entry_t* dir, address_t addr)
     return -3;
 }
 
+/** @brief A vm_operator to determine if pages are user readable
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
+ **/
 int vm_user_read_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (is_user(table, dir)) {
@@ -175,6 +240,13 @@ int vm_user_read_h(entry_t* table, entry_t* dir, address_t addr)
     return -3;
 }
 
+/** @brief A vm_operator to make user read pages writeable
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
+ **/
 int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (!is_user(table, dir)) {
@@ -195,6 +267,13 @@ int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
     return 0;
 }
 
+/** @brief A vm_operator to make user readwrite pages read only
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
+ **/
 int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (!is_user(table, dir)) {
@@ -213,77 +292,13 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
     return 0;
 }
 
-int vm_user_can_write(ppd_t* ppd, void* start, uint32_t size)
-{
-    return vm_map_pages(ppd, start, size, vm_user_write_h) == 0;
-}
-
-int vm_user_can_read(ppd_t* ppd, void* start, uint32_t size)
-{
-    return vm_map_pages(ppd, start, size, vm_user_read_h) == 0;
-}
-
-int vm_set_readwrite(ppd_t* ppd, void* start, uint32_t size)
-{
-    return vm_map_pages(ppd, start, size, vm_set_readwrite_h) == 0;
-}
-
-int vm_set_readonly(ppd_t* ppd, void* start, uint32_t size)
-{
-    return vm_map_pages(ppd, start, size, vm_set_readonly_h) == 0;
-}
-
-int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
-{
-    if (vm_user_can_read(ppd, start, size)) {
-        memcpy(buffer, start, size);
-        return 0;
-    }
-    return -1;
-}
-
-int vm_write(ppd_t* ppd, void* buffer, void* start, uint32_t size)
-{
-    if (vm_user_can_write(ppd, start, size)) {
-        memcpy(start, buffer, size);
-        return 0;
-    }
-    return -1;
-}
-
-/** @brief Allocates all page tables from start address to start+size
- *  @param cr3 The address of the page table
- *  @param start The virtual address to begin allocation at
- *  @param size The amount of virtual memory to allocate pages for
- *  @return zero on success less than zero on failure
+/** @brief A vm_operator to allocate pages as readwrite using zfod
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
  **/
-int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
-{
-    int i;
-    page_directory_t* dir = ppd->dir;
-    char* end = ((char*)start) + size - 1;
-    address_t vm_start = AS_TYPE(start, address_t);
-    address_t vm_end = AS_TYPE(end, address_t);
-    if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
-        return -1;
-    }
-    // allocate all relevant page tables
-    for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
-        entry_t* dir_entry = &dir->tables[i];
-        if (dir_entry->present) {
-            continue;
-        }
-        void* frame = alloc_page_table();
-        if (frame == NULL) {
-            lprintf("Ran out of kernel memory for page tables");
-            return -1;
-        }
-        *dir_entry = create_entry(frame, e_user_dir);
-    }
-    // at this point the allocation has committed and must be performed
-    return 0;
-}
-
 int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (table->present) {
@@ -294,35 +309,31 @@ int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
     return 0;
 }
 
-int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
+/** @brief A vm_operator which backs zfod pages with real frames
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
+ **/
+int vm_back_h(entry_t *table, entry_t *dir, address_t addr)
 {
-    //allocations of size zero are successful
-    if (size == 0) {
-        return 0;
+    if (!is_user(table, dir)) {
+        return -3;
     }
-    //you can't allocate more memory than the system has
-    if (size > user_mem_size()) {
-        return -1;
-    }
-    if (allocate_tables(ppd, start, size) < 0) {
-        return -1;
-    }
-    if (add_alloc(ppd, start, size) < 0) {
-        return -1;
-    }
-    // at this point all memory is allocated
-    if (vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) < 0) {
-        lprintf("This really shouldn't happen");
-        return -2;
+    if(is_zfod(table) && is_write(table)){
+        return alloc_frame(AS_TYPE(addr, void*), table, e_write_page);
     }
     return 0;
 }
 
-int vm_back_h(entry_t *table, entry_t *dir, address_t addr)
-{
-    return alloc_frame(AS_TYPE(addr, void*), table, e_write_page);
-}
-
+/** @brief A vm_operator to free a user page
+ *
+ *  @param table The table entry for the current page
+ *  @param dir The directory entry for the current page
+ *  @param addr The virtual address of the current page
+ *  @return Zero to continue, less than zero to stop iteration and return false
+ **/
 int vm_free_alloc_h(entry_t* table, entry_t* dir, address_t addr)
 {
     // everything we are freeing should be user mapped
@@ -347,11 +358,135 @@ int vm_free_alloc_h(entry_t* table, entry_t* dir, address_t addr)
     return 0;
 }
 
+/** @brief Can a user write to a given set of addresses
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return an integer boolean
+ **/
+int vm_user_can_write(ppd_t* ppd, void* start, uint32_t size)
+{
+    return vm_map_pages(ppd, start, size, vm_user_write_h) == 0;
+}
+
+/** @brief Can a user read from a given set of addresses
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return an integer boolean
+ **/
+int vm_user_can_read(ppd_t* ppd, void* start, uint32_t size)
+{
+    return vm_map_pages(ppd, start, size, vm_user_read_h) == 0;
+}
+
+/** @brief Set a group of user pages to be user readable and writable
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return an integer boolean
+ **/
+int vm_set_readwrite(ppd_t* ppd, void* start, uint32_t size)
+{
+    return vm_map_pages(ppd, start, size, vm_set_readwrite_h) == 0;
+}
+
+/** @brief Set a group of user pages to be user read only
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return an integer boolean
+ **/
+int vm_set_readonly(ppd_t* ppd, void* start, uint32_t size)
+{
+    return vm_map_pages(ppd, start, size, vm_set_readonly_h) == 0;
+}
+
+/** @brief Safely read from user memory to a kernel buffer
+ *  
+ *  @param ppd The user page directory
+ *  @param buffer The buffer to read to
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
+{
+    if (vm_user_can_read(ppd, start, size)) {
+        memcpy(buffer, start, size);
+        return 0;
+    }
+    return -1;
+}
+
+/** @brief Safely write from a kernel buffer to user memory
+ *  
+ *  @param ppd The user page directory
+ *  @param buffer The buffer to write from
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int vm_write(ppd_t* ppd, void* buffer, void* start, uint32_t size)
+{
+    if (vm_user_can_write(ppd, start, size)) {
+        memcpy(start, buffer, size);
+        return 0;
+    }
+    return -1;
+}
+
+/** @brief Allocate a section of userspace memory using zfod
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
+int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
+{
+    //allocations of size zero are successful and also noops
+    if (size == 0) {
+        return 0;
+    }
+    //you can't allocate more memory than the system has
+    if (size > user_mem_size()) {
+        return -1;
+    }
+    if (allocate_tables(ppd, start, size) < 0) {
+        return -1;
+    }
+    if (add_alloc(ppd, start, size) < 0) {
+        return -1;
+    }
+    // at this point all memory is allocated
+    ASSERT(vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) >= 0);
+    return 0;
+}
+
+/** @brief Back an allocated section of userspace memory with physical pages
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
 int vm_back(ppd_t *ppd, uint32_t start, uint32_t size)
 {
     return vm_map_pages(ppd, (void *)start, size, vm_back_h);
 }
 
+/** @brief Free a previously allocated a section of userspace memory
+ *  
+ *  @param ppd The user page directory
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
 int vm_free_alloc(ppd_t* ppd, uint32_t start, uint32_t size)
 {
     return vm_map_pages(ppd, (void*)start, size, vm_free_alloc_h);

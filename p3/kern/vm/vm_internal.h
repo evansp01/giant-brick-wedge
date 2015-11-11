@@ -96,4 +96,6 @@ int alloc_frame(void* virtual, entry_t* table, entry_t model);
 int kernel_alloc_frame(entry_t* table, entry_t model);
 void free_frame(void* virtual, void *physical);
 
+int allocate_tables(ppd_t* ppd, void* start, uint32_t size);
+
 #endif //H_VM_INTERNAL_
