@@ -26,14 +26,17 @@
 #include <mutex.h>
 
 #define STACK_HIGH 0xFFFFFFF0
+#define NUM_PARAMS_TO_MAIN 5
 #define USER_STACK_SIZE PAGE_SIZE
+#define EXEC_MAX_BYTES (4 * PAGE_SIZE)
+#define MAGIC_NUMBER 0xDEAD1337
 
-int get_argv_length(void* cr3, int argc, char** argv)
+int get_argv_length(ppd_t *ppd, int argc, char** argv)
 {
     int i;
     int total_length = 0;
     for (i = 0; i < argc; i++) {
-        int length = vm_user_strlen(cr3, argv[i]);
+        int length = vm_user_strlen(ppd, argv[i]);
         if (length < 0) {
             return -1;
         }
@@ -136,6 +139,12 @@ int getbytes(const char* filename, int offset, int size, char* buf)
     return byte_index;
 }
 
+/** @brief Finds the min of an array of unsigned integers
+ *
+ *  @param array The array of integers
+ *  @param len The length of the array
+ *  @return The min
+ **/
 uint32_t min(uint32_t array[], int len)
 {
     int i;
@@ -148,6 +157,12 @@ uint32_t min(uint32_t array[], int len)
     return min_val;
 }
 
+/** @brief Finds the max of an array of unsigned integers
+ *
+ *  @param array The array of integers
+ *  @param len The length of the array
+ *  @return The max
+ **/
 uint32_t max(uint32_t array[], int len)
 {
     int i;
@@ -160,10 +175,12 @@ uint32_t max(uint32_t array[], int len)
     return max_val;
 }
 
-/** @brief Creates page directory and copies process data into memory
+/** @brief load a process image into a page directory
  *
  *  @param elf Struct containing elf file information
- *  @return page directory of new process
+ *  @param ppd The page directory to load the process image into
+ *  @param zfod Should memory be initialized using zfod
+ *  @return Zero on success, less than zero on failure
  **/
 int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir, int zfod)
 {
@@ -206,6 +223,11 @@ int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir, int zfod)
     return 0;
 }
 
+/** @brief Copy a string, and return the length copied
+ *  @param dest The destination to copy the string to
+ *  @param source The source to copy the string from
+ *  @return The number of bytes copied
+ **/
 int strcpy_len(char* dest, char* source)
 {
     int i = 0;
@@ -252,7 +274,7 @@ uint32_t setup_main_stack(int argc, char** argv, int argv_total, uint32_t stack_
     PUSH_STACK(stack_current, STACK_HIGH, uint32_t);
     PUSH_STACK(stack_current, argv_start, uint32_t);
     PUSH_STACK(stack_current, argc, uint32_t);
-    PUSH_STACK(stack_current, 0xDEAD1337, uint32_t);
+    PUSH_STACK(stack_current, MAGIC_NUMBER, uint32_t);
     return (uint32_t)(stack_current);
 }
 
@@ -261,7 +283,7 @@ uint32_t stack_space(int argvlen, int argc)
     uint32_t space = USER_STACK_SIZE;
     space += argvlen * sizeof(char);
     space += argc * sizeof(char*);
-    space += 5 * sizeof(uint32_t);
+    space += NUM_PARAMS_TO_MAIN * sizeof(uint32_t);
     return space;
 }
 
@@ -331,7 +353,6 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     return tcb;
 }
 
-#define EXEC_MAX_BYTES (4 * PAGE_SIZE)
 
 //TODO: this has become a function of DOOM, should be broken up, but 
 //      everything has so many arguments
