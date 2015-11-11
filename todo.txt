@@ -9,7 +9,6 @@ Stuff to do:
     copy_frame function to handle all types of copying
     move local headers from inc to local folder
     
-    readline/print error checking
     multithreaded readline
     multithreaded print
     readline max buffer size = screensize - 1 line

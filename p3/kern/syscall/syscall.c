@@ -214,23 +214,23 @@ void remove_pages_syscall(ureg_t state)
  */
 void readline_syscall(ureg_t state)
 {
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = &tcb->process->directory;
     typedef struct args {
         int len;
         char *buf;
     } args_t;
     args_t *arg = (args_t *)state.esi;
     
-    /*
-    // Error: buf is not a valid memory address
-    if (vm_user_can_write(ppd_t* ppd, void* start, uint32_t size)) {
+    // Error: len is unreasonably large
+    if (arg->len > MAX_LEN) {
         state.eax = -1;
         return;
     }
-    */
     
-    // Error: len is unreasonably large
-    if (arg->len > MAX_LEN) {
-        state.eax = -3;
+    // Error: buf is not a valid memory address
+    if (!vm_user_can_write(ppd, (void *)arg->buf, arg->len)) {
+        state.eax = -2;
         return;
     }
     
@@ -293,25 +293,25 @@ void getchar_syscall(ureg_t state)
  */
 void print_syscall(ureg_t state)
 {
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = &tcb->process->directory;
     typedef struct args {
         int len;
         char *buf;
     } args_t;
     args_t *arg = (args_t *)state.esi;
     
-    /*
-    // Error: buf is not a valid memory address
-    if (??) {
+    // Error: len is unreasonably large
+    if (arg->len > MAX_LEN) {
         state.eax = -1;
         return;
     }
     
-    // Error: len is unreasonably large
-    if (arg->len > MAX_LEN) {
+    // Error: buf is not a valid memory address
+    if (!vm_user_can_write(ppd, (void *)arg->buf, arg->len)) {
         state.eax = -2;
         return;
     }
-    */
     
     sem_wait(&print_sem);
     putbytes(arg->buf, arg->len);
