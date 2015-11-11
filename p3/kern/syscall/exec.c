@@ -286,14 +286,16 @@ int load_elf(simple_elf_t *elf, char *fname){
     return 0;
 }
 
-int exec(tcb_t* tcb, simple_elf_t *elf, int argc, char** argv, int argspace, int zfod)
+int exec(tcb_t* tcb, simple_elf_t *elf, int argc, char** argv,
+         int argspace, int zfod)
 {
     pcb_t *pcb = tcb->process;
     switch_ppd(&pcb->directory);
     if (create_proc_pagedir(elf, &pcb->directory, zfod) < 0) {
         return -1;
     }
-    uint32_t stack_low = page_align(STACK_HIGH - stack_space(argspace, argc)) - PAGE_SIZE;
+    uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
+    stack_low = page_align(stack_low) - PAGE_SIZE;
     if (allocate_stack(&pcb->directory, stack_low, zfod) < 0) {
         return -1;
     }
