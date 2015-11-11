@@ -53,7 +53,6 @@ void fork_syscall(ureg_t state)
     sim_reg_child(tcb_child->process->directory.dir,
                   tcb_parent->process->directory.dir);
     // Return child tid to parent
-    lprintf("%d spawned %d", tcb_parent->id, tcb_child->id);
     state.eax = tcb_child->id;
 
 }

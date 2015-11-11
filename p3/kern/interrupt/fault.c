@@ -19,27 +19,7 @@
 #include <stack_info.h>
 #include <loader.h>
 #include <mode_switch.h>
-
-void default_fault_handler(ureg_t* state, tcb_t* tcb)
-{
-    // Print error message
-    dump_registers(state);
-    // and panic, should probably kill thread
-    panic("Process is terminally ill");
-}
-
-void page_fault_handler(ureg_t* state, tcb_t* tcb)
-{
-    int vm_status;
-    state->cr2 = get_cr2();
-    ppd_t* ppd = &tcb->process->directory;
-    mutex_lock(&ppd->lock);
-    vm_status = vm_resolve_pagefault(ppd, state->cr2, state->error_code);
-    mutex_unlock(&ppd->lock);
-    if (vm_status < 0) {
-        default_fault_handler(state, tcb);
-    }
-}
+#include <common_kern.h>
 
 /** @brief Swexn handler
  *
@@ -74,6 +54,37 @@ void swexn_handler(ureg_t* state, tcb_t* tcb)
     panic("We are lost in the depths of swexn");
 }
 
+void default_fault_handler(ureg_t* state, tcb_t* tcb)
+{
+    // Swexn needs to run after the system page fault handler
+    if(state->eip > USER_MEM_START){
+        // only run swexn if the fault wasn't in kernel mode
+        if (tcb->swexn.handler != NULL) {
+            swexn_handler(state, tcb);
+        }
+    }
+
+    // Print error message
+    dump_registers(state);
+    // and panic, should probably kill thread
+    panic("Process is terminally ill");
+}
+
+void page_fault_handler(ureg_t* state, tcb_t* tcb)
+{
+    int vm_status;
+    state->cr2 = get_cr2();
+    ppd_t* ppd = &tcb->process->directory;
+    mutex_lock(&ppd->lock);
+    vm_status = vm_resolve_pagefault(ppd, state->cr2, state->error_code);
+    mutex_unlock(&ppd->lock);
+    if (vm_status < 0) {
+        default_fault_handler(state, tcb);
+    }
+}
+
+
+
 /** @brief Generic fault handler
  *
  *  @param state Struct containing saved register state before exception
@@ -83,10 +94,6 @@ void fault_handler(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
     
-    if (tcb->swexn.handler != NULL) {
-        swexn_handler(&state, tcb);
-    }
-
     switch (state.cause) {
     //page faults
     case IDT_PF:
