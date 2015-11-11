@@ -72,10 +72,10 @@ static unsigned int ticks_so_far;
 int initialize_devices()
 {
     uint16_t frequency = 1 + (TIMER_RATE / TIMER_INTERRUPT_FREQUENCY);
+    install_devices();
     outb(TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)frequency);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)(frequency >> 8));
-    install_devices();
     return 0;
 }
 
@@ -88,8 +88,8 @@ int initialize_devices()
 void timer_interrupt()
 {
     ticks_so_far++;
-    run_scheduler(ticks_so_far);
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
+    run_scheduler(ticks_so_far);
 }
 
 /** @brief The next index in the circular keyboard buffer

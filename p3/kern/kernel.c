@@ -54,16 +54,10 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     init_kernel_state();
     // Create idle process
     tcb_t *idle = new_program("idle", 0, NULL);
-    if (idle == NULL) {
-        panic("Cannot create first process. Kernel is sad");
-    }
     // Allow for correct context switching to idle
     setup_for_switch(idle);
     // Create main program kernel will run
     tcb_t *tcb = new_program("init", 0, NULL);
-    if (tcb == NULL) {
-        panic("Cannot create first process. Kernel is sad");
-    }
     init_scheduler(idle, tcb);
     // Switch to thread safe malloc
     // this **MUST** be done after all other initialization has been performed

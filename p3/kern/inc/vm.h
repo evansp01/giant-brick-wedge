@@ -32,6 +32,7 @@ int free_ppd(ppd_t* to_free, ppd_t *current);
 void switch_ppd(ppd_t* ppd);
 
 int vm_alloc_readwrite(ppd_t *ppd, void *start, uint32_t size);
+int vm_back(ppd_t *ppd, uint32_t start, uint32_t size);
 int vm_free(ppd_t *ppd, void *start);
 
 int vm_user_strlen(ppd_t *ppd, char* start);

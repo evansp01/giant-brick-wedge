@@ -317,6 +317,11 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
     return 0;
 }
 
+int vm_back_h(entry_t *table, entry_t *dir, address_t addr)
+{
+    return alloc_frame(AS_TYPE(addr, void*), table, e_write_page);
+}
+
 int vm_free_alloc_h(entry_t* table, entry_t* dir, address_t addr)
 {
     // everything we are freeing should be user mapped
@@ -339,6 +344,11 @@ int vm_free_alloc_h(entry_t* table, entry_t* dir, address_t addr)
     *table = e_unmapped;
     invalidate_page(virtual);
     return 0;
+}
+
+int vm_back(ppd_t *ppd, uint32_t start, uint32_t size)
+{
+    return vm_map_pages(ppd, (void *)start, size, vm_back_h);
 }
 
 int vm_free_alloc(ppd_t* ppd, uint32_t start, uint32_t size)
