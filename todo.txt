@@ -16,8 +16,6 @@ Stuff to do:
     console scroll flashing
     console backspace past "410-shell"
     
-    swexn error checking
-    
     fork_exit_bomb does not return to shell
     stack_test1 fails to get pagetable/dir at fffeffa8
     

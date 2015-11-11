@@ -21,10 +21,13 @@
 #include <devices.h>
 #include <console.h>
 #include <video_defines.h>
+#include <seg.h>
+#include <eflags.h>
 
 // TODO: Decide on arbitrary max length
 #define MAX_LEN 1024
 #define INVALID_COLOR 0x90
+#define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
 sem_t read_sem;
 sem_t print_sem;
 
@@ -409,6 +412,58 @@ void misbehave_syscall(ureg_t state)
     }
 }
 
+/** @brief Checks the user provided arguments for swexn
+ *  @param tcb TCB of current thread
+ *  @param eip Address of first instruction of user exception handler
+ *  @param esp User exception stack
+ *  @param regs User provided return register state
+ *  @return 0 on success, a negative integer on failure
+ */
+int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
+                uint32_t eflags)
+{
+    ppd_t *ppd = &tcb->process->directory;
+    
+    // Error: Provided eip and/or esp3 are unreasonable
+    if ((eip != 0)&&(esp != 0)) {
+        // Check that eip is user read memory
+        if (!vm_user_can_read(ppd, eip, sizeof(void*))) {
+            return -1;
+        }
+        // Check that esp3 is in user write memory
+        if (!vm_user_can_write(ppd, esp, sizeof(void*))) {
+            return -2;
+        }
+    }
+    
+    // Error: Provided register values are unreasonable
+    if (regs != NULL) {
+        // Check that newureg is in user memory
+        if (!vm_user_can_read(ppd, regs, sizeof(void*))) {
+            return -3;
+        }
+        // Check ds/es/fs/gs/ss/cs
+        if ((regs->ds != SEGSEL_USER_DS)||(regs->es != SEGSEL_USER_DS)||
+            (regs->fs != SEGSEL_USER_DS)||(regs->gs != SEGSEL_USER_DS)||
+            (regs->ss != SEGSEL_USER_DS)||(regs->cs != SEGSEL_USER_CS)) {
+            return -4;
+        }
+        // Check that eip is in user read memory
+        if (!vm_user_can_read(ppd, (void *)regs->eip, sizeof(void*))) {
+            return -5;
+        }
+        // Check eflags
+        if ((eflags&(~USER_FLAGS)&(~EFL_RF)) != (regs->eflags&(~USER_FLAGS))) {
+            return -6;
+        }
+        // Check that esp is in user write memory
+        if (!vm_user_can_write(ppd, (void *)regs->esp, sizeof(void*))) {
+            return -7;
+        }
+    }
+    return 0;
+}
+
 /** @brief The swexn syscall
  *  @param state The current state in user mode
  *  @return void
@@ -424,6 +479,12 @@ void swexn_syscall(ureg_t state)
         ureg_t *newureg;
     } args_t;
     args_t *arg = (args_t *)state.esi;
+    int ret = check_swexn(tcb, arg->eip, arg->esp3, arg->newureg, state.eflags);
+    // If either request cannot be carried out, syscall must fail
+    if (ret < 0) {
+        state.eax = -1;
+        return;
+    }
     
     // Deregister handler if one is registered
     if ((arg->esp3 == 0)||(arg->eip == 0)) {
@@ -432,7 +493,7 @@ void swexn_syscall(ureg_t state)
     
     // Register a new software exception handler
     else {
-        uint32_t stack = (uint32_t)arg->esp3 - 4;
+        uint32_t stack = (uint32_t)arg->esp3 - sizeof(void *);
         register_swexn(tcb, arg->eip, arg->arg, (void *)stack);
     }
     
@@ -440,7 +501,7 @@ void swexn_syscall(ureg_t state)
     if (arg->newureg != NULL) {
         state = *(arg->newureg);
     }
-    
-    // TODO: If either request cannot be carried out, both requests must fail
-    
+    else {
+        state.eax = 0;
+    }
 }
