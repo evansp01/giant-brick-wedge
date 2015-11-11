@@ -116,7 +116,7 @@ void yield_syscall(ureg_t state)
 void deschedule_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    state.eax = deschedule(tcb, state.esi);
+    state.eax = user_deschedule(tcb, state.esi);
 }
 
 /** @brief The make_runnable syscall
@@ -139,11 +139,8 @@ void make_runnable_syscall(ureg_t state)
  */
 void get_ticks_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called get_ticks. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    // don't need locks, just read whatever is there
+    state.eax = get_ticks();
 }
 
 /** @brief The sleep syscall
@@ -153,10 +150,15 @@ void get_ticks_syscall(ureg_t state)
 void sleep_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called sleep. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    uint32_t slept_for = add_sleeper(tcb, state.esi);
+    if(slept_for < 0){
+        state.eax = slept_for;
+        return;
     }
+    if(slept_for > 0){
+        release_sleeper(slept_for);
+    }
+    state.eax = 0;
 }
 
 /** @brief The new_pages syscall

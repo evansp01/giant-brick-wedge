@@ -15,6 +15,8 @@
 #include <switch.h>
 #include <mutex.h>
 #include <stack_info.h>
+#include <cr.h>
+#include <contracts.h>
 
 // Global kernel state with process and thread info
 kernel_state_t kernel_state;
@@ -179,7 +181,9 @@ void free_pcb(pcb_t* pcb)
 tcb_t* get_tcb()
 {
     uint32_t tcb_addr = K_STACK_TOP(K_STACK_BASE(get_esp()));
-    return *(tcb_t**)tcb_addr;
+    tcb_t *tcb = *(tcb_t**)tcb_addr;
+    ASSERT((uint32_t)(tcb->process->directory.dir) == get_cr3());
+    return tcb;
 }
 
 tcb_t* get_tcb_by_id(int tid)

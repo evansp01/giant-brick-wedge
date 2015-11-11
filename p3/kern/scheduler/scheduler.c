@@ -22,12 +22,18 @@
 Q_NEW_HEAD(runnable_queue_t, tcb);
 
 // Global scheduler list of runnable threads
-struct {
+static struct {
     tcb_t* idle;
     runnable_queue_t runnable;
     tcb_t* switched_from;
     uint32_t ticks;
 } scheduler = { 0 };
+
+
+uint32_t get_ticks()
+{
+    return scheduler.ticks;
+}
 
 /** @brief Initializes the scheduler
  *
@@ -88,7 +94,7 @@ void switch_to_next(tcb_t* current, int schedule)
  *
  *  @return void
  */
-void run_scheduler(unsigned int ticks)
+void run_scheduler(uint32_t ticks)
 {
     disable_interrupts();
     scheduler.ticks = ticks;
@@ -124,6 +130,12 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
     scheduler_mutex_unlock(mp);
+    deschedule(tcb);
+}
+
+
+void deschedule(tcb_t *tcb)
+{
     tcb->state = SUSPENDED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
@@ -133,15 +145,15 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 void kill_thread(tcb_t* tcb, pcb_t *pcb)
 {
     disable_interrupts();
-    tcb->state = EXITED;
     // store the process to free in the tcb
     tcb->process = pcb;
+    tcb->state = EXITED;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
 
-int deschedule(tcb_t* tcb, uint32_t esi)
+int user_deschedule(tcb_t* tcb, uint32_t esi)
 {
     ppd_t* ppd = &tcb->process->directory;
     mutex_lock(&ppd->lock);
@@ -154,9 +166,7 @@ int deschedule(tcb_t* tcb, uint32_t esi)
         return 0;
     }
     scheduler_mutex_unlock(&ppd->lock);
-    tcb->state = SUSPENDED;
-    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
-    switch_to_next(tcb, SCHEDULE_MODE);
+    deschedule(tcb);
     return 0;
 }
 

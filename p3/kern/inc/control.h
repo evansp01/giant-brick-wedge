@@ -28,6 +28,7 @@ typedef struct swexn {
     void *arg;
     void *stack;
 } swexn_t;
+
 typedef struct swexn_stack {
     void *ret_addr;
     void *arg;
@@ -75,6 +76,7 @@ typedef struct tcb {
     void *saved_esp;
     state_t state;
     swexn_t swexn;
+    unsigned int wake_tick;
 } tcb_t;
 
 /** @brief Structure for the overall kernel state */

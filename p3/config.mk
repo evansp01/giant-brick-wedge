@@ -115,7 +115,8 @@ KERN_CONTROL = control/control.o control/mutex.o control/atomic.o \
 KERN_INTERRUPT = interrupt/debug.o interrupt/devices.o interrupt/fault.o \
 				 interrupt/console.o interrupt/mode_switch.o \
 				 interrupt/mode_switch_asm.o interrupt/setup_idt.o
-KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o scheduler/switch.o
+KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
+				 scheduler/switch.o scheduler/sleep.o
 KERN_TESTS = tests/kernel_tests.o
 KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o vm/ppd.o \
 		  vm/page_fault.o
