@@ -60,5 +60,5 @@ void release_sleeper(uint32_t slept){
     disable_interrupts();
     H_REMOVE(&table, slept, wake_tick, suspended_threads);
     enable_interrupts();
-
+    release_malloc();
 }

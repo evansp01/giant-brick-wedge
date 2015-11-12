@@ -14,7 +14,7 @@ Stuff to do:
     console scroll flashing
     fix console scroll code
     
-    sleep_test1 fails sometimes
+    make_crash drops into idle
     
 Stuff to do:
     
