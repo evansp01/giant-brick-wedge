@@ -9,8 +9,6 @@ Stuff to do:
     copy_frame function to handle all types of copying
     move local headers from inc to local folder
     
-    multithreaded readline
-    multithreaded print
     console scroll flashing
     fix console scroll code
     
@@ -52,5 +50,7 @@ Stuff to do:
         new scheduler queue for wakeup threads
         interface for sleep
         
-    
+    tests to write
+        readline multithreaded
+        print multithreaded
         

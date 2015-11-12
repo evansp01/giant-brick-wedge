@@ -282,7 +282,7 @@ void print_syscall(ureg_t state)
         return;
     }
     // Error: buf is not a valid memory address
-    if (!vm_user_can_write(ppd, (void *)arg->buf, arg->len)) {
+    if (!vm_user_can_read(ppd, (void *)arg->buf, arg->len)) {
         state.eax = -2;
         return;
     }
