@@ -66,8 +66,8 @@ void default_fault_handler(ureg_t* state, tcb_t* tcb)
 
     // Print error message
     dump_registers(state);
-    // and panic, should probably kill thread
-    panic("Process is terminally ill");
+    // Kill thread on error
+    vanish_thread(tcb);
 }
 
 void page_fault_handler(ureg_t* state, tcb_t* tcb)

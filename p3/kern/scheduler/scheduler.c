@@ -79,8 +79,6 @@ void switch_to_next(tcb_t* current, int schedule)
         }
         if (current->id != next->id) {
             context_switch(current, next);
-        } else {
-            enable_interrupts();
         }
     } else {
         // no runnable threads, should run idle
@@ -88,6 +86,8 @@ void switch_to_next(tcb_t* current, int schedule)
             context_switch(current, scheduler.idle);
         }
     }
+    // must re-enable interrupts if not context switching
+    enable_interrupts();
 }
 
 /** @brief Runs the next thread in the runnable queue

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <contracts.h>
 #include <simics.h>
+#include <scheduler.h>
 
 void cleanup_process(pcb_t *pcb)
 {
@@ -107,4 +108,15 @@ void finalize_exit(tcb_t* tcb)
         cleanup_process(tcb->process);
     }
     free_tcb(tcb);
+}
+
+/** @brief Cleans up and kills a single thread
+ *  @param tcb TCB of the thread to kill
+ *  @return void
+ **/
+void vanish_thread(tcb_t *tcb)
+{
+    pcb_t* to_free = thread_exit(tcb);
+    acquire_malloc();
+    kill_thread(tcb, to_free);
 }

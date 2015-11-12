@@ -100,6 +100,7 @@ tcb_t *get_tcb();
 tcb_t* get_tcb_by_id(int tid);
 int get_thread_count(pcb_t *pcb);
 void finalize_exit(tcb_t *tcb);
+void vanish_thread(tcb_t *tcb);
 int wait(pcb_t* pcb, int *status_ptr);
 void pcb_add_child(pcb_t *parent, pcb_t *child);
 int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb);
