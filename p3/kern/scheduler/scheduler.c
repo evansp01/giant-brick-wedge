@@ -79,6 +79,8 @@ void switch_to_next(tcb_t* current, int schedule)
         }
         if (current->id != next->id) {
             context_switch(current, next);
+        } else {
+            enable_interrupts();
         }
     } else {
         // no runnable threads, should run idle
