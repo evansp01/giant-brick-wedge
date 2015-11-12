@@ -8,6 +8,6 @@
 #ifndef DEVICES_H_
 #define DEVICES_H_
 
-int readchar(void);
+int readline(int len, char *buf, tcb_t *tcb);
 
 #endif // DEVICES_H_

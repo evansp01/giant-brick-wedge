@@ -11,8 +11,8 @@ Stuff to do:
     
     multithreaded readline
     multithreaded print
-    readline max buffer size = screensize - 1 line
     console scroll flashing
+    fix console scroll code
     
     sleep_test1 fails sometimes
     
@@ -51,10 +51,6 @@ Stuff to do:
         hash table of lists
         new scheduler queue for wakeup threads
         interface for sleep
-    
-    keyboard
-        readline thread should go to sleep until chars are ready
-        keyboard interrupt handler runs on other threads to process scancodes
         
     
         

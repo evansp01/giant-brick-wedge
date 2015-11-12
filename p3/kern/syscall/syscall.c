@@ -24,8 +24,7 @@
 #include <seg.h>
 #include <eflags.h>
 
-// TODO: Decide on arbitrary max length
-#define MAX_LEN 1024
+#define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
 #define INVALID_COLOR 0x90
 #define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
 sem_t read_sem;
@@ -223,12 +222,11 @@ void readline_syscall(ureg_t state)
     } args_t;
     args_t *arg = (args_t *)state.esi;
     
-    // Error: len is unreasonably large
-    if (arg->len > MAX_LEN) {
+    // Error: len is unreasonable
+    if ((arg->len > MAX_LEN)||(arg->len <= 0)) {
         state.eax = -1;
         return;
     }
-    
     // Error: buf is not a valid memory address
     if (!vm_user_can_write(ppd, (void *)arg->buf, arg->len)) {
         state.eax = -2;
@@ -236,34 +234,10 @@ void readline_syscall(ureg_t state)
     }
     
     sem_wait(&read_sem);
-    char c;
-    int i = 0;
-    char temp[arg->len];
-    while (i < arg->len) {
-        if ((c = readchar()) == -1) {
-            continue;
-        }
-        
-        // Backspace character
-        if (c == '\b') {
-            if (i != 0) {
-                putbyte(c);
-                i--;
-            }
-        }
-        // Standard character
-        else {
-            putbyte(c);
-            temp[i] = c;
-            i++;
-            if (c == '\n')
-                break;
-        }
-    }
+    int num_bytes = readline(arg->len, arg->buf, tcb);
     sem_signal(&read_sem);
     
-    memcpy(arg->buf, temp, i);
-    state.eax = i;
+    state.eax = num_bytes;
 }
 
 /** @brief The getchar syscall
@@ -302,12 +276,11 @@ void print_syscall(ureg_t state)
     } args_t;
     args_t *arg = (args_t *)state.esi;
     
-    // Error: len is unreasonably large
-    if (arg->len > MAX_LEN) {
+    // Error: len is unreasonable
+    if ((arg->len > MAX_LEN)||(arg->len <= 0)) {
         state.eax = -1;
         return;
     }
-    
     // Error: buf is not a valid memory address
     if (!vm_user_can_write(ppd, (void *)arg->buf, arg->len)) {
         state.eax = -2;
