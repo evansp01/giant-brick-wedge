@@ -1,54 +1,22 @@
 Stuff to do:
 
-    doxygen cleanup
-
-    fix write_vm
-    void * to uint32_t where we might do math
-    disable interrupts vs disable context switching
-    
-    copy_frame function to handle all types of copying
-    move local headers from inc to local folder
-    
-    console scroll flashing
     fix console scroll code
-    
-    make_crash drops into idle
     
     lock page directory when using vm_write
     
     mutex change to resemble semaphore and use disable interrupts
         no aimless spinwait yield loops
-        
-    check that malloc uses have error conditions
+    
+    readline
+        keep two buffers, scancodes and chars
+        process only if readline is active
+        disable interrupts
     
     Halt involves assembly HLT
     
+    clean up header files
     move common.h functions into appropriate files
-    
-Stuff to do:
-    
-    locking
-        process locks
-        thread locks
-        scheduler lock (flag)
-        frame alloc lock
-        process lock for page fault handler / lock the page table & set lock bit
-        cond vars without malloc (linked lists using sleeping threads' memory)
-        
-    exec system call
-        fix how argc, argv works (work towards exec system call)
-        validity check for given values from user for system calls
-        copy user input into kernel space
-        validate user input
-        replace the currently running program (similar to loader code)
-        
-    scheduler
-        runnable queue
-            things are added when marked runnable
-        make_runnable should not be preemptible
-            disable interrupts across make_runnable
-        yield() does not affect scheduling
-        
+
     error handling
         1. recoverable fault -> fix the problem
         2. inform the user -> kill the thread / process
@@ -58,18 +26,11 @@ Stuff to do:
         init/install should panic instead of returning errors
     
     sleep
-        hash table of lists
-        new scheduler queue for wakeup threads
-        interface for sleep
+        switch to linked list variant
         
     tests to write
         readline multithreaded
         print multithreaded
-    
-    readline
-        keep two buffers, scancodes and chars
-        process only if readline is active
-        disable interrupts
 
     allocation still doesn't count frames
-        
+    
