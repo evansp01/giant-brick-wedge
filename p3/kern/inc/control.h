@@ -110,7 +110,5 @@ void kernel_add_thread(tcb_t* tcb);
 pcb_t *thread_exit(tcb_t *tcb);
 void acquire_malloc();
 void release_malloc();
-void register_swexn(tcb_t *tcb,swexn_handler_t handler,void *arg,void *stack);
-void deregister_swexn(tcb_t *tcb);
 
 #endif // CONTROL_H_

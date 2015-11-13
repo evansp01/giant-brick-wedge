@@ -23,8 +23,6 @@ Stuff to do:
     
     Halt involves assembly HLT
     
-    move swexn into new file
-    
     move common.h functions into appropriate files
     
 Stuff to do:
