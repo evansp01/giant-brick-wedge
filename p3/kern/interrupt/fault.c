@@ -21,6 +21,7 @@
 #include <mode_switch.h>
 #include <common_kern.h>
 #include <common.h>
+#include <syscall_kern.h>
 
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {

@@ -36,6 +36,7 @@
 #include <mode_switch.h>
 #include <scheduler.h>
 #include <switch.h>
+#include <syscall_kern.h>
 
 void init_malloc();
 

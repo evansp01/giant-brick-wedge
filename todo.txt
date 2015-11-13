@@ -6,13 +6,14 @@ Stuff to do:
     
     mutex change to resemble semaphore and use disable interrupts
         no aimless spinwait yield loops
+            1. Change mutexes
+            2. Change cond variables
+            3. Change semaphore usages (replace with mutexes)
     
     readline
         keep two buffers, scancodes and chars
         process only if readline is active
         disable interrupts
-    
-    Halt involves assembly HLT
     
     clean up header files
     move common.h functions into appropriate files

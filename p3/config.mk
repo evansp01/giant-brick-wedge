@@ -41,7 +41,8 @@ UPDATE_METHOD = afs
            wait_getpid actual_wait fork_wait fork_wait_bomb fork_exit_bomb \
            stack_test1 swexn_basic_test swexn_cookie_monster swexn_dispatch \
            swexn_regs swexn_stands_for_swextensible swexn_uninstall_test \
-		   sleep_test1 yield_desc_mkrun make_crash make_crash_helper
+		   sleep_test1 yield_desc_mkrun make_crash make_crash_helper \
+           halt_test
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -109,7 +110,8 @@ AUTOSTACK_OBJS = autostack.o
 #
 # Kernel object files you provide in from kern/
 #
-KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o syscall/swexn.o
+KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o syscall/swexn.o \
+               syscall/halt.o
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o
 KERN_CONTROL = control/control.o control/mutex.o control/atomic.o \
                control/cond.o control/sem.o control/wait_vanish.o

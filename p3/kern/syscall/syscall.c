@@ -23,6 +23,7 @@
 #include <video_defines.h>
 #include <seg.h>
 #include <eflags.h>
+#include <syscall_kern.h>
 
 #define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
 #define INVALID_COLOR 0x90
@@ -364,8 +365,7 @@ void halt_syscall(ureg_t state)
     // Halt machines running on simics
     sim_halt();
     // Halt machines running on real hardware
-    panic("Running on real hardware, please add code to initiate shutdown\
-           based on current hardware implementation!");
+    halt_asm();
 }
 
 
