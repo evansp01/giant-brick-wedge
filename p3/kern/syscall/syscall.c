@@ -18,7 +18,7 @@
 #include <string.h>
 #include <asm.h>
 #include <sem.h>
-#include <devices.h>
+#include <readline.h>
 #include <console.h>
 #include <video_defines.h>
 #include <seg.h>

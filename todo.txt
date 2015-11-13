@@ -14,6 +14,19 @@ Stuff to do:
     
     make_crash drops into idle
     
+    lock page directory when using vm_write
+    
+    mutex change to resemble semaphore and use disable interrupts
+        no aimless spinwait yield loops
+        
+    check that malloc uses have error conditions
+    
+    Halt involves assembly HLT
+    
+    move swexn into new file
+    
+    move timer from devices.c into scheduler
+    
 Stuff to do:
     
     locking
@@ -44,6 +57,7 @@ Stuff to do:
         3. kill the kernel
         
         check for failure case in malloc calls
+        init/install should panic instead of returning errors
     
     sleep
         hash table of lists
@@ -53,4 +67,11 @@ Stuff to do:
     tests to write
         readline multithreaded
         print multithreaded
+    
+    readline
+        keep two buffers, scancodes and chars
+        process only if readline is active
+        disable interrupts
+
+    allocation still doesn't count frames
         

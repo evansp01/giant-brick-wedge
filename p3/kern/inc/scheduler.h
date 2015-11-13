@@ -7,8 +7,9 @@
 
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
-#include <stdint.h>
 
+#include <stdint.h>
+#include <control.h>
 
 uint32_t get_ticks();
 int yield(int yield_tid);
