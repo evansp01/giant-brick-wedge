@@ -82,15 +82,6 @@ void install_syscalls()
 
     set_idt_syscall(NAME_ASM(new_pages_syscall), NEW_PAGES_INT);
     set_idt_syscall(NAME_ASM(remove_pages_syscall), REMOVE_PAGES_INT);
-
-    //TODO: these don't belong here, It might be good to have an
-    //      init_syscalls function somewhere in syscalls though which could
-    //      create locks for any syscalls which need them. Also probably
-    //      shouldn't be global variables
-    extern sem_t read_sem;
-    extern sem_t print_sem;
-    sem_init(&read_sem, 1);
-    sem_init(&print_sem, 1);
     
     set_idt_syscall(NAME_ASM(getchar_syscall), GETCHAR_INT);
     set_idt_syscall(NAME_ASM(readline_syscall), READLINE_INT);

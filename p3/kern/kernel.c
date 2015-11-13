@@ -48,7 +48,9 @@ void init_malloc();
 int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
 {
     install_exceptions();
-    initialize_devices();
+    init_timer();
+    install_devices();
+    init_syscalls();
     install_syscalls();
     init_virtual_memory();
     init_kernel_state();

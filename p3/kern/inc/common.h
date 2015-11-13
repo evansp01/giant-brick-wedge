@@ -9,7 +9,11 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <control.h>
+
 //fault handler stuff
-int initialize_devices();
+int init_timer();
+void init_syscalls();
+int readline(int len, char *buf, tcb_t *tcb);
 
 #endif // COMMON_H_

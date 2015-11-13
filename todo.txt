@@ -25,7 +25,7 @@ Stuff to do:
     
     move swexn into new file
     
-    move timer from devices.c into scheduler
+    move common.h functions into appropriate files
     
 Stuff to do:
     

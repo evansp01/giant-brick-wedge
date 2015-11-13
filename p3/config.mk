@@ -113,12 +113,11 @@ KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o
 KERN_CONTROL = control/control.o control/mutex.o control/atomic.o \
                control/cond.o control/sem.o control/wait_vanish.o
-KERN_INTERRUPT = interrupt/debug.o interrupt/devices.o interrupt/fault.o \
+KERN_INTERRUPT = interrupt/debug.o interrupt/readline.o interrupt/fault.o \
 				 interrupt/console.o interrupt/mode_switch.o \
-				 interrupt/mode_switch_asm.o interrupt/setup_idt.o \
-                 interrupt/readline.o
+				 interrupt/mode_switch_asm.o interrupt/setup_idt.o
 KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
-				 scheduler/switch.o scheduler/sleep.o
+				 scheduler/switch.o scheduler/sleep.o scheduler/timer.o
 KERN_TESTS = tests/kernel_tests.o
 KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o vm/ppd.o \
 		  vm/page_fault.o

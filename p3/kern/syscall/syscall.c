@@ -18,7 +18,7 @@
 #include <string.h>
 #include <asm.h>
 #include <sem.h>
-#include <readline.h>
+#include <common.h>
 #include <console.h>
 #include <video_defines.h>
 #include <seg.h>
@@ -27,16 +27,22 @@
 #define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
 #define INVALID_COLOR 0x90
 #define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
-sem_t read_sem;
-sem_t print_sem;
+
+/** @brief Struct for variables required for syscalls */
+typedef struct {
+    sem_t read_sem;
+    sem_t print_sem;
+} sysvars_t;
+
+static sysvars_t sysvars;
 
 /** @brief Initializes the semaphores used in the console syscalls
  *  @return void
  */
-void init_syscall_sem()
+void init_syscalls()
 {
-    sem_init(&read_sem, 1);
-    sem_init(&print_sem, 1);
+    sem_init(&sysvars.read_sem, 1);
+    sem_init(&sysvars.print_sem, 1);
 }
 
 /** @brief The set_status syscall
@@ -233,9 +239,9 @@ void readline_syscall(ureg_t state)
         return;
     }
     
-    sem_wait(&read_sem);
+    sem_wait(&sysvars.read_sem);
     int num_bytes = readline(arg->len, arg->buf, tcb);
-    sem_signal(&read_sem);
+    sem_signal(&sysvars.read_sem);
     
     state.eax = num_bytes;
 }
@@ -287,9 +293,9 @@ void print_syscall(ureg_t state)
         return;
     }
     
-    sem_wait(&print_sem);
+    sem_wait(&sysvars.print_sem);
     putbytes(arg->buf, arg->len);
-    sem_signal(&print_sem);
+    sem_signal(&sysvars.print_sem);
     state.eax = 0;
 }
 
