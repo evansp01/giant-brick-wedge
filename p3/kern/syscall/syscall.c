@@ -339,17 +339,19 @@ void set_cursor_pos_syscall(ureg_t state)
  */
 void get_cursor_pos_syscall(ureg_t state)
 {
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = &tcb->process->directory;
     typedef struct args {
         int *row;
         int *col;
     } args_t;
     args_t *arg = (args_t *)state.esi;
     
-    // Error: arguments are invalid
-    // TODO: Check if pointers are on user-writable memory?
-    if ((arg->row == NULL)||(arg->col == NULL)) {
+    // Check that row and col are in user readable memory
+    if ((!vm_user_can_read(ppd, arg->row, sizeof(void*)))||
+        (!vm_user_can_read(ppd, arg->col, sizeof(void*)))) {
         state.eax = -1;
-        return;
+        return ;
     }
     
     get_cursor(arg->row, arg->col);
