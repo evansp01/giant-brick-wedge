@@ -36,7 +36,7 @@ void default_fault_handler(ureg_t* state, tcb_t* tcb)
     // Print error message
     dump_registers(state);
     // Kill thread on error
-    vanish_thread(tcb);
+    vanish_thread(tcb, THREAD_EXIT_FAILED);
 }
 
 void page_fault_handler(ureg_t* state, tcb_t* tcb)

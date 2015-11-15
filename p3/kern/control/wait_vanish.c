@@ -72,7 +72,7 @@ void pcb_inform_children(pcb_t* pcb)
 }
 
 
-pcb_t *thread_exit(tcb_t *tcb)
+pcb_t *thread_exit(tcb_t *tcb, int failed)
 {
     pcb_t* process = tcb->process;
     kernel_remove_thread(tcb);
@@ -80,6 +80,9 @@ pcb_t *thread_exit(tcb_t *tcb)
     // More threads, so we get off easy
     if (thread_count != 0) {
         return NULL;
+    }
+    if(failed){
+        process->exit_status = -2;
     }
     //We are cleaning up the last thread
     //now we want to see what our parent has to say
@@ -121,9 +124,9 @@ void finalize_exit(tcb_t* tcb)
  *  @param tcb TCB of the thread to kill
  *  @return void
  **/
-void vanish_thread(tcb_t *tcb)
+void vanish_thread(tcb_t *tcb, int failed)
 {
-    pcb_t* to_free = thread_exit(tcb);
+    pcb_t* to_free = thread_exit(tcb, failed);
     acquire_malloc();
     lprintf("thread %d acquired malloc", tcb->id);
     kill_thread(tcb, to_free);

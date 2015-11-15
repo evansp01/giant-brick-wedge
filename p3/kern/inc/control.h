@@ -8,6 +8,10 @@
 #ifndef CONTROL_H_
 #define CONTROL_H_
 
+
+#define THREAD_EXIT_SUCCESS 0
+#define THREAD_EXIT_FAILED 1
+
 #include <vm.h>
 #include <interface.h>
 #include <mutex.h>
@@ -102,14 +106,13 @@ tcb_t *get_tcb();
 tcb_t* get_tcb_by_id(int tid);
 int get_thread_count(pcb_t *pcb);
 void finalize_exit(tcb_t *tcb);
-void vanish_thread(tcb_t *tcb);
+void vanish_thread(tcb_t *tcb, int failed);
 int wait(pcb_t* pcb, int *status_ptr);
 void pcb_add_child(pcb_t *parent, pcb_t *child);
 int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb);
 void pcb_add_thread(pcb_t* pcb, tcb_t* tcb);
 void kernel_remove_thread(tcb_t* tcb);
 void kernel_add_thread(tcb_t* tcb);
-pcb_t *thread_exit(tcb_t *tcb);
 void acquire_malloc();
 void release_malloc();
 int get_next_id();

@@ -66,7 +66,7 @@ void set_status_syscall(ureg_t state)
 void vanish_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    vanish_thread(tcb);
+    vanish_thread(tcb, THREAD_EXIT_SUCCESS);
 }
 
 /** @brief The task_vanish syscall
@@ -159,7 +159,6 @@ void sleep_syscall(ureg_t state)
     while (get_ticks() < time) {
         continue;
     }
-    
     /*
     tcb_t* tcb = get_tcb();
     int status = add_sleeper(tcb, state.esi);
