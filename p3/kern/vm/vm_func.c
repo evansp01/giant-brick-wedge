@@ -416,6 +416,14 @@ int vm_set_readonly(ppd_t* ppd, void* start, uint32_t size)
     return vm_map_pages(ppd, start, size, vm_set_readonly_h) == 0;
 }
 
+int vm_read_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size)
+{
+    mutex_lock(&ppd->lock);
+    int status = vm_read(ppd, buffer, (void*)start, size);
+    mutex_unlock(&ppd->lock);
+    return status;
+}
+
 /** @brief Safely read from user memory to a kernel buffer
  *  
  *  @param ppd The user page directory
@@ -431,6 +439,14 @@ int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
         return 0;
     }
     return -1;
+}
+
+int vm_write_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size)
+{
+    mutex_lock(&ppd->lock);
+    int status = vm_write(ppd, buffer, (void*)start, size);
+    mutex_unlock(&ppd->lock);
+    return status;
 }
 
 /** @brief Safely write from a kernel buffer to user memory
@@ -468,7 +484,7 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
         return 0;
     }
     //you can't allocate more memory than the system has
-    if(reserve_frames(start, size) < 0){
+    if (reserve_frames(start, size) < 0) {
         return -1;
     }
     if (allocate_tables(ppd, start, size) < 0) {
