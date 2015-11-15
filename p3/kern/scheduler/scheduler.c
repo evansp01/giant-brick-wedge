@@ -14,6 +14,7 @@
 #include <simics.h>
 #include <asm.h>
 #include <contracts.h>
+#include <utilities.h>
 
 #define YIELD_MODE 0
 #define SCHEDULE_MODE 1
@@ -130,8 +131,9 @@ void switch_to_next(tcb_t* current, int schedule)
             Q_REMOVE(&scheduler.runnable, next, runnable_threads);
             Q_INSERT_TAIL(&scheduler.runnable, next, runnable_threads);
         }
-        //lprintf("switching from %d to %d", current->id, next->id);
+        
         if (current->id != next->id) {
+            //lprintf("switching from %d to %d", current->id, next->id);
             context_switch(current, next);
         }
     } else {

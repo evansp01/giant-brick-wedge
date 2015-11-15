@@ -42,7 +42,7 @@ UPDATE_METHOD = afs
            stack_test1 swexn_basic_test swexn_cookie_monster swexn_dispatch \
            swexn_regs swexn_stands_for_swextensible swexn_uninstall_test \
 		   sleep_test1 yield_desc_mkrun make_crash make_crash_helper \
-           halt_test
+           halt_test cho cho2 cho_variant chow
 
 ###########################################################################
 # Test programs you have written which you wish to run

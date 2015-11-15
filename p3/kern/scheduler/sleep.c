@@ -4,6 +4,7 @@
 #include <scheduler.h>
 #include <asm.h>
 #include <simics.h>
+#include <utilities.h>
 
 static tcb_ds_t sleep_list;
 static mutex_t sleep_mutex;
@@ -44,6 +45,7 @@ int add_sleeper(tcb_t* tcb, uint32_t ticks)
     }
     tcb->wake_tick = 0;
     scheduler_mutex_unlock(&sleep_mutex);
+    //lprintf("thread %d going to sleep", tcb->id);
     remove_runnable(tcb, SLEEPING);
     switch_to_next(tcb, 0);
     return 1;
@@ -55,6 +57,7 @@ void schedule_sleepers(uint32_t current)
     // if we only examine the list, we don't need the lock
     tcb_t *head = Q_GET_FRONT(&sleep_list);
     if(head->wake_tick <= current && head->state == SLEEPING){
+        //lprintf("scheduling sleeper %d", head->id);
         add_runnable(head);
     }
     enable_interrupts();

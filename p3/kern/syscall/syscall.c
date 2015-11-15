@@ -153,6 +153,13 @@ void get_ticks_syscall(ureg_t state)
  */
 void sleep_syscall(ureg_t state)
 {
+    state.eax = 0;
+    int time = get_ticks() + state.esi;
+    while (get_ticks() < time) {
+        continue;
+    }
+    
+    /*
     tcb_t* tcb = get_tcb();
     int status = add_sleeper(tcb, state.esi);
     if(status < 0){
@@ -163,6 +170,7 @@ void sleep_syscall(ureg_t state)
         release_sleeper(tcb);
     }
     state.eax = 0;
+    */
 }
 
 /** @brief The new_pages syscall

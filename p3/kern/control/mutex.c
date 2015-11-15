@@ -11,22 +11,14 @@
 #include <stdlib.h>
 #include <control.h>
 #include <scheduler.h>
-#include <asm.h>
-
-#include <simics.h>
 
 #define LOCKED 1
 #define UNLOCKED 0
 #define UNSPECIFIED -1
 
-static int initialized = 0;
-
-/** @brief Initializes all mutexes for multithreaded usage
- *  @return void
- **/
 void init_mutexes()
 {
-    initialized = 1;
+    return;
 }
 
 /** @brief Initialize mutex
@@ -41,8 +33,8 @@ void mutex_init(mutex_t* mp)
     //unlocked and nobody owns
     mp->lock = UNLOCKED;
     mp->owner = UNSPECIFIED;
-    mp->count = 1;
-    Q_INIT_HEAD(&mp->waiting);
+    mp->waiting = 0;
+    return;
 }
 
 /** @brief Destroy a mutex
@@ -70,20 +62,27 @@ void mutex_destroy(mutex_t* mp)
  **/
 void mutex_lock(mutex_t* mp)
 {
-    if (initialized) {
-        tcb_t *tcb = get_tcb();
-    
-        disable_interrupts();
-        mp->count--;
-        if (mp->count < 0) {
-            Q_INIT_ELEM(tcb, suspended_threads);
-            Q_INSERT_TAIL(&mp->waiting, tcb, suspended_threads);
-            deschedule(tcb);
-        }
-        enable_interrupts();
-        mp->lock = LOCKED;
-        mp->owner = tcb->id;
+    //might as well get the tid, we'll need it later
+    tcb_t *tcb = get_tcb();
+    int thread_id = tcb->id;
+    //let's see if we can get the lock immediately (provided nobody is waiting)
+    if (atomic_xchg(&mp->lock, LOCKED) == UNLOCKED) {
+        mp->owner = thread_id;
+        return;
     }
+    //we failed to get the lock, note that we are waiting
+    atomic_inc(&mp->waiting);
+    //now try and get the lock again
+    do {
+        // try to yield to the owner
+        if (yield(mp->owner) < 0) {
+            //but if that doesn't work, settle for anyone
+            yield(UNSPECIFIED);
+        }
+    } while (atomic_xchg(&mp->lock, LOCKED) != UNLOCKED);
+    //we got  the lock, stop waiting
+    atomic_dec(&mp->waiting);
+    mp->owner = thread_id;
 }
 
 /** @brief Unlock a mutex
@@ -95,25 +94,17 @@ void mutex_lock(mutex_t* mp)
  **/
 void mutex_unlock(mutex_t* mp)
 {
-    if (initialized) {
-        if (mp->lock == LOCKED && mp->owner == UNSPECIFIED) {
-            panic("cannot unlock kernel mutex which is destroyed or not owned");
-        }
-        
-        disable_interrupts();
-        
+    if (mp->lock == LOCKED && mp->owner == UNSPECIFIED) {
+        panic("cannot unlock kernel mutex which is destroyed or not owned");
+    }
+    //if people are waiting, we will yield so we don't get the lock too much
+    if (mp->waiting > 0) {
         mp->owner = UNSPECIFIED;
         mp->lock = UNLOCKED;
-        mp->count++;
-        
-        // wake the next thread up
-        if (!Q_IS_EMPTY(&mp->waiting)) {
-            tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
-            Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
-            schedule(tcb_to_schedule);
-        }
-        
-        enable_interrupts();
+        yield(UNSPECIFIED);
+    } else {
+        mp->owner = UNSPECIFIED;
+        mp->lock = UNLOCKED;
     }
 }
 
@@ -132,5 +123,4 @@ void scheduler_mutex_unlock(mutex_t* mp)
     }
     mp->owner = UNSPECIFIED;
     mp->lock = UNLOCKED;
-    mp->count++;
 }
