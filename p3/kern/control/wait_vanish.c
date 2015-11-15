@@ -24,7 +24,9 @@ int wait(pcb_t* pcb, int *status_ptr)
     pcb_t* child = Q_GET_FRONT(&pcb->children);
     if(child->state != EXITED){
         pcb->waiting++;
+        lprintf("waiting for child %d", child->id);
         cond_wait(&pcb->wait, &pcb->children_mutex);
+        lprintf("finished wait for child %d", child->id);
         child = Q_GET_FRONT(&pcb->children);
     }
     ASSERT(child->state == EXITED);
@@ -87,6 +89,7 @@ pcb_t *thread_exit(tcb_t *tcb)
     pcb_t* parent = process->parent;
     if (parent == NULL) {
         // nobody is going to wait for you ;(
+        lprintf("child %d has no parent", tcb->id);
         return process;
     }
     mutex_lock(&parent->children_mutex);
@@ -96,6 +99,7 @@ pcb_t *thread_exit(tcb_t *tcb)
     Q_INSERT_FRONT(&parent->children, process, siblings);
     if(parent->waiting > 0){
         parent->waiting--;
+        lprintf("child %d is signalling parent %d", tcb->id, parent->id);
         cond_signal(&parent->wait);
     }
     mutex_unlock(&parent->children_mutex);
@@ -121,5 +125,6 @@ void vanish_thread(tcb_t *tcb)
 {
     pcb_t* to_free = thread_exit(tcb);
     acquire_malloc();
+    lprintf("thread %d acquired malloc", tcb->id);
     kill_thread(tcb, to_free);
 }

@@ -80,6 +80,7 @@ void mutex_lock(mutex_t* mp)
             Q_INSERT_TAIL(&mp->waiting, tcb, suspended_threads);
             deschedule(tcb);
         }
+        enable_interrupts();
         mp->lock = LOCKED;
         mp->owner = tcb->id;
     }

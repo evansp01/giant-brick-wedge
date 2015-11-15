@@ -8,6 +8,8 @@
 static tcb_ds_t sleep_list;
 static mutex_t sleep_mutex;
 
+void switch_to_next(tcb_t* current, int schedule);
+
 void init_sleep()
 {
     Q_INIT_HEAD(&sleep_list);
@@ -40,9 +42,10 @@ int add_sleeper(tcb_t* tcb, uint32_t ticks)
     } else {
         Q_INSERT_AFTER(&sleep_list, iter, tcb, sleeping_threads);
     }
+    tcb->wake_tick = 0;
+    scheduler_mutex_unlock(&sleep_mutex);
     remove_runnable(tcb, SLEEPING);
-    enable_interrupts();
-    mutex_unlock(&sleep_mutex);
+    switch_to_next(tcb, 0);
     return 1;
 }
 

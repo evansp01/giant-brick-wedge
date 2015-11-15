@@ -64,13 +64,47 @@ void scheduler_post_switch()
 void add_runnable(tcb_t* tcb)
 {
     tcb->state = RUNNABLE;
+    
+    /*
+    tcb_t *i;
+    Q_FOREACH(i, &scheduler.runnable, runnable_threads)
+    {
+        lprintf("element %d", i->id);
+    }
+    */
+    
+    //lprintf("adding thread %d to runnable", tcb->id);
     Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
+    //lprintf("added thread %d to runnable", tcb->id);
+    
+    /*
+    Q_FOREACH(i, &scheduler.runnable, runnable_threads)
+    {
+        lprintf("element %d", i->id);
+    }
+    */
 }
 
 void remove_runnable(tcb_t* tcb, state_t state)
 {
+    /*
+    tcb_t *i;
+    Q_FOREACH(i, &scheduler.runnable, runnable_threads)
+    {
+        lprintf("element %d", i->id);
+    }
+    */
+    
     tcb->state = state;
+    //lprintf("removing runnable %d", tcb->id);
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+    
+    /*
+    Q_FOREACH(i, &scheduler.runnable, runnable_threads)
+    {
+        lprintf("element %d", i->id);
+    }
+    */
 }
 
 /** @brief Switches to the next thread to be run
@@ -80,19 +114,30 @@ void remove_runnable(tcb_t* tcb, state_t state)
  *  @return void
  **/
 void switch_to_next(tcb_t* current, int schedule)
-{
+{   
+
+    /*
+    tcb_t *i;
+    Q_FOREACH(i, &scheduler.runnable, runnable_threads)
+    {
+        lprintf("scheduler element %d", i->id);
+    }
+    */
+
     if (!Q_IS_EMPTY(&scheduler.runnable)) {
         tcb_t* next = Q_GET_FRONT(&scheduler.runnable);
         if (schedule) {
             Q_REMOVE(&scheduler.runnable, next, runnable_threads);
             Q_INSERT_TAIL(&scheduler.runnable, next, runnable_threads);
         }
+        //lprintf("switching from %d to %d", current->id, next->id);
         if (current->id != next->id) {
             context_switch(current, next);
         }
     } else {
         // no runnable threads, should run idle
         if (current->id != scheduler.idle->id) {
+            //lprintf("switching from %d to idle", current->id);
             context_switch(current, scheduler.idle);
         }
     }
