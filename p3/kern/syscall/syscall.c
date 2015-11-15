@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <asm.h>
-#include <sem.h>
+#include <mutex.h>
 #include <common.h>
 #include <console.h>
 #include <video_defines.h>
@@ -31,19 +31,19 @@
 
 /** @brief Struct for variables required for syscalls */
 typedef struct {
-    sem_t read_sem;
-    sem_t print_sem;
+    mutex_t read_mutex;
+    mutex_t print_mutex;
 } sysvars_t;
 
 static sysvars_t sysvars;
 
-/** @brief Initializes the semaphores used in the console syscalls
+/** @brief Initializes the mutexes used in the console syscalls
  *  @return void
  */
 void init_syscalls()
 {
-    sem_init(&sysvars.read_sem, 1);
-    sem_init(&sysvars.print_sem, 1);
+    mutex_init(&sysvars.read_mutex);
+    mutex_init(&sysvars.print_mutex);
 }
 
 /** @brief The set_status syscall
@@ -240,9 +240,9 @@ void readline_syscall(ureg_t state)
         return;
     }
     
-    sem_wait(&sysvars.read_sem);
+    mutex_lock(&sysvars.read_mutex);
     int num_bytes = readline(arg->len, arg->buf, tcb);
-    sem_signal(&sysvars.read_sem);
+    mutex_unlock(&sysvars.read_mutex);
     
     state.eax = num_bytes;
 }
@@ -258,15 +258,6 @@ void getchar_syscall(ureg_t state)
     while(1) {
         continue;
     }
-    /*
-    char c;
-    sem_wait(&read_sem);
-    while ((c = readchar()) == -1) {
-        continue;
-    }
-    sem_signal(&read_sem);
-    state.eax = c;
-    */
 }
 
 /** @brief The print syscall
@@ -294,9 +285,9 @@ void print_syscall(ureg_t state)
         return;
     }
     
-    sem_wait(&sysvars.print_sem);
+    mutex_lock(&sysvars.print_mutex);
     putbytes(arg->buf, arg->len);
-    sem_signal(&sysvars.print_sem);
+    mutex_unlock(&sysvars.print_mutex);
     state.eax = 0;
 }
 

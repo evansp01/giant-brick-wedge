@@ -15,7 +15,7 @@
 #include <setup_idt.h>
 #include <ureg.h>
 
-typedef enum state {
+typedef enum {
     NOT_YET,
     RUNNABLE,
     SUSPENDED,

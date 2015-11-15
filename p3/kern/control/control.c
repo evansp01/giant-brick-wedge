@@ -19,7 +19,7 @@
 #include <contracts.h>
 
 // Global kernel state with process and thread info
-kernel_state_t kernel_state;
+static kernel_state_t kernel_state;
 
 /** @brief Initializes the global lists of processes and threads
  *  @return void

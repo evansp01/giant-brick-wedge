@@ -16,7 +16,6 @@
 #include <setup_idt.h>
 #include <syscall_int.h>
 #include <asm.h>
-#include <sem.h>
 
 /** @brief Struct for Interrupt Descriptor Table (IDT) entries
  */

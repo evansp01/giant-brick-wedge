@@ -66,6 +66,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // this **MUST** be done after all other initialization has been performed
     // otherwise semaphores can randomly enable interrupts
     init_malloc();
+    init_mutexes();
     //  Switch to ppd of first thread
     // Switch to 1st idle thread
     // Interrupts cannot yet be enabled, as they will trigger a fault since

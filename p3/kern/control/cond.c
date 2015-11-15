@@ -17,15 +17,11 @@
  *  before it has been initialized
  *
  *  @param cv The condition variable to initialize
- *  @return zero on success, less than zero on failure
+ *  @return void
  */
-int cond_init(cond_t* cv)
+void cond_init(cond_t* cv)
 {
-    if (mutex_init(&cv->m) < 0) {
-        return -1;
-    }
     Q_INIT_HEAD(&cv->waiting);
-    return 0;
 }
 
 /** @brief Destroy a condition variable freeing all associated resources
@@ -37,9 +33,8 @@ int cond_init(cond_t* cv)
  **/
 void cond_destroy(cond_t* cv)
 {
-    mutex_destroy(&cv->m);
     if (!Q_IS_EMPTY(&cv->waiting)) {
-        panic("condition variable destroyed, but queue not empty");
+        panic("cond var destroyed while threads are waiting");
     }
 }
 
@@ -53,13 +48,10 @@ void cond_wait(cond_t* cv, mutex_t* mp)
 {
     tcb_t *tcb = get_tcb();
     Q_INIT_ELEM(tcb, suspended_threads);
-    mutex_lock(&cv->m);
+    disable_interrupts();
     Q_INSERT_TAIL(&cv->waiting, tcb, suspended_threads);
     mutex_unlock(mp);
-    
-    // function is atomic
-    deschedule_and_drop(tcb, &cv->m); 
-    
+    deschedule(tcb);
     mutex_lock(mp);
 }
 
@@ -70,14 +62,13 @@ void cond_wait(cond_t* cv, mutex_t* mp)
  **/
 void cond_signal(cond_t* cv)
 {
-    mutex_lock(&cv->m);
-    // if nobody is waiting, just return
+    disable_interrupts();
     if (!Q_IS_EMPTY(&cv->waiting)) {
         tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
         Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
         schedule(tcb_to_schedule);
     }
-    mutex_unlock(&cv->m);
+    enable_interrupts();
 }
 
 /** @brief Signal all threads currently waiting on the condition variable
@@ -87,12 +78,11 @@ void cond_signal(cond_t* cv)
  **/
 void cond_broadcast(cond_t* cv)
 {
-    mutex_lock(&cv->m);
-    // if nobody is waiting, just return
+    disable_interrupts();
     while (!Q_IS_EMPTY(&cv->waiting)) {
         tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
         Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
         schedule(tcb_to_schedule);
     }
-    mutex_unlock(&cv->m);
+    enable_interrupts();
 }
