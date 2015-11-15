@@ -29,7 +29,6 @@ static struct {
     uint32_t ticks;
 } scheduler = { 0 };
 
-
 uint32_t get_ticks()
 {
     return scheduler.ticks;
@@ -47,7 +46,6 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
     init_sleep();
 }
 
-
 void scheduler_pre_switch(tcb_t* from, tcb_t* to)
 {
     scheduler.switched_from = from;
@@ -61,6 +59,18 @@ void scheduler_post_switch()
     if (switched_from->state == EXITED) {
         finalize_exit(switched_from);
     }
+}
+
+void add_runnable(tcb_t* tcb)
+{
+    tcb->state = RUNNABLE;
+    Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
+}
+
+void remove_runnable(tcb_t* tcb, state_t state)
+{
+    tcb->state = state;
+    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
 }
 
 /** @brief Switches to the next thread to be run
@@ -119,8 +129,7 @@ int schedule(tcb_t* tcb)
         enable_interrupts();
         return -1;
     }
-    tcb->state = RUNNABLE;
-    Q_INSERT_TAIL(&scheduler.runnable, tcb, runnable_threads);
+    add_runnable(tcb);
     enable_interrupts();
     return 0;
 }
@@ -135,28 +144,25 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
     scheduler_mutex_unlock(mp);
-    deschedule(tcb);
-}
-
-
-void deschedule(tcb_t *tcb)
-{
-    tcb->state = SUSPENDED;
-    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+    remove_runnable(tcb, SUSPENDED);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
+void deschedule(tcb_t* tcb)
+{
+    disable_interrupts();
+    remove_runnable(tcb, SUSPENDED);
+    switch_to_next(tcb, SCHEDULE_MODE);
+}
 
-void kill_thread(tcb_t* tcb, pcb_t *pcb)
+void kill_thread(tcb_t* tcb, pcb_t* pcb)
 {
     disable_interrupts();
     // store the process to free in the tcb
     tcb->process = pcb;
-    tcb->state = EXITED;
-    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+    remove_runnable(tcb, EXITED);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
-
 
 int user_deschedule(tcb_t* tcb, uint32_t esi)
 {
@@ -171,7 +177,8 @@ int user_deschedule(tcb_t* tcb, uint32_t esi)
         return 0;
     }
     scheduler_mutex_unlock(&ppd->lock);
-    deschedule(tcb);
+    remove_runnable(tcb, SUSPENDED);
+    switch_to_next(tcb, SCHEDULE_MODE);
     return 0;
 }
 
