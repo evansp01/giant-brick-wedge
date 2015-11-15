@@ -112,5 +112,6 @@ void kernel_add_thread(tcb_t* tcb);
 pcb_t *thread_exit(tcb_t *tcb);
 void acquire_malloc();
 void release_malloc();
+int get_next_id();
 
 #endif // CONTROL_H_
