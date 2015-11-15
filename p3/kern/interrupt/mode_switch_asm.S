@@ -94,6 +94,7 @@ INTERRUPT_ASM_WRAPPER deschedule_syscall
 INTERRUPT_ASM_WRAPPER make_runnable_syscall
 INTERRUPT_ASM_WRAPPER get_ticks_syscall
 INTERRUPT_ASM_WRAPPER sleep_syscall
+INTERRUPT_ASM_WRAPPER thread_fork_syscall
 
 INTERRUPT_ASM_WRAPPER new_pages_syscall
 INTERRUPT_ASM_WRAPPER remove_pages_syscall

@@ -22,7 +22,8 @@
 #include <asm.h> //temp
 #include <stack_info.h>
 
-tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state);
+int copy_process(tcb_t* tcb_parent, ureg_t* state);
+int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state);
 
 /** @brief Handler function for fork()
  *
@@ -32,29 +33,26 @@ void fork_syscall(ureg_t state)
 {
     tcb_t* tcb_parent = get_tcb();
     //cant call fork with more than one thread
-    if(get_thread_count(tcb_parent->process) > 1){
+    if (get_thread_count(tcb_parent->process) > 1) {
         state.eax = -1;
         return;
     }
+    state.eax = copy_process(tcb_parent, &state);
+}
 
-    // Copy memory regions to new memory
-    // TODO: refactor into thread_fork and fork parts
-    tcb_t* tcb_child = create_copy(tcb_parent, &state);
-    if(tcb_child == NULL){
+void thread_fork_syscall(ureg_t state)
+{
+    tcb_t* parent = get_tcb();
+    pcb_t* process = parent->process;
+    mutex_lock(&process->children_mutex);
+    tcb_t* child = create_tcb_entry(get_next_id());
+    if (child == NULL) {
+        mutex_unlock(&process->children_mutex);
         state.eax = -1;
         return;
     }
-    // Copy kernel stack with return value of 0 for child
-    // Setup stack for re-entry via context_switch
-    setup_for_switch(tcb_child);
-    // Schedule the child
-    schedule(tcb_child);
-    // Register child process for simics user space debugging
-    sim_reg_child(tcb_child->process->directory.dir,
-                  tcb_parent->process->directory.dir);
-    // Return child tid to parent
-    state.eax = tcb_child->id;
-
+    state.eax = copy_thread(parent, child, &state);
+    mutex_unlock(&process->children_mutex);
 }
 
 /** @brief Copies the kernel stack from a parent to child process
@@ -63,7 +61,7 @@ void fork_syscall(ureg_t state)
  *  @param tcb_child Pointer to child tcb
  *  @return void
  **/
-void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
+void copy_kernel_stack(tcb_t* tcb_parent, tcb_t* tcb_child)
 {
     uint32_t child_addr = K_STACK_BASE(tcb_child->kernel_stack);
     uint32_t parent_addr = K_STACK_BASE(tcb_parent->kernel_stack);
@@ -71,51 +69,57 @@ void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child)
     memcpy((void*)child_addr, (void*)parent_addr, K_STACK_SPACE);
 }
 
-
 /** @brief Calculates the saved esp for the new thread stack
  *
  *  @param tcb_parent Pointer to parent tcb
  *  @param tcb_child Pointer to child tcb
  *  @return void
  **/
-void calc_saved_esp(tcb_t* parent, tcb_t *child, void *state)
+void copy_saved_esp(tcb_t* parent, tcb_t* child, void* state)
 {
     uint32_t offset = (uint32_t)parent->kernel_stack - (uint32_t)state;
-    child->saved_esp = (void *) ((uint32_t)child->kernel_stack - offset);
+    child->saved_esp = (void*)((uint32_t)child->kernel_stack - offset);
+}
+
+int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state)
+{
+    copy_saved_esp(parent, child, state);
+    child->swexn = parent->swexn;
+    // Copy kernel stack with return value of 0 for child
+    state->eax = 0;
+    copy_kernel_stack(parent, child);
+    // Setup stack for re-entry via context_switch
+    setup_for_switch(child);
+    // add child to kernel list of threads
+    kernel_add_thread(child);
+    // schedule the child thread
+    schedule(child);
+    return child->id;
 }
 
 /** @brief Creates a copy of the given process
  *
  *  @return Pointer to tcb on success, null on failure
  **/
-tcb_t *create_copy(tcb_t *tcb_parent, ureg_t *state)
+int copy_process(tcb_t* tcb_parent, ureg_t* state)
 {
     pcb_t* pcb_parent = tcb_parent->process;
 
     // Create copy of pcb & tcb
     tcb_t* tcb_child = create_pcb_entry();
-    if(tcb_child == NULL){
-        return NULL;
+    if (tcb_child == NULL) {
+        return -1;
     }
-    // Copy tcb data
-    calc_saved_esp(tcb_parent, tcb_child, state);
-    
-    // Copy swexn
-    tcb_child->swexn = tcb_parent->swexn;
-
     // Copy memory regions
-    if(init_ppd_from(&tcb_child->process->directory, &pcb_parent->directory)){
-        pcb_t *proc = tcb_child->process;
+    if (init_ppd_from(&tcb_child->process->directory, &pcb_parent->directory)) {
+        pcb_t* proc = tcb_child->process;
         free_tcb(tcb_child);
         free_pcb(proc);
-        return NULL;
+        return -1;
     }
-    // Now that we know things worked, add to lists
     pcb_add_child(pcb_parent, tcb_child->process);
-    kernel_add_thread(tcb_child);
-
-    state->eax = 0;
-    copy_kernel_stack(tcb_parent, tcb_child);
-
-    return tcb_child;
+    // Register child process for simics user space debugging
+    sim_reg_child(tcb_child->process->directory.dir, pcb_parent->directory.dir);
+    copy_thread(tcb_child, tcb_parent, state);
+    return tcb_child->process->id;
 }

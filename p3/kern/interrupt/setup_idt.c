@@ -78,6 +78,7 @@ void install_syscalls()
     set_idt_syscall(NAME_ASM(make_runnable_syscall), MAKE_RUNNABLE_INT);
     set_idt_syscall(NAME_ASM(get_ticks_syscall), GET_TICKS_INT);
     set_idt_syscall(NAME_ASM(sleep_syscall), SLEEP_INT);
+    set_idt_syscall(NAME_ASM(thread_fork_syscall), THREAD_FORK_INT);
 
     set_idt_syscall(NAME_ASM(new_pages_syscall), NEW_PAGES_INT);
     set_idt_syscall(NAME_ASM(remove_pages_syscall), REMOVE_PAGES_INT);

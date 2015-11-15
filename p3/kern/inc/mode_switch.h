@@ -224,6 +224,11 @@ NAME_ASM_H(get_ticks_syscall);
  */
 NAME_ASM_H(sleep_syscall);
 
+/** @brief Wrapper for thread fork syscall handler
+ *  @return void
+ */
+NAME_ASM_H(thread_fork_syscall);
+
 /** @brief Wrapper for new_pages syscall handler
  *  @return void
  */
