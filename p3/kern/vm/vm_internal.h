@@ -12,6 +12,7 @@
 #define PAGES_PER_TABLE 1024
 #define TABLES_PER_DIR 1024
 #define ENTRY_ADDRESS_SHIFT 12
+#define OVERCOMMIT_RATIO 1
 
 #define KERNEL_TABLES DIVIDE_ROUND_UP(USER_MEM_START, PAGE_SIZE* PAGES_PER_TABLE)
 
@@ -47,6 +48,8 @@ typedef struct {
 struct virtual_memory{
     page_directory_t *identity;
     page_table_t* kernel_pages[KERNEL_TABLES];
+    int available_frames;
+    mutex_t lock;
 };
 
 extern struct virtual_memory virtual_memory;
@@ -62,6 +65,10 @@ extern const entry_t e_unmapped;
 
 int add_alloc(ppd_t* ppd, void* start, uint32_t size);
 int remove_alloc(ppd_t* ppd, void* start, uint32_t* size);
+
+
+void release_frames(void* start, uint32_t size);
+int reserve_frames(void* start, uint32_t size);
 
 void invalidate_page(void *page);
 entry_t create_entry(void* address, entry_t model);
@@ -92,7 +99,7 @@ int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir);
 //headers for frame alloc
 void init_frame_alloc();
 void* get_zero_page();
-uint32_t user_mem_size();
+int user_frame_total();
 int alloc_frame(void* virtual, entry_t* table, entry_t model);
 int kernel_alloc_frame(entry_t* table, entry_t model);
 void free_frame(void* virtual, void *physical);

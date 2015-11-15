@@ -468,7 +468,7 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
         return 0;
     }
     //you can't allocate more memory than the system has
-    if (size > user_mem_size()) {
+    if(reserve_frames(start, size) < 0){
         return -1;
     }
     if (allocate_tables(ppd, start, size) < 0) {
@@ -503,5 +503,6 @@ int vm_back(ppd_t* ppd, uint32_t start, uint32_t size)
  **/
 int vm_free_alloc(ppd_t* ppd, uint32_t start, uint32_t size)
 {
+    release_frames((void*)start, size);
     return vm_map_pages(ppd, (void*)start, size, vm_free_alloc_h);
 }
