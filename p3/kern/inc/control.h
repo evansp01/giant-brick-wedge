@@ -19,6 +19,7 @@ typedef enum {
     NOT_YET,
     RUNNABLE,
     SUSPENDED,
+    SLEEPING,
     EXITED
 } state_t;
 
@@ -70,6 +71,7 @@ typedef struct tcb {
     Q_NEW_LINK(tcb) pcb_threads;
     Q_NEW_LINK(tcb) runnable_threads;
     Q_NEW_LINK(tcb) suspended_threads;
+    Q_NEW_LINK(tcb) sleeping_threads;
     int id;
     pcb_t *process;
     void *kernel_stack;

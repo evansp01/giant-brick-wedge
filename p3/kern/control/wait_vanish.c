@@ -32,10 +32,13 @@ int wait(pcb_t* pcb, int *status_ptr)
     int pid = child->id;
     if(status_ptr != NULL){
         ppd_t *ppd = &pcb->directory;
+        mutex_lock(&ppd->lock);
         if(vm_write(ppd, &status, status_ptr, sizeof(int)) < 0){
+            mutex_unlock(&ppd->lock);
             mutex_unlock(&pcb->children_mutex);
             return -2;
         }
+        mutex_unlock(&ppd->lock);
     }
     Q_REMOVE(&pcb->children, child, siblings);
     pcb->num_children--;

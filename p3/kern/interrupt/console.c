@@ -24,12 +24,13 @@
 #define GET_POS(MSB, LSB) ((MSB << 8)|LSB)
 #define GET_ROW(val) (val / CONSOLE_WIDTH)
 #define GET_COL(val) (val % CONSOLE_WIDTH)
+#define INVALID_COLOR 0x90
 
 // Global variables
-int global_color = FGND_WHITE | BGND_BLACK;
-int cursor_hidden = 0;
-int cursor_row = 0;
-int cursor_col = 0;
+static int global_color = FGND_WHITE | BGND_BLACK;
+static int cursor_hidden = 0;
+static int cursor_row = 0;
+static int cursor_col = 0;
 
 /** @brief Sets the hardware cursor to the given coordinate position.
  *
@@ -123,6 +124,7 @@ int putbyte( char ch )
     /* Backspace: Erase previous character. If the cursor is already
        at the beginning of the line nothing occurs. */
     case '\b':
+      // TODO: backspace should backup lines, or readline buffer shorter
       if (col != 0) {
         col--;
         *(char *)(GET_CHR(row, col)) = ' ';
@@ -167,6 +169,9 @@ void putbytes( const char *s, int len )
 
 int set_term_color( int color )
 {
+    if (color >= INVALID_COLOR) {
+        return -1;
+    }
   global_color = color;
   return 0;
 }

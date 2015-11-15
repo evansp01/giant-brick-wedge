@@ -172,6 +172,42 @@ void init_virtual_memory()
     set_cr3((uint32_t)virtual_memory.identity);
     set_cr4(get_cr4() | CR4_PGE);
     set_cr0(get_cr0() | CR0_PG | CR0_WP);
+    virtual_memory.available_frames = OVERCOMMIT_RATIO * user_frame_total();
+    mutex_init(&virtual_memory.lock);
+}
+
+/** @brief Calculate the number of frames required for an allocation
+ *
+ *  @param start The starting address of the allocation
+ *  @param size The size of the allocation
+ *  @return The number of frames needed for the allocation
+ **/
+int required_frames(void* start, uint32_t size)
+{
+    uint32_t start_page = page_align((uint32_t)start);
+    uint32_t end_page = page_align((uint32_t)start + size);
+    return 1 + (end_page - start_page) / PAGE_SIZE;
+}
+
+int reserve_frames(void* start, uint32_t size)
+{
+    mutex_lock(&virtual_memory.lock);
+    int required = required_frames(start, size);
+    if (required <= virtual_memory.available_frames) {
+        virtual_memory.available_frames -= required;
+    } else {
+        mutex_unlock(&virtual_memory.lock);
+        return -1;
+    }
+    mutex_unlock(&virtual_memory.lock);
+    return 0;
+}
+
+void release_frames(void* start, uint32_t size)
+{
+    mutex_lock(&virtual_memory.lock);
+    virtual_memory.available_frames += required_frames((void*)start, size);
+    mutex_unlock(&virtual_memory.lock);
 }
 
 /** @brief Allocate and initialize a page directory
@@ -336,7 +372,7 @@ void free_page_directory(page_directory_t* dir)
         if (!is_present_user(dir_entry)) {
             continue;
         }
-        void *addr = get_entry_address(*dir_entry);
+        void* addr = get_entry_address(*dir_entry);
         sfree(addr, PAGE_SIZE);
     }
 }

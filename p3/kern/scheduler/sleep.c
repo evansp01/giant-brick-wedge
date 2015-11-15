@@ -5,16 +5,16 @@
 #include <asm.h>
 #include <simics.h>
 
-H_NEW_TABLE(sleep_hash_t, tcb_ds_t);
+static tcb_ds_t sleep_list;
+static mutex_t sleep_mutex;
 
-static sleep_hash_t table;
-
-int init_sleep()
+void init_sleep()
 {
-    return H_INIT_TABLE(&table);
+    Q_INIT_HEAD(&sleep_list);
+    mutex_init(&sleep_mutex);
 }
 
-uint32_t add_sleeper(tcb_t* tcb, uint32_t ticks)
+int add_sleeper(tcb_t* tcb, uint32_t ticks)
 {
     if (ticks < 0) {
         return -1;
@@ -22,43 +22,46 @@ uint32_t add_sleeper(tcb_t* tcb, uint32_t ticks)
     if (ticks == 0) {
         return 0;
     }
-    // get the malloc lock
-    acquire_malloc();
-    // disable interrupts to prevent switch
-    disable_interrupts();
-    // release the malloc lock -- we that malloc is unlocked until we 
-    // enable interrupts again (unless we lock it)
-    // TODO: just hold malloc the whole time (a bit of a pain though)
-    // TODO: reentrant locks?? -- would really make this less of a pain
-    release_malloc();
-
+    mutex_lock(&sleep_mutex);
+    tcb_t* iter;
     uint32_t until = get_ticks() + ticks;
-    lprintf("%lu until", until);
-    while (H_CONTAINS(&table, until, wake_tick, suspended_threads)) {
-        until++;
+    // O(n) time holding the lock
+    Q_FOREACH(iter, &sleep_list, sleeping_threads)
+    {
+        if (iter->wake_tick >= until) {
+            break;
+        }
     }
-    tcb->wake_tick = until;
-    H_INSERT(&table, tcb, wake_tick, suspended_threads);
-    deschedule(tcb);
+    // O(1) disable interrupts time
+    disable_interrupts();
+    // if iter is the last element we might want to insert after
+    if(until < iter->wake_tick){
+        Q_INSERT_BEFORE(&sleep_list, iter, tcb, sleeping_threads);
+    } else {
+        Q_INSERT_AFTER(&sleep_list, iter, tcb, sleeping_threads);
+    }
+    remove_runnable(tcb, SLEEPING);
     enable_interrupts();
-    return until;
+    mutex_unlock(&sleep_mutex);
+    return 1;
 }
 
 void schedule_sleepers(uint32_t current)
 {
-    // can't do anything which might malloc since we are in the timer int
     disable_interrupts();
-    tcb_t* tcb = H_GET(&table, current, wake_tick, suspended_threads);
+    // if we only examine the list, we don't need the lock
+    tcb_t *head = Q_GET_FRONT(&sleep_list);
+    if(head->wake_tick <= current && head->state == SLEEPING){
+        add_runnable(head);
+    }
     enable_interrupts();
-    schedule(tcb);
 }
 
-
-void release_sleeper(uint32_t slept){
-    acquire_malloc();
-    // disable interrupts to prevent switch
+void release_sleeper(tcb_t *sleeper)
+{
+    mutex_lock(&sleep_mutex);
     disable_interrupts();
-    H_REMOVE(&table, slept, wake_tick, suspended_threads);
+    Q_REMOVE(&sleep_list, sleeper, sleeping_threads);
     enable_interrupts();
-    release_malloc();
+    mutex_unlock(&sleep_mutex);
 }

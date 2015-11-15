@@ -56,9 +56,9 @@ void* get_zero_page()
     return frames.zero_page;
 }
 
-uint32_t user_mem_size()
+int user_frame_total()
 {
-    return frames.total_frames * PAGE_SIZE;
+    return frames.total_frames;
 }
 
 /** @brief Initializes the frame allocator
@@ -67,12 +67,13 @@ uint32_t user_mem_size()
 void init_frame_alloc()
 {
     frames.total_frames = machine_phys_frames() - USER_MEM_START / PAGE_SIZE;
+    // the zfod frame doesn't count, since it can never be allocated
+    frames.total_frames--;
     frames.free_frames = frames.total_frames;
     frames.next_physical_frame = 0;
     frames.next_frame = 0;
     frames.zero_page = next_physical_frame();
     zero_frame(frames.zero_page);
-    frames.free_frames--;
     mutex_init(&frames.lock);
 }
 

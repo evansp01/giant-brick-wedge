@@ -128,9 +128,10 @@ int getbytes(const char* filename, int offset, int size, char* buf)
     if (i == exec2obj_userapp_count) {
         return -1;
     }
-    // Check if given offset and size exceeds the file size
-    if ((offset + size) > exec2obj_userapp_TOC[i].execlen) {
-        return -1;
+    int filelen = exec2obj_userapp_TOC[i].execlen;
+    // if not enough bytes, copy over as many as possible
+    if (offset + size > filelen) {
+        size = filelen - offset;
     }
     // Copy bytes over to buffer
     for (byte_index = 0; byte_index < size; byte_index++) {

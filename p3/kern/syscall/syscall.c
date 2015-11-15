@@ -24,9 +24,9 @@
 #include <seg.h>
 #include <eflags.h>
 #include <syscall_kern.h>
+#include <exec2obj.h>
 
 #define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
-#define INVALID_COLOR 0x90
 #define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
 
 /** @brief Struct for variables required for syscalls */
@@ -154,13 +154,13 @@ void get_ticks_syscall(ureg_t state)
 void sleep_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    uint32_t slept_for = add_sleeper(tcb, state.esi);
-    if(slept_for < 0){
-        state.eax = slept_for;
+    int status = add_sleeper(tcb, state.esi);
+    if(status < 0){
+        state.eax = status;
         return;
     }
-    if(slept_for > 0){
-        release_sleeper(slept_for);
+    if(status > 0){
+        release_sleeper(tcb);
     }
     state.eax = 0;
 }
@@ -172,30 +172,33 @@ void sleep_syscall(ureg_t state)
 void new_pages_syscall(ureg_t state)
 {
     struct {
-        void *start;
+        uint32_t start;
         uint32_t size;
-    } packet;
+    } args;
 
     tcb_t* tcb = get_tcb();
     ppd_t *ppd = &tcb->process->directory;
     mutex_lock(&ppd->lock);
-    if(vm_read(ppd, &packet, (void *)state.esi, sizeof(packet)) < 0){
+    if(vm_read(ppd, &args, (void *)state.esi, sizeof(args)) < 0){
         goto return_fail;
     }
-    if(!vm_user_can_alloc(ppd, packet.start, packet.size)){
+    if(page_align(args.start) != args.start || args.size % PAGE_SIZE != 0){
+        goto return_fail;
+    }
+    if(!vm_user_can_alloc(ppd, (void *)args.start, args.size)){
         lprintf("Space no allocable");
         goto return_fail;
     }
-    if(vm_alloc_readwrite(ppd, packet.start, packet.size) < 0){
+    if(vm_alloc_readwrite(ppd, (void *)args.start, args.size) < 0){
         goto return_fail;
     }
     mutex_unlock(&ppd->lock);
-    lprintf("New pages suceeded %lx %lx", (uint32_t)packet.start, packet.size);
+    lprintf("New pages suceeded %lx %lx", args.start, args.size);
     state.eax = 0;
     return;
 
 return_fail:
-    lprintf("New pages failed %lx %lx", (uint32_t)packet.start, packet.size);
+    lprintf("New pages failed %lx %lx", args.start, args.size);
     mutex_unlock(&ppd->lock);
     state.eax = -1;
     return;
@@ -298,15 +301,7 @@ void print_syscall(ureg_t state)
 void set_term_color_syscall(ureg_t state)
 {
     int color = (int)state.esi;
-    
-    // Error: color is not valid
-    if (color >= INVALID_COLOR) {
-        state.eax = -1;
-        return;
-    }
-    
-    set_term_color(color);
-    state.eax = 0;
+    state.eax = set_term_color(color);
 }
 
 /** @brief The set_cursor_pos syscall
@@ -348,7 +343,6 @@ void get_cursor_pos_syscall(ureg_t state)
     get_cursor(arg->row, arg->col);
     state.eax = 0;
 }
-
 /** @brief The halt syscall
  *  @param state The current state in user mode
  *  @return void
@@ -359,8 +353,9 @@ void halt_syscall(ureg_t state)
     sim_halt();
     // Halt machines running on real hardware
     halt_asm();
+    // Hmmm, things didn't go so well
+    panic("We can't be killed!");
 }
-
 
 /** @brief The readfile syscall
  *  @param state The current state in user mode
@@ -369,11 +364,43 @@ void halt_syscall(ureg_t state)
 void readfile_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called readfile. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
+    ppd_t *ppd = &tcb->process->directory;
+    struct {
+        char *filename;
+        char *buf;
+        int count;
+        int offset;
+    } args;
+    mutex_lock(&ppd->lock);
+    if (vm_read(ppd, &args, (void*)state.esi, sizeof(args)) < 0) {
+        goto return_fail;
     }
+    // make sure the filename is readable and short enough
+    int strlen = vm_user_strlen(ppd, args.filename);
+    if(strlen > MAX_EXECNAME_LEN || strlen < 0){
+        goto return_fail;
+    }
+    // make sure the buffer is user writeable
+    if(!vm_user_can_write(ppd, args.buf, args.count)){
+        goto return_fail;
+    }
+    // back the buffer with real frames to prevent pagefaults
+    if(vm_back(ppd, (uint32_t)args.buf, args.count) < 0){
+        goto return_fail;
+    }
+    // read from the file
+    int bytes = getbytes(args.filename, args.offset, args.count, args.buf);
+    mutex_unlock(&ppd->lock);
+    state.eax = bytes;
+    return;
+
+return_fail:
+    state.eax = -1;
+    mutex_unlock(&ppd->lock);
+    return;
+
 }
+
 
 /** @brief The misbehave syscall
  *  @param state The current state in user mode

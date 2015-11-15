@@ -23,10 +23,12 @@ void deschedule_and_drop(tcb_t *tcb, mutex_t *mp);
 void scheduler_post_switch();
 void scheduler_pre_switch(tcb_t* from, tcb_t* to);
 
+void add_runnable(tcb_t *tcb);
+void remove_runnable(tcb_t *tcb, state_t state);
 
-int init_sleep();
-uint32_t add_sleeper(tcb_t* tcb, uint32_t ticks);
+void init_sleep();
+int add_sleeper(tcb_t* tcb, uint32_t ticks);
 void schedule_sleepers(uint32_t current);
-void release_sleeper(uint32_t slept);
+void release_sleeper(tcb_t *tcb);
 
 #endif // SCHEDULER_H_
