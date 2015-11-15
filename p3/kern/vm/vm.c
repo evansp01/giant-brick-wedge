@@ -193,7 +193,7 @@ int reserve_frames(void* start, uint32_t size)
 {
     mutex_lock(&virtual_memory.lock);
     int required = required_frames(start, size);
-    if (required >= virtual_memory.available_frames) {
+    if (required <= virtual_memory.available_frames) {
         virtual_memory.available_frames -= required;
     } else {
         mutex_unlock(&virtual_memory.lock);
