@@ -50,7 +50,7 @@ void cond_wait(cond_t* cv, mutex_t* mp)
     Q_INIT_ELEM(tcb, suspended_threads);
     disable_interrupts();
     Q_INSERT_TAIL(&cv->waiting, tcb, suspended_threads);
-    mutex_unlock(mp);
+    scheduler_mutex_unlock(mp);
     deschedule(tcb);
     mutex_lock(mp);
 }
