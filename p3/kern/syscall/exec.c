@@ -31,7 +31,7 @@
 #define EXEC_MAX_BYTES (4 * PAGE_SIZE)
 #define MAGIC_NUMBER 0xDEAD1337
 
-int get_argv_length(ppd_t *ppd, int argc, char** argv)
+int get_argv_length(ppd_t* ppd, int argc, char** argv)
 {
     int i;
     int total_length = 0;
@@ -53,19 +53,17 @@ void exec_syscall(ureg_t state)
     } packet;
 
     tcb_t* tcb = get_tcb();
-    if(get_thread_count(tcb->process) > 1){
+    if (get_thread_count(tcb->process) > 1) {
         goto return_fail;
     }
-    ppd_t *dir = &tcb->process->directory;
+    ppd_t* dir = &tcb->process->directory;
     if (vm_read(dir, &packet, (void*)state.esi, sizeof(packet)) < 0) {
         goto return_fail;
     }
-    int flen, argc, argvlen = 0;
-    if ((flen = vm_user_strlen(dir, packet.fname)) < 0) {
+    int argc, argvlen;
+    int flen = vm_user_strlen(dir, packet.fname) + 1;
+    if (flen <= 0) {
         goto return_fail;
-    } else {
-        // add one for the null character
-        flen += 1;
     }
     if ((argc = vm_user_arrlen(dir, packet.argv)) < 0) {
         goto return_fail;
@@ -80,7 +78,6 @@ return_fail:
     state.eax = -1;
     return;
 }
-
 
 /** @brief Crafts the kernel stack for the initial program
  *
@@ -194,29 +191,29 @@ int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)
     uint32_t min_start = min(starts, 4);
     uint32_t max_end = max(ends, 4);
     //all pages should be writeable so we can write to them even
-    if(vm_alloc_readwrite(dir, (void*)min_start, max_end - min_start) < 0){
+    if (vm_alloc_readwrite(dir, (void*)min_start, max_end - min_start) < 0) {
         return -1;
     }
-    if(vm_back(dir, min_start, max_end - min_start) < 0){
+    if (vm_back(dir, min_start, max_end - min_start) < 0) {
         return -1;
     }
-    getbytes(elf->e_fname, elf->e_txtoff, 
-            elf->e_txtlen, (char*)elf->e_txtstart);
+    getbytes(elf->e_fname, elf->e_txtoff,
+             elf->e_txtlen, (char*)elf->e_txtstart);
     getbytes(elf->e_fname, elf->e_rodatoff,
-            elf->e_rodatlen, (char*)elf->e_rodatstart);
+             elf->e_rodatlen, (char*)elf->e_rodatstart);
     getbytes(elf->e_fname, elf->e_datoff,
-            elf->e_datlen, (char*)elf->e_datstart);
+             elf->e_datlen, (char*)elf->e_datstart);
     // set everything to readonly
-    if(vm_set_readonly(dir, (void*)min_start, max_end - min_start) < 0){
+    if (vm_set_readonly(dir, (void*)min_start, max_end - min_start) < 0) {
         return -1;
     }
     // set pages which need to be writeable to read/write this means that
     // if a readonly and write section are on the same page, both will be
     // writeable, so at least the program still runs
-    if(vm_set_readwrite(dir, (void*)elf->e_datstart, elf->e_datlen) < 0){
+    if (vm_set_readwrite(dir, (void*)elf->e_datstart, elf->e_datlen) < 0) {
         return -1;
     }
-    if(vm_set_readwrite(dir, (void*)elf->e_bssstart, elf->e_bsslen) < 0){
+    if (vm_set_readwrite(dir, (void*)elf->e_bssstart, elf->e_bsslen) < 0) {
         return -1;
     }
     return 0;
@@ -289,14 +286,14 @@ uint32_t stack_space(int argvlen, int argc)
 int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
     uint32_t stack_size = STACK_HIGH - stack_low + 1;
-    if(vm_alloc_readwrite(ppd, (void*)stack_low, stack_size) < 0){
+    if (vm_alloc_readwrite(ppd, (void*)stack_low, stack_size) < 0) {
         return -1;
     }
     return vm_back(ppd, stack_low, stack_size);
 }
 
-
-int load_elf(simple_elf_t *elf, char *fname){
+int load_elf(simple_elf_t* elf, char* fname)
+{
     if (elf_check_header(fname) < 0) {
         return -1;
     }
@@ -304,9 +301,10 @@ int load_elf(simple_elf_t *elf, char *fname){
     return 0;
 }
 
-int exec(tcb_t* tcb, simple_elf_t *elf, int argc, char** argv, int argspace)
+int load_process(tcb_t* tcb, simple_elf_t* elf,
+                 int argc, char** argv, int argspace)
 {
-    pcb_t *pcb = tcb->process;
+    pcb_t* pcb = tcb->process;
     switch_ppd(&pcb->directory);
     if (create_proc_pagedir(elf, &pcb->directory) < 0) {
         return -1;
@@ -331,14 +329,14 @@ tcb_t* new_program(char* fname, int argc, char** argv)
         argspace += strlen(argv[i]) + 1;
     }
     simple_elf_t elf;
-    if(load_elf(&elf, fname) < 0){
+    if (load_elf(&elf, fname) < 0) {
         panic("Cannot load elf for required program %s", fname);
     }
     pcb_t* pcb = tcb->process;
-    if(init_ppd(&pcb->directory) < 0){
+    if (init_ppd(&pcb->directory) < 0) {
         panic("Cannot create pcb for required program %s", fname);
     }
-    if (exec(tcb, &elf, argc, argv, argspace) < 0) {
+    if (load_process(tcb, &elf, argc, argv, argspace) < 0) {
         panic("Cannot exec required program %s", fname);
     }
     // Add the newly created thread to the thread list
@@ -348,10 +346,40 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     return tcb;
 }
 
+int replace_process(tcb_t* tcb, void* k_space,
+                    int argc, char** k_argv, int arglen)
+{
+    simple_elf_t elf;
+    if (load_elf(&elf, k_space) < 0) {
+        return -1;
+    }
+    pcb_t* pcb = tcb->process;
+    ppd_t old_dir = pcb->directory;
+    if (init_ppd(&pcb->directory) < 0) {
+        pcb->directory = old_dir;
+        return -1;
+    }
+    int status = load_process(tcb, &elf, argc, k_argv, arglen);
+    if (status < 0) {
+        // if we failed make sure to restore the old page directory
+        ppd_t tmp = pcb->directory;
+        pcb->directory = old_dir;
+        free_ppd(&tmp, &pcb->directory);
+        // re initialize mutex since it was copied
+        mutex_init(&tcb->process->directory.lock);
+        switch_ppd(&old_dir);
+    } else {
+        // De-register the previously running process in simics
+        sim_unreg_process(old_dir.dir);
+        sim_reg_process(pcb->directory.dir, k_space);
+        //if we succeeded free the old directory
+        free_ppd(&old_dir, &pcb->directory);
+    }
+    return status;
+}
 
-//TODO: this has become a function of DOOM, should be broken up, but 
-//      everything has so many arguments
-int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int arglen)
+int user_exec(tcb_t* tcb, int flen, char* fname,
+              int argc, char** argv, int arglen)
 {
     size_t flen_space = flen * sizeof(char);
     size_t argv_space = argc * sizeof(char*);
@@ -375,37 +403,7 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         int copied = strcpy_len(k_str_current, argv[i]);
         k_str_current += copied;
     }
-    //we have copied all the arguments to kernel space -- now try to exec
-    simple_elf_t elf;
-    if(load_elf(&elf, k_space) < 0){
-        free(k_space);
-        return -1;
-    }
-    pcb_t* pcb = tcb->process;
-    ppd_t old_dir = pcb->directory;
-    if(init_ppd(&pcb->directory) < 0){
-        pcb->directory = old_dir;
-        free(k_space);
-        return -1;
-    }
-
-    int status = exec(tcb, &elf, argc, k_argv, arglen);
-
-    if (status < 0) {
-        // if we failed make sure to restore the old page directory
-        ppd_t tmp = pcb->directory;
-        pcb->directory = old_dir;
-        free_ppd(&tmp, &pcb->directory);
-        // re initialize mutex since it was copied
-        mutex_init(&tcb->process->directory.lock);
-        switch_ppd(&old_dir);
-    } else {
-        // De-register the previously running process in simics
-        sim_unreg_process(old_dir.dir);
-        sim_reg_process(pcb->directory.dir, k_space);
-        //if we succeeded free the old directory
-        free_ppd(&old_dir, &pcb->directory);
-    }
+    int status = replace_process(tcb, k_space, argc, k_argv, arglen);
     free(k_space);
     return status;
 }
