@@ -8,8 +8,7 @@
 
 void cleanup_process(pcb_t *pcb)
 {
-    pcb_t *current = get_tcb()->process;
-    free_ppd(&pcb->directory, &current->directory);
+    free_ppd_kernel_mem(&pcb->directory);
     free_pcb(pcb);
 }
 
@@ -88,6 +87,8 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
         process->exit_status = -2;
     }
     //We are cleaning up the last thread
+    //first deallocate the user memory, we don't need it
+    free_ppd_user_mem(&process->directory);
     //now we want to see what our parent has to say
     mutex_lock(&process->parent_mutex);
     //notify all children that you are exited
@@ -129,6 +130,12 @@ void finalize_exit(tcb_t* tcb)
  **/
 void vanish_thread(tcb_t *tcb, int failed)
 {
+    if(failed) {
+        alloc_t *alloc;
+        Q_FOREACH(alloc, &tcb->process->directory.allocations, list){
+            lprintf("alloc start %lx size %lx", alloc->start, alloc->size);
+        }
+    }
     pcb_t* to_free = thread_exit(tcb, failed);
     acquire_malloc();
     lprintf("thread %d acquired malloc", tcb->id);

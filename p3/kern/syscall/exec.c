@@ -384,6 +384,7 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
     pcb_t* pcb = tcb->process;
     ppd_t old_dir = pcb->directory;
     if(init_ppd(&pcb->directory) < 0){
+        pcb->directory = old_dir;
         free(k_space);
         return -1;
     }

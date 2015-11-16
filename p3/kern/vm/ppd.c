@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <control.h>
+#include <asm.h>
 
 int init_ppd(ppd_t* ppd)
 {
@@ -51,29 +52,37 @@ int vm_free(ppd_t* ppd, void* start)
     return 0;
 }
 
-int free_ppd(ppd_t* to_free, ppd_t *current)
+void free_ppd_user_mem(ppd_t* to_free)
 {
     alloc_t* alloc;
     alloc_t* swap;
-    page_directory_t* tmp = current->dir;
-    // switch safely so context switch can't muck things up
-    current->dir = to_free->dir;
-    switch_ppd(to_free);
-    // free the user memory associated with the page directory
     Q_FOREACH_SAFE(alloc, swap, &to_free->allocations, list)
     {
         Q_REMOVE(&to_free->allocations, alloc, list);
         vm_free_alloc(to_free, alloc->start, alloc->size);
         free(alloc);
     }
-    // restore and switch back
+}
+
+void free_ppd_kernel_mem(ppd_t* to_free)
+{
+    free_page_directory(to_free->dir);
+    sfree(to_free->dir, PAGE_SIZE);
+}
+
+void free_ppd(ppd_t* to_free, ppd_t* current)
+{
+    page_directory_t* tmp = current->dir;
+    disable_interrupts();
+    current->dir = to_free->dir;
+    switch_ppd(current);
+    enable_interrupts();
+    free_ppd_user_mem(to_free);
+    disable_interrupts();
     current->dir = tmp;
     switch_ppd(current);
-    // free the kernel memory associated with the page directory
-    free_page_directory(to_free->dir);
-    //free the actual directory now that it is safely switched out
-    sfree(to_free->dir, PAGE_SIZE);
-    return 0;
+    enable_interrupts();
+    free_ppd_kernel_mem(to_free);
 }
 
 void switch_ppd(ppd_t* ppd)
