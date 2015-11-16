@@ -27,13 +27,9 @@
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     // Swexn needs to run after the system page fault handler
-    if(state->cs == SEGSEL_USER_CS){
-        // only run swexn if the fault wasn't in kernel mode
-        if (tcb->swexn.handler != NULL) {
-            swexn_handler(state, tcb);
-        }
-    } else {
-        panic("Thread crashed in kernel space");
+    // only run swexn if the fault wasn't in kernel mode
+    if (tcb->swexn.handler != NULL) {
+        swexn_handler(state, tcb);
     }
 
     // Print error message
@@ -65,6 +61,9 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
 void fault_handler(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
+    if(state.cs == SEGSEL_KERNEL_CS){
+        panic("Thread crashed in kernel space");
+    }
     
     switch (state.cause) {
     //page faults

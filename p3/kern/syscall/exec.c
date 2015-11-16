@@ -183,7 +183,7 @@ uint32_t max(uint32_t array[], int len)
  *  @param zfod Should memory be initialized using zfod
  *  @return Zero on success, less than zero on failure
  **/
-int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir, int zfod)
+int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)
 {
     uint32_t starts[4] = { elf->e_txtstart, elf->e_rodatstart,
                            elf->e_datstart, elf->e_bssstart };
@@ -197,10 +197,8 @@ int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir, int zfod)
     if(vm_alloc_readwrite(dir, (void*)min_start, max_end - min_start) < 0){
         return -1;
     }
-    if(!zfod){
-        if(vm_back(dir, min_start, max_end - min_start) < 0){
-            return -1;
-        }
+    if(vm_back(dir, min_start, max_end - min_start) < 0){
+        return -1;
     }
     getbytes(elf->e_fname, elf->e_txtoff, 
             elf->e_txtlen, (char*)elf->e_txtstart);
@@ -288,16 +286,13 @@ uint32_t stack_space(int argvlen, int argc)
     return space;
 }
 
-int allocate_stack(ppd_t* ppd, uint32_t stack_low, int zfod)
+int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
     uint32_t stack_size = STACK_HIGH - stack_low + 1;
     if(vm_alloc_readwrite(ppd, (void*)stack_low, stack_size) < 0){
         return -1;
     }
-    if(!zfod){
-        return vm_back(ppd, stack_low, stack_size);
-    }
-    return 0;
+    return vm_back(ppd, stack_low, stack_size);
 }
 
 
@@ -309,17 +304,16 @@ int load_elf(simple_elf_t *elf, char *fname){
     return 0;
 }
 
-int exec(tcb_t* tcb, simple_elf_t *elf, int argc, char** argv,
-         int argspace, int zfod)
+int exec(tcb_t* tcb, simple_elf_t *elf, int argc, char** argv, int argspace)
 {
     pcb_t *pcb = tcb->process;
     switch_ppd(&pcb->directory);
-    if (create_proc_pagedir(elf, &pcb->directory, zfod) < 0) {
+    if (create_proc_pagedir(elf, &pcb->directory) < 0) {
         return -1;
     }
     uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
     stack_low = page_align(stack_low) - PAGE_SIZE;
-    if (allocate_stack(&pcb->directory, stack_low, zfod) < 0) {
+    if (allocate_stack(&pcb->directory, stack_low) < 0) {
         return -1;
     }
     uint32_t stack_entry = setup_main_stack(argc, argv, argspace, stack_low);
@@ -344,7 +338,7 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     if(init_ppd(&pcb->directory) < 0){
         panic("Cannot create pcb for required program %s", fname);
     }
-    if (exec(tcb, &elf, argc, argv, argspace, 0) < 0) {
+    if (exec(tcb, &elf, argc, argv, argspace) < 0) {
         panic("Cannot exec required program %s", fname);
     }
     // Add the newly created thread to the thread list
@@ -394,7 +388,7 @@ int user_exec(tcb_t* tcb, int flen, char* fname, int argc, char** argv, int argl
         return -1;
     }
 
-    int status = exec(tcb, &elf, argc, k_argv, arglen, 1);
+    int status = exec(tcb, &elf, argc, k_argv, arglen);
 
     if (status < 0) {
         // if we failed make sure to restore the old page directory

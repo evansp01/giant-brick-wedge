@@ -59,16 +59,18 @@ int free_ppd(ppd_t* to_free, ppd_t *current)
     // switch safely so context switch can't muck things up
     current->dir = to_free->dir;
     switch_ppd(to_free);
+    // free the user memory associated with the page directory
     Q_FOREACH_SAFE(alloc, swap, &to_free->allocations, list)
     {
         Q_REMOVE(&to_free->allocations, alloc, list);
         vm_free_alloc(to_free, alloc->start, alloc->size);
         free(alloc);
     }
-    free_page_directory(to_free->dir);
     // restore and switch back
     current->dir = tmp;
     switch_ppd(current);
+    // free the kernel memory associated with the page directory
+    free_page_directory(to_free->dir);
     //free the actual directory now that it is safely switched out
     sfree(to_free->dir, PAGE_SIZE);
     return 0;
