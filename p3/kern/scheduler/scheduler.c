@@ -159,7 +159,6 @@ void run_scheduler(uint32_t ticks)
     disable_interrupts();
     scheduler.ticks = ticks;
     schedule_sleepers(ticks);
-    disable_interrupts();
     switch_to_next(get_tcb(), SCHEDULE_MODE);
 }
 
@@ -170,7 +169,6 @@ void run_scheduler(uint32_t ticks)
  */
 int schedule(tcb_t* tcb)
 {
-    // TODO: Neeed mutex to access state
     disable_interrupts();
     if (tcb->state != SUSPENDED && tcb->state != NOT_YET) {
         enable_interrupts();

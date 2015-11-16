@@ -96,23 +96,24 @@ void pcb_add_child(pcb_t* parent, pcb_t* child)
 tcb_t* create_pcb_entry()
 {
     pcb_t* entry = (pcb_t*)smalloc(sizeof(pcb_t));
+    if(entry == NULL){
+        return NULL;
+    }
     Q_INIT_ELEM(entry, siblings);
-
-    /* scheduler lists */
-    INIT_STRUCT(&entry->children);
-    INIT_STRUCT(&entry->threads);
     mutex_init(&entry->parent_mutex);
+    entry->parent = NULL;
     mutex_init(&entry->children_mutex);
-    mutex_init(&entry->threads_mutex);
+    INIT_STRUCT(&entry->children);
+    entry->num_children = 0;
     cond_init(&entry->wait);
-
+    entry->waiting = 0;
+    mutex_init(&entry->threads_mutex);
+    INIT_STRUCT(&entry->threads);
+    entry->num_threads = 0;
     entry->id = get_next_id();
     entry->exit_status = 0;
     // TODO; this is strange
     entry->state = RUNNABLE;
-    entry->num_threads = 0;
-    entry->num_children = 0;
-    entry->parent = NULL;
 
     // create first process
     tcb_t* tcb = create_tcb_entry(entry->id);
@@ -146,19 +147,24 @@ tcb_t* create_tcb_entry(int id)
     }
     uint32_t mem = (uint32_t)smemalign(K_STACK_SIZE, K_STACK_SIZE);
     if (mem == 0) {
-        free_tcb(entry);
+        sfree(entry, sizeof(tcb_t));
         return NULL;
     }
-    entry->kernel_stack = (void*) K_STACK_TOP(mem);
+    entry->kernel_stack = (void*)K_STACK_TOP(mem);
     // Store pointer to tcb at the top of the kernel stack
     *((tcb_t**)entry->kernel_stack) = entry;
 
     Q_INIT_ELEM(entry, all_threads);
     Q_INIT_ELEM(entry, pcb_threads);
     Q_INIT_ELEM(entry, runnable_threads);
+    Q_INIT_ELEM(entry, suspended_threads);
+    Q_INIT_ELEM(entry, sleeping_threads);
     entry->id = id;
     entry->state = NOT_YET;
+    memset(&entry->swexn, 0, sizeof(swexn_t));
     entry->swexn.handler = NULL;
+    entry->process = NULL;
+    entry->wake_tick = 0;
     return entry;
 }
 
@@ -181,7 +187,7 @@ void free_pcb(pcb_t* pcb)
 tcb_t* get_tcb()
 {
     uint32_t tcb_addr = K_STACK_TOP(K_STACK_BASE(get_esp()));
-    tcb_t *tcb = *(tcb_t**)tcb_addr;
+    tcb_t* tcb = *(tcb_t**)tcb_addr;
     ASSERT((uint32_t)(tcb->process->directory.dir) == get_cr3());
     return tcb;
 }

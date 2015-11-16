@@ -22,15 +22,18 @@
 #include <common_kern.h>
 #include <common.h>
 #include <syscall_kern.h>
+#include <seg.h>
 
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     // Swexn needs to run after the system page fault handler
-    if(state->eip > USER_MEM_START){
+    if(state->cs == SEGSEL_USER_CS){
         // only run swexn if the fault wasn't in kernel mode
         if (tcb->swexn.handler != NULL) {
             swexn_handler(state, tcb);
         }
+    } else {
+        panic("Thread crashed in kernel space");
     }
 
     // Print error message

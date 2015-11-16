@@ -53,14 +53,12 @@ int add_sleeper(tcb_t* tcb, uint32_t ticks)
 
 void schedule_sleepers(uint32_t current)
 {
-    disable_interrupts();
     // if we only examine the list, we don't need the lock
     tcb_t *head = Q_GET_FRONT(&sleep_list);
     if(head->wake_tick <= current && head->state == SLEEPING){
         //lprintf("scheduling sleeper %d", head->id);
         add_runnable(head);
     }
-    enable_interrupts();
 }
 
 void release_sleeper(tcb_t *sleeper)
