@@ -51,7 +51,8 @@ void thread_fork_syscall(ureg_t state)
         state.eax = -1;
         return;
     }
-    state.eax = copy_thread(parent, child, &state);
+    state.eax = copy_thread(child, parent, &state);
+    pcb_add_thread(process, child);
     mutex_unlock(&process->children_mutex);
 }
 

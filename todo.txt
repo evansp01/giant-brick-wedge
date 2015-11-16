@@ -32,3 +32,9 @@ Stuff to do:
 
     allocation still doesn't count frames
     
+CURRENT:
+    1. finalize_exit and exec
+    2. rollforward sleep implementation
+    3. rollforward mutex implementation
+    
+    
