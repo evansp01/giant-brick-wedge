@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include <control.h>
 #include <asm.h>
+#include <malloc_internal.h>
 
 /** @brief Initialize a process page directory
  *
@@ -86,16 +87,39 @@ void free_ppd_user_mem(ppd_t* to_free)
     }
 }
 
+/** @brief Free all kernel memory associated with this ppd without locks
+ *
+ *  @param to_free The ppd to free
+ *  @return void
+ **/
+void _free_ppd_kernel_mem(ppd_t* to_free)
+{
+    int i;
+    page_directory_t *dir = to_free->dir;
+    for (i = 0; i < TABLES_PER_DIR; i++) {
+        // Check if it is a present user directory entry
+        entry_t* dir_entry = &dir->tables[i];
+        if (!is_present_user(dir_entry)) {
+            continue;
+        }
+        void* addr = get_entry_address(*dir_entry);
+        _sfree(addr, PAGE_SIZE);
+    }
+    _sfree(to_free->dir, PAGE_SIZE);
+}
+
 /** @brief Free all kernel memory associated with this ppd
  *
  *  @param to_free The ppd to free
  *  @return void
  **/
-void free_ppd_kernel_mem(ppd_t* to_free)
-{
-    free_page_directory(to_free->dir);
-    sfree(to_free->dir, PAGE_SIZE);
+void free_ppd_kernel_mem(ppd_t *to_free){
+    acquire_malloc();
+    _free_ppd_kernel_mem(to_free);
+    release_malloc();
 }
+
+
 
 /** @brief Free all memory associated with a ppd
  *

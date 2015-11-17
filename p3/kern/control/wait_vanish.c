@@ -6,15 +6,27 @@
 #include <simics.h>
 #include <scheduler.h>
 
+/** @brief Frees all kernel memory associated with a process without locks
+ *  @param pcb The process to free
+ *  @return void
+ **/
+void _cleanup_process(pcb_t *pcb)
+{
+    _free_ppd_kernel_mem(&pcb->directory);
+    _free_pcb(pcb);
+}
+
 /** @brief Frees all kernel memory associated with a process
  *  @param pcb The process to free
  *  @return void
  **/
 void cleanup_process(pcb_t *pcb)
 {
-    free_ppd_kernel_mem(&pcb->directory);
-    free_pcb(pcb);
+    acquire_malloc();
+    _cleanup_process(pcb);
+    release_malloc();
 }
+
 
 /** @brief Waits on children of a process if any children exist
  *
@@ -138,11 +150,11 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
 void finalize_exit(tcb_t* tcb)
 {
     // we only needed malloc to make sure our thread didn't have it
-    release_malloc();
     if(tcb->process != NULL){
-        cleanup_process(tcb->process);
+        _cleanup_process(tcb->process);
     }
-    free_tcb(tcb);
+    _free_tcb(tcb);
+    release_malloc();
 }
 
 /** @brief Cleans up a deschedules a thread

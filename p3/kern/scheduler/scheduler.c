@@ -33,6 +33,19 @@ uint32_t get_ticks()
     return scheduler.ticks;
 }
 
+void add_runnable(tcb_t* tcb)
+{
+    tcb->state = T_RUNNABLE;
+    Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
+}
+
+void remove_runnable(tcb_t* tcb, thread_state_t state)
+{
+    tcb->state = state;
+    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+}
+
+
 /** @brief Initializes the scheduler
  *
  *  @return void
@@ -58,18 +71,6 @@ void scheduler_post_switch()
     if (switched_from->state == T_EXITED) {
         finalize_exit(switched_from);
     }
-}
-
-void add_runnable(tcb_t* tcb)
-{
-    tcb->state = T_RUNNABLE;
-    Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
-}
-
-void remove_runnable(tcb_t* tcb, thread_state_t state)
-{
-    tcb->state = state;
-    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
 }
 
 /** @brief Switches to the next thread to be run

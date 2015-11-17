@@ -17,6 +17,7 @@
 #include <stack_info.h>
 #include <cr.h>
 #include <contracts.h>
+#include <malloc_internal.h>
 
 // Global kernel state with process and thread info
 static kernel_state_t kernel_state;
@@ -208,6 +209,19 @@ tcb_t* create_tcb_entry(int id)
     return entry;
 }
 
+
+/** @brief Free memory associated with a tcb_t structure without locks
+ *
+ *  @param tcb The tcb to free
+ *  @return void
+ **/
+void _free_tcb(tcb_t* tcb)
+{
+    _sfree((void*)K_STACK_BASE(tcb->kernel_stack), K_STACK_SIZE);
+    _sfree(tcb, sizeof(tcb_t));
+}
+
+
 /** @brief Free memory associated with a tcb_t structure
  *
  *  @param tcb The tcb to free
@@ -215,8 +229,19 @@ tcb_t* create_tcb_entry(int id)
  **/
 void free_tcb(tcb_t* tcb)
 {
-    sfree((void*)K_STACK_BASE(tcb->kernel_stack), K_STACK_SIZE);
-    sfree(tcb, sizeof(tcb_t));
+    acquire_malloc();
+    _free_tcb(tcb);
+    release_malloc();
+}
+
+/** @brief Free memory associated with a pcb_t structure
+ *
+ *  @param pcb The pcb to free
+ *  @return void
+ **/
+void _free_pcb(pcb_t* pcb)
+{
+    _sfree(pcb, sizeof(pcb_t));
 }
 
 /** @brief Free memory associated with a pcb_t structure
@@ -226,7 +251,9 @@ void free_tcb(tcb_t* tcb)
  **/
 void free_pcb(pcb_t* pcb)
 {
-    sfree(pcb, sizeof(pcb_t));
+    acquire_malloc();
+    _free_pcb(pcb);
+    release_malloc();
 }
 
 /** @brief Gets the tcb from the top of the kernel stack
