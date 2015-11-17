@@ -31,8 +31,13 @@
 #define EXEC_MAX_BYTES (4 * PAGE_SIZE)
 #define MAGIC_NUMBER 0xDEAD1337
 
-//TODO a bit of zfod possibly
-
+/** @brief Get the length of all strings in the argv array
+ *
+ *  @param ppd The page directory of the current process
+ *  @param argc The number of entries in argv
+ *  @param argv The array of arguments
+ *  @return The combined length of argv on success, less than zero on fail
+ **/
 int get_argv_length(ppd_t* ppd, int argc, char** argv)
 {
     int i;
@@ -47,6 +52,11 @@ int get_argv_length(ppd_t* ppd, int argc, char** argv)
     return total_length;
 }
 
+/** @brief A hander for the exec system call
+ *
+ *  @param State the state of userspace when exec was called
+ *  @return void
+ **/
 void exec_syscall(ureg_t state)
 {
     struct {
@@ -85,7 +95,9 @@ void exec_syscall(ureg_t state)
 /** @brief Crafts the kernel stack for the initial program
  *
  *  @param stack Stack pointer for the thread stack to be crafted
- *  @return void
+ *  @param user_esp The stack pointer of the user process
+ *  @param user_eip The entry point to the user process
+ *  @return The location of the created context on the kernel stack
  **/
 void* create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip)
 {
@@ -178,6 +190,13 @@ uint32_t max(uint32_t array[], int len)
 
 /** @brief load a process image into a page directory
  *
+ *  This function does the best it can in a number of situations. Notably
+ *  the sections .text and .rodata will be allocated as readonly only if they
+ *  are not on the same page as data which needs to be allocated read/write
+ *
+ *  Similarly, .bss will be allocated as zfod only if it does not share a page
+ *  with data which needs to be written
+ *
  *  @param elf Struct containing elf file information
  *  @param ppd The page directory to load the process image into
  *  @param zfod Should memory be initialized using zfod
@@ -246,18 +265,17 @@ int strcpy_len(char* dest, char* source)
     return i + 1;
 }
 
-/** @brief Allocates the stack for the new process
+/** @brief Sets up the argv array above the beginning of the user stack space
  *
- *  @param cr2 Address of the page table
- *  @param stack_high Highest address for the new stack
- *  @param argc Number of user arguments
- *  @param argv Pointer to user arguments
+ *  @param argc The number of strings in argv
+ *  @param argv An array of strings passed to main of the new program
+ *  @param argvlen The number of characters in argv
  *  @return Pointer to the top of the new stack
  **/
-uint32_t setup_argv(int argc, char** argv, int argv_total)
+uint32_t setup_argv(int argc, char** argv, int argvlen)
 {
     int i;
-    char* strings_start = (char*)(STACK_HIGH - argv_total);
+    char* strings_start = (char*)(STACK_HIGH - argvlen);
     char* current_string = strings_start;
     char** pointers_start = ((char**)strings_start) - argc;
     for (i = 0; i < argc; i++) {
@@ -270,14 +288,16 @@ uint32_t setup_argv(int argc, char** argv, int argv_total)
 
 /** @brief Sets up the stack for the new process
  *
- *  @param cr2 Address of the page table
- *  @param argc Number of user arguments
- *  @param argv Pointer to user arguments
+ *  @param argc The number of strings in argv
+ *  @param argv An array of strings passed to main of the new program
+ *  @param argvlen The number of characters in argv
+ *  @param stack_low The lowest address of the user stack
  *  @return Pointer to esp for the new stack
  **/
-uint32_t setup_main_stack(int argc, char** argv, int argv_total, uint32_t stack_low)
+uint32_t setup_main_stack(int argc, char** argv,
+                          int argvlen, uint32_t stack_low)
 {
-    uint32_t argv_start = setup_argv(argc, argv, argv_total);
+    uint32_t argv_start = setup_argv(argc, argv, argvlen);
     uint32_t* stack_current = (uint32_t*)argv_start;
     PUSH_STACK(stack_current, stack_low, uint32_t);
     PUSH_STACK(stack_current, STACK_HIGH, uint32_t);
@@ -287,6 +307,12 @@ uint32_t setup_main_stack(int argc, char** argv, int argv_total, uint32_t stack_
     return (uint32_t)(stack_current);
 }
 
+/** @brief Calculates the required stack space for a given program
+ *
+ *  @param argvlen The total length of the argv array
+ *  @param argc The number of strings in the argv array
+ *  @return The required stack space
+ **/
 uint32_t stack_space(int argvlen, int argc)
 {
     uint32_t space = USER_STACK_SIZE;
@@ -296,6 +322,14 @@ uint32_t stack_space(int argvlen, int argc)
     return space;
 }
 
+/** @brief Allocate the stack for a new program
+ *
+ *  This function will attempt to leave the user stack space zfod allocated
+ *
+ *  @param ppd The ppd of the process
+ *  @param stack_low The lowest address of the stack to be allocated
+ *  @return Zero on success, less than zero on failure
+ **/
 int allocate_stack(ppd_t* ppd, uint32_t stack_low)
 {
     uint32_t stack_size = STACK_HIGH - stack_low + 1;
@@ -307,6 +341,12 @@ int allocate_stack(ppd_t* ppd, uint32_t stack_low)
     return vm_back(ppd, stack_low + USER_STACK_SIZE, stack_used);
 }
 
+/** @brief Popualte an elf structure with a program
+ *
+ *  @param elf The elf structure to populate
+ *  @param fname The name of the program to populate the elf with
+ *  @return Zero on success, less than zero on failure
+ **/
 int load_elf(simple_elf_t* elf, char* fname)
 {
     if (elf_check_header(fname) < 0) {
@@ -316,26 +356,45 @@ int load_elf(simple_elf_t* elf, char* fname)
     return 0;
 }
 
+/** @brief Load a program into a process
+ *
+ *  @param tcb The tcb of the process to load the program into
+ *  @param elf An elf file describing the program to load
+ *  @param argc The number of strings in argv
+ *  @param argv An array of strings passed to main of the new program
+ *  @param arglen The number of characters in argv
+ *  @return Zero on success, less than zero on failure
+ **/
 int load_process(tcb_t* tcb, simple_elf_t* elf,
-                 int argc, char** argv, int argspace)
+                 int argc, char** argv, int arglen)
 {
     pcb_t* pcb = tcb->process;
     switch_ppd(&pcb->directory);
     if (create_proc_pagedir(elf, &pcb->directory) < 0) {
         return -1;
     }
-    uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
+    uint32_t stack_low = STACK_HIGH - stack_space(arglen, argc);
     stack_low = page_align(stack_low);
     if (allocate_stack(&pcb->directory, stack_low) < 0) {
         return -1;
     }
-    uint32_t stack_entry = setup_main_stack(argc, argv, argspace, stack_low);
+    uint32_t stack_entry = setup_main_stack(argc, argv, arglen, stack_low);
     // Craft kernel stack contents
     tcb->saved_esp = create_context(
         (uint32_t)tcb->kernel_stack, stack_entry, elf->e_entry);
     return 0;
 }
 
+/** @brief Create a process with a program loaded into it
+ *
+ *  Note: this call will panic on failure, and should only be used for required
+ *  processes
+ *
+ *  @param fname The name of the program to load
+ *  @param argc The number of strings in argv
+ *  @param argv An array of strings passed to main of the new program
+ *  @return The tcb of the created process
+ **/
 tcb_t* new_program(char* fname, int argc, char** argv)
 {
     tcb_t* tcb = create_pcb_entry();
@@ -361,6 +420,15 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     return tcb;
 }
 
+/** @brief Replace the current program in this process with another program
+ *
+ *  @param tcb The tcb of the process to replace programs in
+ *  @param k_space The kernel space buffer with arguments to the new program
+ *  @param argc The number of strings in argv
+ *  @param argv An array of strings passed to main of the new program
+ *  @param arglen The number of characters in argv
+ *  @return Zero on success, less than zero on failure
+ **/
 int replace_process(tcb_t* tcb, void* k_space,
                     int argc, char** k_argv, int arglen)
 {
@@ -393,6 +461,16 @@ int replace_process(tcb_t* tcb, void* k_space,
     return status;
 }
 
+/** @brief Exec from userspace, copies arguments to kernel space and replaces
+ *         the current process
+ *  @param tcb The tcb of the process to exec
+ *  @param flen The length of the filename to exec
+ *  @param fname The filename of the process to exec
+ *  @param argc The number of strings in argv
+ *  @param argv An array of strings passed to main of the new program
+ *  @param arglen The number of characters in argv
+ *  @return Zero on success, less than zero on failure
+ **/
 int user_exec(tcb_t* tcb, int flen, char* fname,
               int argc, char** argv, int arglen)
 {

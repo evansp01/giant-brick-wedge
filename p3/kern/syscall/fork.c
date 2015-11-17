@@ -19,14 +19,14 @@
 #include <utilities.h>
 #include <scheduler.h>
 #include <vm.h>
-#include <asm.h> //temp
 #include <stack_info.h>
 
-int copy_process(tcb_t* tcb_parent, ureg_t* state);
-int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state);
+static int copy_process(tcb_t* tcb_parent, ureg_t* state);
+static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state);
 
-/** @brief Handler function for fork()
+/** @brief Handler function for the fork syscall
  *
+ *  @param state The register state upon the call to fork
  *  @return void
  */
 void fork_syscall(ureg_t state)
@@ -40,6 +40,11 @@ void fork_syscall(ureg_t state)
     state.eax = copy_process(tcb_parent, &state);
 }
 
+/** @brief Handler function for the thread fork syscall
+ *
+ *  @param state The register state upon the call to thread fork
+ *  @return void
+ */
 void thread_fork_syscall(ureg_t state)
 {
     tcb_t* parent = get_tcb();
@@ -82,7 +87,15 @@ void copy_saved_esp(tcb_t* parent, tcb_t* child, void* state)
     child->saved_esp = (void*)((uint32_t)child->kernel_stack - offset);
 }
 
-int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state)
+/** @brief Creates a copy of the given process
+ *
+ *  @param tcb_parent The tcb of the parent thread
+ *  @param tcb_child The tcb of the child thread
+ *  @param state The state of userspace on the call to fork
+ *
+ *  @return Id of the child thread
+ **/
+static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state)
 {
     copy_saved_esp(parent, child, state);
     child->swexn = parent->swexn;
@@ -100,9 +113,12 @@ int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state)
 
 /** @brief Creates a copy of the given process
  *
- *  @return Pointer to tcb on success, null on failure
+ *  @param tcb_parent The tcb of the parent process
+ *  @param state The state of userspace on the call to fork
+ *
+ *  @return Id of the created process on success, -1 on failure
  **/
-int copy_process(tcb_t* tcb_parent, ureg_t* state)
+static int copy_process(tcb_t* tcb_parent, ureg_t* state)
 {
     pcb_t* pcb_parent = tcb_parent->process;
 
