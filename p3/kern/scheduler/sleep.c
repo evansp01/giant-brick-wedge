@@ -5,18 +5,25 @@
 #include <asm.h>
 #include <simics.h>
 #include <utilities.h>
+#include "scheduler_internal.h"
 
 static tcb_ds_t sleep_list;
 static mutex_t sleep_mutex;
 
-void switch_to_next(tcb_t* current, int schedule);
 
+/** @brief Initialize state needed for the sleep system call
+ *  @return void
+ **/
 void init_sleep()
 {
     Q_INIT_HEAD(&sleep_list);
     mutex_init(&sleep_mutex);
 }
 
+/** @brief Add a the current thread to the list of sleeping threads
+ *  @param tcb The tcb of the current thread;w
+ *  @param ticks The number of ticks to sleep for
+ **/
 int add_sleeper(tcb_t* tcb, uint32_t ticks)
 {
     if (ticks < 0) {
@@ -38,29 +45,41 @@ int add_sleeper(tcb_t* tcb, uint32_t ticks)
     // O(1) disable interrupts time
     disable_interrupts();
     // if iter is the last element we might want to insert after
+    tcb->wake_tick = until;
     if(until < iter->wake_tick){
         Q_INSERT_BEFORE(&sleep_list, iter, tcb, sleeping_threads);
     } else {
         Q_INSERT_AFTER(&sleep_list, iter, tcb, sleeping_threads);
     }
-    tcb->wake_tick = 0;
     scheduler_mutex_unlock(&sleep_mutex);
-    //lprintf("thread %d going to sleep", tcb->id);
-    remove_runnable(tcb, SLEEPING);
-    switch_to_next(tcb, 0);
+    remove_runnable(tcb, T_SLEEPING);
+    switch_to_next(tcb, YIELD_MODE);
     return 1;
 }
 
+/** @brief Schedule the sleeping thread at the start of the sleeping list
+ *         if it is time for it to wake up
+ *
+ *  Note: Should be called from the scheduler with interrupts disabled
+ *
+ *  @param current The current number of ticks
+ *  @return void
+ **/
 void schedule_sleepers(uint32_t current)
 {
     // if we only examine the list, we don't need the lock
     tcb_t *head = Q_GET_FRONT(&sleep_list);
-    if(head->wake_tick <= current && head->state == SLEEPING){
-        //lprintf("scheduling sleeper %d", head->id);
+    if(head->wake_tick <= current && head->state == T_SLEEPING){
         add_runnable(head);
     }
 }
 
+/** @brief After a sleeping thread has awoken it must remove itsself from the
+ *         sleeping list with this call
+ *
+ *  @param The thread which woke up
+ *  @return void
+ **/
 void release_sleeper(tcb_t *sleeper)
 {
     mutex_lock(&sleep_mutex);

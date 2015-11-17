@@ -6,12 +6,34 @@
 #include <simics.h>
 #include <scheduler.h>
 
-void cleanup_process(pcb_t *pcb)
+/** @brief Frees all kernel memory associated with a process without locks
+ *  @param pcb The process to free
+ *  @return void
+ **/
+void _cleanup_process(pcb_t *pcb)
 {
-    free_ppd_kernel_mem(&pcb->directory);
-    free_pcb(pcb);
+    _free_ppd_kernel_mem(&pcb->directory);
+    _free_pcb(pcb);
 }
 
+/** @brief Frees all kernel memory associated with a process
+ *  @param pcb The process to free
+ *  @return void
+ **/
+void cleanup_process(pcb_t *pcb)
+{
+    acquire_malloc();
+    _cleanup_process(pcb);
+    release_malloc();
+}
+
+
+/** @brief Waits on children of a process if any children exist
+ *
+ *  @param pcb The process whose children should be waited on
+ *  @param status_ptr Will be set to the exit status of children if not NULL
+ *  @return Zero if a child was waited on, less than zero on error or no child
+ **/
 int wait(pcb_t* pcb, int *status_ptr)
 {
     mutex_lock(&pcb->children_mutex);
@@ -21,14 +43,12 @@ int wait(pcb_t* pcb, int *status_ptr)
         return -1;
     }
     pcb_t* child = Q_GET_FRONT(&pcb->children);
-    if(child->state != EXITED){
+    if(child->state != P_EXITED){
         pcb->waiting++;
-        lprintf("waiting for child %d", child->id);
         if(child->id < 0){
             MAGIC_BREAK;
         }
         cond_wait(&pcb->wait, &pcb->children_mutex);
-        lprintf("finished wait for child %d", child->id);
         child = Q_GET_FRONT(&pcb->children);
     }
     ASSERT(child->state == EXITED);
@@ -36,13 +56,11 @@ int wait(pcb_t* pcb, int *status_ptr)
     int pid = child->id;
     if(status_ptr != NULL){
         ppd_t *ppd = &pcb->directory;
-        mutex_lock(&ppd->lock);
-        if(vm_write(ppd, &status, status_ptr, sizeof(int)) < 0){
-            mutex_unlock(&ppd->lock);
+        if(vm_write_locked(ppd, &status,(uint32_t)status_ptr,
+                           sizeof(int)) < 0){
             mutex_unlock(&pcb->children_mutex);
             return -2;
         }
-        mutex_unlock(&ppd->lock);
     }
     Q_REMOVE(&pcb->children, child, siblings);
     pcb->num_children--;
@@ -51,6 +69,12 @@ int wait(pcb_t* pcb, int *status_ptr)
     return pid;
 }
 
+/** @brief Informs all children of a process that the process is exiting so
+ *         that they know to clean themselves up
+ *
+ *  @param pcb The process which is exiting
+ *  @return void
+ **/
 void pcb_inform_children(pcb_t* pcb)
 {
     pcb_t* child;
@@ -64,7 +88,7 @@ void pcb_inform_children(pcb_t* pcb)
         Q_REMOVE(&pcb->children, child, siblings);
         pcb->num_children--;
         child->parent = NULL;
-        if(child->state == EXITED){
+        if(child->state == P_EXITED){
             // Child is done, we aren't going to wait since we are dying
             cleanup_process(child);
         }
@@ -73,7 +97,12 @@ void pcb_inform_children(pcb_t* pcb)
     }
 }
 
-
+/** @brief Cleans up a thread, and it's process if it is the last thread
+ *
+ *  @param tcb The thread to clean up
+ *  @param failed Is this thread being killed because it failed
+ *  @return pcb The process pcb if it needs to be freed, NULL otherwise
+ **/
 pcb_t *thread_exit(tcb_t *tcb, int failed)
 {
     pcb_t* process = tcb->process;
@@ -96,17 +125,15 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
     pcb_t* parent = process->parent;
     if (parent == NULL) {
         // nobody is going to wait for you ;(
-        lprintf("child %d has no parent", tcb->id);
         return process;
     }
     mutex_lock(&parent->children_mutex);
-    process->state = EXITED;
+    process->state = P_EXITED;
     // Exited people always at front of list for efficient wait
     Q_REMOVE(&parent->children, process, siblings);
     Q_INSERT_FRONT(&parent->children, process, siblings);
     if(parent->waiting > 0){
         parent->waiting--;
-        lprintf("child %d is signalling parent %d", tcb->id, parent->id);
         cond_signal(&parent->wait);
     }
     mutex_unlock(&parent->children_mutex);
@@ -114,29 +141,28 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
     return NULL;
 }
 
+/** @brief Frees memory associated with a thread and process which cannot
+ *         be freed conveniently by the thread
+ *
+ *  @param The thread to free
+ *  @return void
+ **/
 void finalize_exit(tcb_t* tcb)
-{   
     if(tcb->process != NULL){
-        cleanup_process(tcb->process);
+        _cleanup_process(tcb->process);
     }
-    free_tcb(tcb);
+    _free_tcb(tcb);
     release_malloc();
 }
 
-/** @brief Cleans up and kills a single thread
- *  @param tcb TCB of the thread to kill
+/** @brief Cleans up a deschedules a thread
+ *  @param tcb The thread to kill
+ *  @param failed Is this thread being killed because it failed?
  *  @return void
  **/
 void vanish_thread(tcb_t *tcb, int failed)
 {
-    if(failed) {
-        alloc_t *alloc;
-        Q_FOREACH(alloc, &tcb->process->directory.allocations, list){
-            lprintf("alloc start %lx size %lx", alloc->start, alloc->size);
-        }
-    }
     pcb_t* to_free = thread_exit(tcb, failed);
     acquire_malloc();
-    lprintf("thread %d acquired malloc", tcb->id);
     kill_thread(tcb, to_free);
 }

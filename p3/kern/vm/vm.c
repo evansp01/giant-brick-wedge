@@ -385,24 +385,6 @@ int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent)
     return 0;
 }
 
-/** @brief Free a page directory
- *  @param dir The page directory to free
- *  @return void
- **/
-void free_page_directory(page_directory_t* dir)
-{
-    int i;
-    for (i = 0; i < TABLES_PER_DIR; i++) {
-        // Check if it is a present user directory entry
-        entry_t* dir_entry = &dir->tables[i];
-        if (!is_present_user(dir_entry)) {
-            continue;
-        }
-        void* addr = get_entry_address(*dir_entry);
-        sfree(addr, PAGE_SIZE);
-    }
-}
-
 /** @brief Allocates all page tables from start address to start+size
  *  @param cr3 The address of the page table
  *  @param start The virtual address to begin allocation at

@@ -12,13 +12,11 @@
 #include <stdint.h>
 #include <common_kern.h>
 #include <control.h>
-#include <loader.h>
 #include <scheduler.h>
 #include <stdlib.h>
 #include <string.h>
 #include <asm.h>
 #include <mutex.h>
-#include <common.h>
 #include <console.h>
 #include <video_defines.h>
 #include <seg.h>

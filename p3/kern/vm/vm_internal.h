@@ -7,7 +7,6 @@
 #include <page.h>
 #include <stddef.h>
 #include <mutex.h>
-#include <common.h>
 
 #define PAGES_PER_TABLE 1024
 #define TABLES_PER_DIR 1024
@@ -63,14 +62,18 @@ extern const entry_t e_write_page;
 extern const entry_t e_zfod_page;
 extern const entry_t e_unmapped;
 
+/** @brief Invalidates a page using the invl page instruction
+ *  @param Page the page to invalidate
+ *  @return void
+ **/
+void invalidate_page(void *page);
+
 int add_alloc(ppd_t* ppd, void* start, uint32_t size);
 int remove_alloc(ppd_t* ppd, void* start, uint32_t* size);
-
 
 void release_frames(void* start, uint32_t size);
 int reserve_frames(void* start, uint32_t size);
 
-void invalidate_page(void *page);
 entry_t create_entry(void* address, entry_t model);
 void* get_entry_address(entry_t entry);
 void set_entry_address(entry_t* entry, void* address);
@@ -95,8 +98,7 @@ int is_write(entry_t* table);
 int is_zfod(entry_t* table);
 int is_present_user(entry_t* entry);
 int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir);
-//page table manipulation
-//headers for frame alloc
+
 void init_frame_alloc();
 void* get_zero_page();
 int user_frame_total();

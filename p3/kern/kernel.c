@@ -23,7 +23,6 @@
 /* additional includes */
 #include <control.h>
 #include <switch.h>
-#include <common.h>
 #include <vm.h>
 #include <utilities.h>
 #include <malloc.h>
@@ -31,8 +30,6 @@
 #include <string.h>
 #include <eflags.h>
 #include <setup_idt.h>
-#include <kernel_tests.h>
-#include <loader.h>
 #include <mode_switch.h>
 #include <scheduler.h>
 #include <switch.h>

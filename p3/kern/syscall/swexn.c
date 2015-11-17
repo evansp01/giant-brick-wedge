@@ -8,9 +8,9 @@
  **/
  
 #include <control.h>
-#include <loader.h>
 #include <mode_switch.h>
 #include <stdlib.h>
+#include <syscall_kern.h>
 
 /** @brief Registers a software exception handler
  *  @return void
