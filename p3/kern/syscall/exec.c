@@ -31,6 +31,8 @@
 #define EXEC_MAX_BYTES (4 * PAGE_SIZE)
 #define MAGIC_NUMBER 0xDEAD1337
 
+//TODO a bit of zfod possibly
+
 int get_argv_length(ppd_t* ppd, int argc, char** argv)
 {
     int i;
