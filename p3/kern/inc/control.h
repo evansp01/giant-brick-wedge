@@ -20,12 +20,17 @@
 #include <ureg.h>
 
 typedef enum {
-    NOT_YET,
-    RUNNABLE,
-    SUSPENDED,
-    SLEEPING,
-    EXITED
-} state_t;
+    T_NOT_YET,
+    T_RUNNABLE,
+    T_SUSPENDED,
+    T_SLEEPING,
+    T_EXITED,
+} thread_state_t;
+
+typedef enum {
+    P_EXITED,
+    P_ACTIVE,
+} process_state_t;
 
 typedef void (*swexn_handler_t)(void *arg, ureg_t *ureg);
 typedef struct swexn {
@@ -66,7 +71,7 @@ typedef struct pcb {
     int id;
     int exit_status;
     ppd_t directory;
-    state_t state;
+    process_state_t state;
 } pcb_t;
 
 /** @brief Structure for a thread control block */
@@ -80,7 +85,7 @@ typedef struct tcb {
     pcb_t *process;
     void *kernel_stack;
     void *saved_esp;
-    state_t state;
+    thread_state_t state;
     swexn_t swexn;
     unsigned int wake_tick;
 } tcb_t;

@@ -31,14 +31,12 @@ int wait(pcb_t* pcb, int *status_ptr)
         return -1;
     }
     pcb_t* child = Q_GET_FRONT(&pcb->children);
-    if(child->state != EXITED){
+    if(child->state != P_EXITED){
         pcb->waiting++;
-        lprintf("waiting for child %d", child->id);
         if(child->id < 0){
             MAGIC_BREAK;
         }
         cond_wait(&pcb->wait, &pcb->children_mutex);
-        lprintf("finished wait for child %d", child->id);
         child = Q_GET_FRONT(&pcb->children);
     }
     ASSERT(child->state == EXITED);
@@ -78,7 +76,7 @@ void pcb_inform_children(pcb_t* pcb)
         Q_REMOVE(&pcb->children, child, siblings);
         pcb->num_children--;
         child->parent = NULL;
-        if(child->state == EXITED){
+        if(child->state == P_EXITED){
             // Child is done, we aren't going to wait since we are dying
             cleanup_process(child);
         }
@@ -115,17 +113,15 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
     pcb_t* parent = process->parent;
     if (parent == NULL) {
         // nobody is going to wait for you ;(
-        lprintf("child %d has no parent", tcb->id);
         return process;
     }
     mutex_lock(&parent->children_mutex);
-    process->state = EXITED;
+    process->state = P_EXITED;
     // Exited people always at front of list for efficient wait
     Q_REMOVE(&parent->children, process, siblings);
     Q_INSERT_FRONT(&parent->children, process, siblings);
     if(parent->waiting > 0){
         parent->waiting--;
-        lprintf("child %d is signalling parent %d", tcb->id, parent->id);
         cond_signal(&parent->wait);
     }
     mutex_unlock(&parent->children_mutex);
@@ -158,6 +154,5 @@ void vanish_thread(tcb_t *tcb, int failed)
 {
     pcb_t* to_free = thread_exit(tcb, failed);
     acquire_malloc();
-    lprintf("thread %d acquired malloc", tcb->id);
     kill_thread(tcb, to_free);
 }

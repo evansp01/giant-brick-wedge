@@ -1,8 +1,7 @@
 /** @file console.h
  *  @brief Function prototypes for the console driver.
  *
- *  This contains the prototypes and global variables for the console
- *  driver
+ *  This contains the prototypes for the console driver
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)

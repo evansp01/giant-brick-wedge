@@ -57,18 +57,18 @@ void scheduler_post_switch()
 {
     tcb_t* switched_from = scheduler.switched_from;
     enable_interrupts();
-    if (switched_from->state == EXITED) {
+    if (switched_from->state == T_EXITED) {
         finalize_exit(switched_from);
     }
 }
 
 void add_runnable(tcb_t* tcb)
 {
-    tcb->state = RUNNABLE;
+    tcb->state = T_RUNNABLE;
     Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
 }
 
-void remove_runnable(tcb_t* tcb, state_t state)
+void remove_runnable(tcb_t* tcb, thread_state_t state)
 {
     tcb->state = state;
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
@@ -126,7 +126,7 @@ void run_scheduler(uint32_t ticks)
 int schedule(tcb_t* tcb)
 {
     disable_interrupts();
-    if (tcb->state != SUSPENDED && tcb->state != NOT_YET) {
+    if (tcb->state != T_SUSPENDED && tcb->state != T_NOT_YET) {
         enable_interrupts();
         return -1;
     }
@@ -145,14 +145,14 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
     scheduler_mutex_unlock(mp);
-    remove_runnable(tcb, SUSPENDED);
+    remove_runnable(tcb, T_SUSPENDED);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
 void deschedule(tcb_t* tcb)
 {
     disable_interrupts();
-    remove_runnable(tcb, SUSPENDED);
+    remove_runnable(tcb, T_SUSPENDED);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
@@ -161,7 +161,7 @@ void kill_thread(tcb_t* tcb, pcb_t* pcb)
     disable_interrupts();
     // store the process to free in the tcb
     tcb->process = pcb;
-    remove_runnable(tcb, EXITED);
+    remove_runnable(tcb, T_EXITED);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
@@ -178,7 +178,7 @@ int user_deschedule(tcb_t* tcb, uint32_t esi)
         return 0;
     }
     scheduler_mutex_unlock(&ppd->lock);
-    remove_runnable(tcb, SUSPENDED);
+    remove_runnable(tcb, T_SUSPENDED);
     switch_to_next(tcb, SCHEDULE_MODE);
     return 0;
 }
@@ -213,7 +213,7 @@ int yield(int yield_tid)
         return -1;
     }
     // Thou shalt not yield to threads which cannot currently be run
-    if (yield_tcb->state != RUNNABLE) {
+    if (yield_tcb->state != T_RUNNABLE) {
         return -1;
     }
     disable_interrupts();

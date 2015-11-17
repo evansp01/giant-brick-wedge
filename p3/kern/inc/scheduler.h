@@ -24,7 +24,7 @@ void scheduler_post_switch();
 void scheduler_pre_switch(tcb_t* from, tcb_t* to);
 
 void add_runnable(tcb_t *tcb);
-void remove_runnable(tcb_t *tcb, state_t state);
+void remove_runnable(tcb_t *tcb, thread_state_t state);
 
 void init_sleep();
 int add_sleeper(tcb_t* tcb, uint32_t ticks);

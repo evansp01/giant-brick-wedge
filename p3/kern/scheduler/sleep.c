@@ -46,7 +46,7 @@ int add_sleeper(tcb_t* tcb, uint32_t ticks)
     tcb->wake_tick = 0;
     scheduler_mutex_unlock(&sleep_mutex);
     //lprintf("thread %d going to sleep", tcb->id);
-    remove_runnable(tcb, SLEEPING);
+    remove_runnable(tcb, T_SLEEPING);
     switch_to_next(tcb, 0);
     return 1;
 }
@@ -55,8 +55,7 @@ void schedule_sleepers(uint32_t current)
 {
     // if we only examine the list, we don't need the lock
     tcb_t *head = Q_GET_FRONT(&sleep_list);
-    if(head->wake_tick <= current && head->state == SLEEPING){
-        //lprintf("scheduling sleeper %d", head->id);
+    if(head->wake_tick <= current && head->state == T_SLEEPING){
         add_runnable(head);
     }
 }
