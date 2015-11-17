@@ -122,11 +122,14 @@ int putbyte( char ch )
       break;
     
     /* Backspace: Erase previous character. If the cursor is already
-       at the beginning of the line nothing occurs. */
+       at the beginning of the screen nothing occurs. */
     case '\b':
-      // TODO: backspace should backup lines, or readline buffer shorter
       if (col != 0) {
         col--;
+        *(char *)(GET_CHR(row, col)) = ' ';
+      } else if (row != 0) {
+        row--;
+        col = CONSOLE_WIDTH - 1;
         *(char *)(GET_CHR(row, col)) = ' ';
       }
       break;
