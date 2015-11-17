@@ -15,8 +15,9 @@
 #include <loader.h>
 #include <mode_switch.h>
 #include <stack_info.h>
+#include "scheduler_internal.h"
 
-/* --- Structs --- */
+/** @brief A struct representing the stack before a context switch */
 typedef struct context_stack {
     void* edi;
     void* esi;
@@ -55,6 +56,11 @@ void context_switch(tcb_t* from, tcb_t* to)
     scheduler_post_switch();
 }
 
+/** @brief The entry point for a thread the first time it is context switched
+ *         to
+ *  @param iret_ptr The pointer of the context required for mode switch
+ *  @return Does not return
+ **/
 void first_context_switch(void* iret_ptr)
 {
     scheduler_post_switch();

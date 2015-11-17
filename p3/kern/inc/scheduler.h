@@ -20,15 +20,9 @@ void kill_thread(tcb_t* tcb, pcb_t *pcb);
 void deschedule(tcb_t *tcb);
 int user_deschedule(tcb_t* tcb, uint32_t esi);
 void deschedule_and_drop(tcb_t *tcb, mutex_t *mp);
-void scheduler_post_switch();
 void scheduler_pre_switch(tcb_t* from, tcb_t* to);
 
-void add_runnable(tcb_t *tcb);
-void remove_runnable(tcb_t *tcb, thread_state_t state);
-
-void init_sleep();
 int add_sleeper(tcb_t* tcb, uint32_t ticks);
-void schedule_sleepers(uint32_t current);
 void release_sleeper(tcb_t *tcb);
 
 #endif // SCHEDULER_H_

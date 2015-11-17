@@ -15,9 +15,7 @@
 #include <asm.h>
 #include <contracts.h>
 #include <utilities.h>
-
-#define YIELD_MODE 0
-#define SCHEDULE_MODE 1
+#include "scheduler_internal.h"
 
 /** @brief Structure for a list of threads */
 Q_NEW_HEAD(runnable_queue_t, tcb);
