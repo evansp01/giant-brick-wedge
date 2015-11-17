@@ -15,47 +15,56 @@ COMPILE_TIME_ASSERT(sizeof(entry_t) == sizeof(uint32_t));
 COMPILE_TIME_ASSERT(sizeof(page_directory_t) == PAGE_SIZE);
 COMPILE_TIME_ASSERT(sizeof(page_table_t) == PAGE_SIZE);
 
+/** @brief The virtual memory structure */
 struct virtual_memory virtual_memory = { 0 };
 
+/** @brief A kernel page directory entry */
 const entry_t e_kernel_dir = {
     .present = 1,
     .write = 1
 };
 
+/** @brief A user page directory entry */
 const entry_t e_user_dir = {
     .present = 1,
     .write = 1,
     .user = 1
 };
 
+/** @brief A global kernel page directory entry */
 const entry_t e_kernel_global = {
     .present = 1,
     .write = 1,
     .global = 1,
 };
 
+/** @brief A kernel page table entry */
 const entry_t e_kernel_local = {
     .present = 1,
     .write = 1,
 };
 
+/** @brief A read only user page table entry */
 const entry_t e_read_page = {
     .present = 1,
     .user = 1
 };
 
+/** @brief A read/write user page table entry */
 const entry_t e_write_page = {
     .present = 1,
     .write = 1,
     .user = 1
 };
 
+/** @brief A write zfod user page table entry */
 const entry_t e_zfod_page = {
     .present = 1,
     .zfod = 1,
     .user = 1
 };
 
+/** @brief An unmapped page directory or table entry */
 const entry_t e_unmapped = { 0 };
 
 /** @brief Create an entry from a model and an address
@@ -116,6 +125,11 @@ void* get_address(void* address, void* page)
     return (void*)(((uint32_t)page) | offset);
 }
 
+/** @brief Calculates the number of bytes left before the end of the page
+ *
+ *  @param address The address of the offset
+ *  @return The number of bytes
+ **/
 int page_bytes_left(void* address)
 {
     uint32_t offset = AS_TYPE(address, address_t).page_address;
@@ -189,6 +203,12 @@ int required_frames(void* start, uint32_t size)
     return 1 + (end_page - start_page) / PAGE_SIZE;
 }
 
+/** @brief Reserve frames all the frames required to make this allocation
+ *
+ *  @param start The starting address of the allocation
+ *  @param size The size of the allocation
+ *  @return Zero on success less than zero on failure
+ **/
 int reserve_frames(void* start, uint32_t size)
 {
     mutex_lock(&virtual_memory.lock);
@@ -203,6 +223,12 @@ int reserve_frames(void* start, uint32_t size)
     return 0;
 }
 
+/** @brief Release frames all the frames associated with this allocation
+ *
+ *  @param start The starting address of the allocation
+ *  @param size The size of the allocation
+ *  @return void
+ **/
 void release_frames(void* start, uint32_t size)
 {
     mutex_lock(&virtual_memory.lock);

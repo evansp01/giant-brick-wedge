@@ -420,6 +420,14 @@ int vm_set_readonly(ppd_t* ppd, void* start, uint32_t size)
     return vm_map_pages(ppd, start, size, vm_set_readonly_h) == 0;
 }
 
+/** @brief Safely read from user memory to a kernel buffer using the ppd lock
+ *  
+ *  @param ppd The user page directory
+ *  @param buffer The buffer to read to
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
 int vm_read_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size)
 {
     mutex_lock(&ppd->lock);
@@ -445,6 +453,14 @@ int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
     return -1;
 }
 
+/** @brief Safely write from a kernel buffer to user memory using the ppd lock
+ *  
+ *  @param ppd The user page directory
+ *  @param buffer The buffer to write from
+ *  @param start The start address
+ *  @param size The size of the section to check
+ *  @return Zero on success, an integer less than zero on failure
+ **/
 int vm_write_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size)
 {
     mutex_lock(&ppd->lock);

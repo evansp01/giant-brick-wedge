@@ -8,6 +8,11 @@
 #include <control.h>
 #include <asm.h>
 
+/** @brief Initialize a process page directory
+ *
+ *  @param ppd A pointer to the directory to initialize
+ *  @return Zero on success, less than zero on failure
+ **/
 int init_ppd(ppd_t* ppd)
 {
     ppd->frames = 0;
@@ -19,6 +24,13 @@ int init_ppd(ppd_t* ppd)
     return 0;
 }
 
+/** @brief Record an allocation to this ppd
+ *
+ *  @param ppd The ppd allocated to
+ *  @param start The start of the allocation
+ *  @param size The size of the allocation
+ *  @return Zero on success, less than zero on failure
+ **/
 int add_alloc(ppd_t* ppd, void* start, uint32_t size)
 {
     alloc_t* new_alloc = malloc(sizeof(alloc_t));
@@ -32,6 +44,12 @@ int add_alloc(ppd_t* ppd, void* start, uint32_t size)
     return 0;
 }
 
+/** @brief Free an allocation associated with this page directory
+ *
+ *  @param ppd The ppd allocated to
+ *  @param start The start of the allocation
+ *  @return Zero on success, less than zero on failure
+ **/
 int vm_free(ppd_t* ppd, void* start)
 {
     alloc_t* alloc;
@@ -52,6 +70,11 @@ int vm_free(ppd_t* ppd, void* start)
     return 0;
 }
 
+/** @brief Free all user memory allocations associated with this ppd
+ *
+ *  @param to_free The ppd to free allocations from
+ *  @return void
+ **/
 void free_ppd_user_mem(ppd_t* to_free)
 {
     alloc_t* alloc;
@@ -64,12 +87,23 @@ void free_ppd_user_mem(ppd_t* to_free)
     }
 }
 
+/** @brief Free all kernel memory associated with this ppd
+ *
+ *  @param to_free The ppd to free
+ *  @return void
+ **/
 void free_ppd_kernel_mem(ppd_t* to_free)
 {
     free_page_directory(to_free->dir);
     sfree(to_free->dir, PAGE_SIZE);
 }
 
+/** @brief Free all memory associated with a ppd
+ *
+ *  @param to_free The ppd to free
+ *  @param current The ppd currently in use (cannot be the same as to_free)
+ *  @return void
+ **/
 void free_ppd(ppd_t* to_free, ppd_t* current)
 {
     page_directory_t* tmp = current->dir;
@@ -85,17 +119,34 @@ void free_ppd(ppd_t* to_free, ppd_t* current)
     free_ppd_kernel_mem(to_free);
 }
 
+/** @brief Switch from the current ppd to a supplied ppd
+ *
+ *  @param ppd The ppd to switch to
+ *  @return void
+ **/
 void switch_ppd(ppd_t* ppd)
 {
     set_cr3((uint32_t)ppd->dir);
 }
 
+/** @brief Copy a user allocation
+ *
+ *  @param to The allocation to copy to
+ *  @param from The allocation to copy from
+ *  @return void
+ **/
 void copy_alloc(alloc_t* to, alloc_t* from)
 {
     to->start = from->start;
     to->size = from->size;
 }
 
+/** @brief Initialize a ppd by copying all contents of another ppd
+ *
+ *  @param ppd The ppd to initialize
+ *  @param from The ppd to copy during initialization
+ *  @return Zero on success, less than zero on failure
+ **/
 int init_ppd_from(ppd_t* ppd, ppd_t* from)
 {
     // create inital ppd
