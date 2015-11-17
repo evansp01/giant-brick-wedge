@@ -56,28 +56,29 @@ void exec_syscall(ureg_t state)
 
     tcb_t* tcb = get_tcb();
     if (get_thread_count(tcb->process) > 1) {
-        goto return_fail;
+        state.eax = -1;
+        return;
     }
     ppd_t* dir = &tcb->process->directory;
     if (vm_read(dir, &packet, (void*)state.esi, sizeof(packet)) < 0) {
-        goto return_fail;
+        state.eax = -1;
+        return;
     }
     int argc, argvlen;
     int flen = vm_user_strlen(dir, packet.fname) + 1;
     if (flen <= 0) {
-        goto return_fail;
+        state.eax = -1;
+        return;
     }
     if ((argc = vm_user_arrlen(dir, packet.argv)) < 0) {
-        goto return_fail;
+        state.eax = -1;
+        return;
     }
     if ((argvlen = get_argv_length(dir, argc, packet.argv)) < 0) {
-        goto return_fail;
+        state.eax = -1;
+        return;
     }
     state.eax = user_exec(tcb, flen, packet.fname, argc, packet.argv, argvlen);
-    return;
-//node that we failed and return -- release mutex?
-return_fail:
-    state.eax = -1;
     return;
 }
 
@@ -291,7 +292,10 @@ int allocate_stack(ppd_t* ppd, uint32_t stack_low)
     if (vm_alloc_readwrite(ppd, (void*)stack_low, stack_size) < 0) {
         return -1;
     }
-    return vm_back(ppd, stack_low, stack_size);
+    // only back what we will write to, leave the rest for zfod
+    uint32_t stack_used = stack_size - USER_STACK_SIZE;
+    lprintf("%lx stack_size  %lx", stack_size, stack_used);
+    return vm_back(ppd, stack_low + USER_STACK_SIZE, stack_used);
 }
 
 int load_elf(simple_elf_t* elf, char* fname)
@@ -312,7 +316,7 @@ int load_process(tcb_t* tcb, simple_elf_t* elf,
         return -1;
     }
     uint32_t stack_low = STACK_HIGH - stack_space(argspace, argc);
-    stack_low = page_align(stack_low) - PAGE_SIZE;
+    stack_low = page_align(stack_low);
     if (allocate_stack(&pcb->directory, stack_low) < 0) {
         return -1;
     }
