@@ -6,12 +6,22 @@
 #include <simics.h>
 #include <scheduler.h>
 
+/** @brief Frees all kernel memory associated with a process
+ *  @param pcb The process to free
+ *  @return void
+ **/
 void cleanup_process(pcb_t *pcb)
 {
     free_ppd_kernel_mem(&pcb->directory);
     free_pcb(pcb);
 }
 
+/** @brief Waits on children of a process if any children exist
+ *
+ *  @param pcb The process whose children should be waited on
+ *  @param status_ptr Will be set to the exit status of children if not NULL
+ *  @return Zero if a child was waited on, less than zero on error or no child
+ **/
 int wait(pcb_t* pcb, int *status_ptr)
 {
     mutex_lock(&pcb->children_mutex);
@@ -36,13 +46,11 @@ int wait(pcb_t* pcb, int *status_ptr)
     int pid = child->id;
     if(status_ptr != NULL){
         ppd_t *ppd = &pcb->directory;
-        mutex_lock(&ppd->lock);
-        if(vm_write(ppd, &status, status_ptr, sizeof(int)) < 0){
-            mutex_unlock(&ppd->lock);
+        if(vm_write_locked(ppd, &status,(uint32_t)status_ptr,
+                           sizeof(int)) < 0){
             mutex_unlock(&pcb->children_mutex);
             return -2;
         }
-        mutex_unlock(&ppd->lock);
     }
     Q_REMOVE(&pcb->children, child, siblings);
     pcb->num_children--;
@@ -51,6 +59,12 @@ int wait(pcb_t* pcb, int *status_ptr)
     return pid;
 }
 
+/** @brief Informs all children of a process that the process is exiting so
+ *         that they know to clean themselves up
+ *
+ *  @param pcb The process which is exiting
+ *  @return void
+ **/
 void pcb_inform_children(pcb_t* pcb)
 {
     pcb_t* child;
@@ -73,7 +87,12 @@ void pcb_inform_children(pcb_t* pcb)
     }
 }
 
-
+/** @brief Cleans up a thread, and it's process if it is the last thread
+ *
+ *  @param tcb The thread to clean up
+ *  @param failed Is this thread being killed because it failed
+ *  @return pcb The process pcb if it needs to be freed, NULL otherwise
+ **/
 pcb_t *thread_exit(tcb_t *tcb, int failed)
 {
     pcb_t* process = tcb->process;
@@ -114,6 +133,12 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
     return NULL;
 }
 
+/** @brief Frees memory associated with a thread and process which cannot
+ *         be freed conveniently by the thread
+ *
+ *  @param The thread to free
+ *  @return void
+ **/
 void finalize_exit(tcb_t* tcb)
 {
     // we only needed malloc to make sure our thread didn't have it
@@ -124,18 +149,13 @@ void finalize_exit(tcb_t* tcb)
     free_tcb(tcb);
 }
 
-/** @brief Cleans up and kills a single thread
- *  @param tcb TCB of the thread to kill
+/** @brief Cleans up a deschedules a thread
+ *  @param tcb The thread to kill
+ *  @param failed Is this thread being killed because it failed?
  *  @return void
  **/
 void vanish_thread(tcb_t *tcb, int failed)
 {
-    if(failed) {
-        alloc_t *alloc;
-        Q_FOREACH(alloc, &tcb->process->directory.allocations, list){
-            lprintf("alloc start %lx size %lx", alloc->start, alloc->size);
-        }
-    }
     pcb_t* to_free = thread_exit(tcb, failed);
     acquire_malloc();
     lprintf("thread %d acquired malloc", tcb->id);
