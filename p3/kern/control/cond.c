@@ -52,9 +52,7 @@ void cond_wait(cond_t* cv, mutex_t* mp)
     Q_INSERT_TAIL(&cv->waiting, tcb, suspended_threads);
     scheduler_mutex_unlock(mp);
     deschedule(tcb);
-    //lprintf("thread %d has returned", tcb->id);
     mutex_lock(mp);
-    //lprintf("thread %d acquired condwait mutex", tcb->id);
 }
 
 /** @brief Signal a waiting thread if such a thread exists
@@ -68,7 +66,6 @@ void cond_signal(cond_t* cv)
     if (!Q_IS_EMPTY(&cv->waiting)) {
         tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
         Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
-        //lprintf("scheduling thread %d", tcb_to_schedule->id);
         schedule(tcb_to_schedule);
     }
     enable_interrupts();

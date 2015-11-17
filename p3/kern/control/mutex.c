@@ -73,11 +73,7 @@ void mutex_lock(mutex_t* mp)
         mp->count--;
         if (mp->count < 0) {
             Q_INSERT_TAIL(&mp->waiting, tcb, suspended_threads);
-            //lprintf("mutex lock descheduling %d for mutex 0x%x, count is %d", tcb->id, (int)mp, mp->count);
             deschedule(tcb);
-        }
-        else {
-            //lprintf("mutex lock with count 1 for thread %d for mutex 0x%x, count is %d", tcb->id, (int)mp, mp->count);
         }
         enable_interrupts();
         mp->owner = tcb->id;
@@ -108,11 +104,6 @@ void mutex_unlock(mutex_t* mp)
             tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
             Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
             schedule_interrupts_disabled(tcb_to_schedule);
-            //lprintf("mutex unlock scheduled %d for mutex 0x%x, count is %d", tcb_to_schedule->id, (int)mp, mp->count);
-        }
-        else {
-            //lprintf("mutex unlock but no waiting threads for mutex 0x%x, count is %d", (int)mp, mp->count);
-        }
         
         enable_interrupts();
     }
@@ -141,10 +132,6 @@ void scheduler_mutex_unlock(mutex_t* mp)
             tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
             Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
             schedule_interrupts_disabled(tcb_to_schedule);
-            //lprintf("scheduler mutex unlock scheduled %d for mutex 0x%x, count is %d", tcb_to_schedule->id, (int)mp, mp->count);
-        }
-        else {
-            //lprintf("scheduler mutex unlock but no waiting threads for mutex 0x%x, count is %d", (int)mp, mp->count);
         }
     }
 }

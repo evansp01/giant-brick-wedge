@@ -90,13 +90,11 @@ void switch_to_next(tcb_t* current, int schedule)
         }
 
         if (current->id != next->id) {
-            //lprintf("switching from %d to %d", current->id, next->id);
             context_switch(current, next);
         }
     } else {
         // no runnable threads, should run idle
         if (current->id != scheduler.idle->id) {
-            //lprintf("switching from %d to idle", current->id);
             context_switch(current, scheduler.idle);
         }
     }

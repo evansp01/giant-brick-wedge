@@ -1,40 +1,46 @@
+Things to take note of:
+    error handling
+        1. recoverable fault -> fix the problem
+        2. inform the user -> kill the thread / process
+        3. kill the kernel
+
 Stuff to do:
 
+    mutexes and cvar states
+    get rid of atomic functions
+    
+    
+
+    different states for threads suspended by user and by kernel
+
+    fast mutexes (disable/enable interrupts) --> multithreaded
+    
+    devices change from task gate to interrupt gate (?) (the one which starts with interrupts disabled)
+    
     fix console scroll code
+    change print implementation (put all bytes then set cursor)
     
     lock page directory when using vm_write
     
-    do condvars need state?
-    switch atomic functions to disable_interrupts?
+    clean up header files --> move to local headers
+    
+    check for failure case in malloc calls
+    init/install should panic instead of returning errors
+    
+    move tcb/pcb out of control into a new folder
+    
+    double check readfile implementation (look at p2 kernel spec)
+    
+    exec strlen should fail fast
+    
+    run all tests
     
     readline
         keep two buffers, scancodes and chars
         process only if readline is active
         disable interrupts
     
-    clean up header files
-    move common.h functions into appropriate files
-
-    error handling
-        1. recoverable fault -> fix the problem
-        2. inform the user -> kill the thread / process
-        3. kill the kernel
-        
-        check for failure case in malloc calls
-        init/install should panic instead of returning errors
-    
-    sleep
-        switch to linked list variant
-        
     tests to write
         readline multithreaded
         print multithreaded
-
-    allocation still doesn't count frames
-    
-CURRENT:
-    1. finalize_exit and exec
-    2. rollforward sleep implementation
-    3. rollforward mutex implementation
-    
-    
+        
