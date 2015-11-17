@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <exec2obj.h>
-#include <loader.h>
 #include <elf_410.h>
 #include <simics.h>
 #include <cr.h>
@@ -30,6 +29,9 @@
 #define USER_STACK_SIZE PAGE_SIZE
 #define EXEC_MAX_BYTES (4 * PAGE_SIZE)
 #define MAGIC_NUMBER 0xDEAD1337
+
+static int user_exec(tcb_t* tcb, int flen, char* fname,
+                     int argc, char** argv, int arglen);
 
 /** @brief Get the length of all strings in the argv array
  *
@@ -471,8 +473,8 @@ int replace_process(tcb_t* tcb, void* k_space,
  *  @param arglen The number of characters in argv
  *  @return Zero on success, less than zero on failure
  **/
-int user_exec(tcb_t* tcb, int flen, char* fname,
-              int argc, char** argv, int arglen)
+static int user_exec(tcb_t* tcb, int flen, char* fname,
+                     int argc, char** argv, int arglen)
 {
     size_t flen_space = flen * sizeof(char);
     size_t argv_space = argc * sizeof(char*);

@@ -12,7 +12,6 @@
 #include <simics.h>
 #include <scheduler.h>
 #include <asm.h>
-#include <loader.h>
 #include <mode_switch.h>
 #include <stack_info.h>
 #include "scheduler_internal.h"

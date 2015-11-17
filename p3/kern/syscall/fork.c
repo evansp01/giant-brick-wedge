@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <malloc.h>
-#include <loader.h>
 #include <simics.h>
 #include <switch.h>
 #include <stdint.h>

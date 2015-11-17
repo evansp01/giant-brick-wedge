@@ -1,6 +1,5 @@
 #include <vm.h>
 #include <mutex.h>
-#include <common.h>
 #include <cr.h>
 #include "vm_internal.h"
 #include <stdlib.h>
