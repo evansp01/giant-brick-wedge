@@ -115,13 +115,12 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
 }
 
 void finalize_exit(tcb_t* tcb)
-{
-    // we only needed malloc to make sure our thread didn't have it
-    release_malloc();
+{   
     if(tcb->process != NULL){
         cleanup_process(tcb->process);
     }
     free_tcb(tcb);
+    release_malloc();
 }
 
 /** @brief Cleans up and kills a single thread

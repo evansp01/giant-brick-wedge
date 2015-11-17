@@ -56,9 +56,20 @@ void scheduler_pre_switch(tcb_t* from, tcb_t* to)
 void scheduler_post_switch()
 {
     tcb_t* switched_from = scheduler.switched_from;
+    tcb_t* switched_to = get_tcb();
     enable_interrupts();
     if (switched_from->state == EXITED) {
+        if (switched_to->id == 1) {
+            disable_interrupts();
+            add_runnable(switched_to);
+            enable_interrupts();
+        }
         finalize_exit(switched_from);
+        if (switched_to->id == 1) {
+            disable_interrupts();
+            remove_runnable(switched_to, NOT_YET);
+            enable_interrupts();
+        }
     }
 }
 
@@ -91,11 +102,13 @@ void switch_to_next(tcb_t* current, int schedule)
         }
 
         if (current->id != next->id) {
+            //lprintf("switching from %d to %d", current->id, next->id);
             context_switch(current, next);
         }
     } else {
         // no runnable threads, should run idle
         if (current->id != scheduler.idle->id) {
+            //lprintf("switching from %d to idle", current->id);
             context_switch(current, scheduler.idle);
         }
     }
@@ -116,6 +129,20 @@ void run_scheduler(uint32_t ticks)
     scheduler.ticks = ticks;
     schedule_sleepers(ticks);
     switch_to_next(get_tcb(), SCHEDULE_MODE);
+}
+
+/** @brief Schedules the thread to be run
+ *
+ *  @param tcb Pointer to tcb of thread to schedule
+ *  @return void
+ */
+int schedule_interrupts_disabled(tcb_t* tcb)
+{
+    if (tcb->state != SUSPENDED && tcb->state != NOT_YET) {
+        return -1;
+    }
+    add_runnable(tcb);
+    return 0;
 }
 
 /** @brief Schedules the thread to be run

@@ -11,16 +11,15 @@
 #include <mutex.h>
 #include <variable_queue.h>
 
-/** @brief A queue of waiting thread ids for condition variables */
-Q_NEW_HEAD(tid_list_t, tcb);
+/** @brief Structure for a list of threads */
+Q_NEW_HEAD(tcb_list_cond_t, tcb);
 
 /** @brief The structure for condition variables */
 typedef struct cond {
-    mutex_t m;
-    tid_list_t waiting;
+    tcb_list_cond_t waiting;
 } cond_t;
 
-int cond_init( cond_t *cv );
+void cond_init( cond_t *cv );
 void cond_destroy( cond_t *cv );
 void cond_wait( cond_t *cv, mutex_t *mp );
 void cond_signal( cond_t *cv );
