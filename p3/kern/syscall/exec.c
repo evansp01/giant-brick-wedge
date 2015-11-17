@@ -197,7 +197,17 @@ int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)
     if (vm_alloc_readwrite(dir, (void*)min_start, max_end - min_start) < 0) {
         return -1;
     }
-    if (vm_back(dir, min_start, max_end - min_start) < 0) {
+    //back the sections we will write to, leave the rest for zfod if possible
+    if (vm_back(dir, elf->e_txtstart, elf->e_txtlen) < 0) {
+        lprintf("text backing failed");
+        return -1;
+    }
+    if (vm_back(dir, elf->e_datstart, elf->e_datlen) < 0) {
+        lprintf("dat backing failed");
+        return -1;
+    }
+    if (vm_back(dir, elf->e_rodatstart, elf->e_rodatlen) < 0) {
+        lprintf("rodat backing failed");
         return -1;
     }
     getbytes(elf->e_fname, elf->e_txtoff,
@@ -294,7 +304,6 @@ int allocate_stack(ppd_t* ppd, uint32_t stack_low)
     }
     // only back what we will write to, leave the rest for zfod
     uint32_t stack_used = stack_size - USER_STACK_SIZE;
-    lprintf("%lx stack_size  %lx", stack_size, stack_used);
     return vm_back(ppd, stack_low + USER_STACK_SIZE, stack_used);
 }
 
