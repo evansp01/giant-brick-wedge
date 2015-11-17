@@ -67,7 +67,6 @@ void scheduler_pre_switch(tcb_t* from, tcb_t* to)
 void scheduler_post_switch()
 {
     tcb_t* switched_from = scheduler.switched_from;
-    tcb_t* switched_to = get_tcb();
     enable_interrupts();
     if (switched_from->state == T_EXITED) {
         finalize_exit(switched_from);
@@ -127,7 +126,7 @@ void run_scheduler(uint32_t ticks)
  */
 int schedule_interrupts_disabled(tcb_t* tcb)
 {
-    if (tcb->state != SUSPENDED && tcb->state != NOT_YET) {
+    if (tcb->state != T_SUSPENDED && tcb->state != T_NOT_YET) {
         return -1;
     }
     add_runnable(tcb);

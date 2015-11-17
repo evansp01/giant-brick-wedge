@@ -148,6 +148,7 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
  *  @return void
  **/
 void finalize_exit(tcb_t* tcb)
+{
     if(tcb->process != NULL){
         _cleanup_process(tcb->process);
     }
