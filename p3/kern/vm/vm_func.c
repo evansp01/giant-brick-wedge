@@ -331,12 +331,8 @@ int vm_back_h(entry_t* table, entry_t* dir, address_t addr)
     if (!is_user(table, dir)) {
         return -3;
     }
-    if (is_zfod(table)) {
-        if (is_write(table)) {
-            return alloc_frame(AS_TYPE(addr, void*), table, e_write_page);
-        } else {
-            return alloc_frame(AS_TYPE(addr, void*), table, e_read_page);
-        }
+    if (is_zfod(table) && is_write(table)) {
+        return alloc_frame(AS_TYPE(addr, void*), table, e_write_page);
     }
     return 0;
 }

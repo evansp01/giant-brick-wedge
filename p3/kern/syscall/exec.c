@@ -336,9 +336,10 @@ int allocate_stack(ppd_t* ppd, uint32_t stack_low)
     if (vm_alloc_readwrite(ppd, (void*)stack_low, stack_size) < 0) {
         return -1;
     }
-    // might as well allocate the whole stack, the user part is only a page,
-    // and will be used as soon as the program enters usermode
-    return vm_back(ppd, stack_low, stack_size);
+    // back only the first page of the user stack
+    uint32_t stack_offset = stack_low + USER_STACK_SIZE - PAGE_SIZE;
+    uint32_t stack_space = stack_size - USER_STACK_SIZE + PAGE_SIZE;
+    return vm_back(ppd, stack_offset, stack_space);
 }
 
 /** @brief Popualte an elf structure with a program
