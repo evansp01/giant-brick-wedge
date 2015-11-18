@@ -169,6 +169,33 @@ void copy_alloc(alloc_t* to, alloc_t* from)
     to->size = from->size;
 }
 
+
+int copy_alloc_list(ppd_t *to, ppd_t *from)
+{
+   alloc_t* alloc;
+   alloc_t *tmp;
+    Q_FOREACH(alloc, &from->allocations, list)
+    {
+        alloc_t* copy = malloc(sizeof(alloc_t));
+        Q_INIT_ELEM(copy, list);
+        if (copy == NULL) {
+            goto free_list_and_return;
+        }
+        copy_alloc(copy, alloc);
+        Q_INSERT_TAIL(&to->allocations, copy, list);
+    }
+    return 0;
+free_list_and_return:
+    Q_FOREACH_SAFE(alloc, tmp, &to->allocations, list)
+    {
+        Q_REMOVE(&to->allocations, alloc, list);
+        free(alloc);
+
+    }
+    return -1;
+
+}
+
 /** @brief Initialize a ppd by copying all contents of another ppd
  *
  *  @param ppd The ppd to initialize
@@ -177,7 +204,6 @@ void copy_alloc(alloc_t* to, alloc_t* from)
  **/
 ppd_t* init_ppd_from(ppd_t* from)
 {
-    //TODO: This function has memory leaks ;(
     // create inital ppd
     ppd_t* ppd = init_ppd();
     if (ppd == NULL) {
@@ -185,19 +211,11 @@ ppd_t* init_ppd_from(ppd_t* from)
     }
     ppd->frames = from->frames;
     //copy over list of allocations
-    alloc_t* alloc;
-    Q_FOREACH(alloc, &from->allocations, list)
-    {
-        alloc_t* copy = malloc(sizeof(alloc_t));
-        Q_INIT_ELEM(copy, list);
-        if (copy == NULL) {
-            free(ppd);
-            return NULL;
-        }
-        copy_alloc(copy, alloc);
-        Q_INSERT_TAIL(&ppd->allocations, copy, list);
+    if(copy_alloc_list(ppd, from) < 0){
+        free_ppd_kernel_mem(ppd);
+        return NULL;
     }
-    // swap to kernel ppd for copying
+        // swap to kernel ppd for copying
     page_directory_t* from_dir = from->dir;
     //temporarily use identity mapping
     from->dir = virtual_memory.identity;
@@ -206,6 +224,7 @@ ppd_t* init_ppd_from(ppd_t* from)
     from->dir = from_dir;
     switch_ppd(from);
     if (status < 0) {
+        free_ppd(ppd, from);
         return NULL;
     } else {
         return ppd;
