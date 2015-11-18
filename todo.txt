@@ -9,8 +9,6 @@ Stuff to do:
     mutexes and cvar states
     get rid of atomic functions
     
-    
-
     different states for threads suspended by user and by kernel
 
     fast mutexes (disable/enable interrupts) --> multithreaded
@@ -32,6 +30,8 @@ Stuff to do:
     double check readfile implementation (look at p2 kernel spec)
     
     exec strlen should fail fast
+    
+    change lprintf to also printf to console (non-simics functionality)
     
     run all tests
     

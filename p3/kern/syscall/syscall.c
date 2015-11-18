@@ -192,12 +192,10 @@ void new_pages_syscall(ureg_t state)
         goto return_fail;
     }
     mutex_unlock(&ppd->lock);
-    lprintf("New pages suceeded %lx %lx", args.start, args.size);
     state.eax = 0;
     return;
 
 return_fail:
-    lprintf("New pages failed %lx %lx", args.start, args.size);
     mutex_unlock(&ppd->lock);
     state.eax = -1;
     return;
