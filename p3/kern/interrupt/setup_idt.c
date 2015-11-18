@@ -52,7 +52,7 @@ void install_exceptions()
     set_idt_exception(INT_ASM(IDT_NP), TRAP, IDT_NP);
     set_idt_exception(INT_ASM(IDT_SS), TRAP, IDT_SS);
     set_idt_exception(INT_ASM(IDT_GP), TRAP, IDT_GP);
-    set_idt_exception(INT_ASM(IDT_PF), TRAP, IDT_PF);
+    set_idt_exception(INT_ASM(IDT_PF), INTERRUPT, IDT_PF);
     set_idt_exception(INT_ASM(IDT_MF), TRAP, IDT_MF);
     set_idt_exception(INT_ASM(IDT_AC), TRAP, IDT_AC);
     set_idt_exception(INT_ASM(IDT_MC), TRAP, IDT_MC);

@@ -21,6 +21,7 @@
 #include <common_kern.h>
 #include <syscall_kern.h>
 #include <seg.h>
+#include <asm.h>
 
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {
@@ -37,6 +38,9 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     int vm_status;
     state->cr2 = get_cr2();
+    // page fault is an interrupt gate, so we must reenable interrupts
+    // after we get the fault
+    enable_interrupts();
     ppd_t* ppd = tcb->process->directory;
     mutex_lock(&ppd->lock);
     vm_status = vm_resolve_pagefault(ppd, state->cr2, state->error_code);
