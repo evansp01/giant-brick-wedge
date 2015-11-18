@@ -1,4 +1,4 @@
-/** @file console.c 
+/** @file console.c
  *  @brief Implementation of the console device driver
  *
  *  @author Jonathan Ong (jonathao)

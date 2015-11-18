@@ -354,4 +354,4 @@
  **/
 #define Q_IS_EMPTY(Q_HEAD) \
     ((*Q_HEAD).head == NULL)
-    
+

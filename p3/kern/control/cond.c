@@ -47,7 +47,6 @@ void cond_destroy(cond_t* cv)
 void cond_wait(cond_t* cv, mutex_t* mp)
 {
     tcb_t *tcb = get_tcb();
-    Q_INIT_ELEM(tcb, suspended_threads);
     disable_interrupts();
     Q_INSERT_TAIL(&cv->waiting, tcb, suspended_threads);
     scheduler_mutex_unlock(mp);

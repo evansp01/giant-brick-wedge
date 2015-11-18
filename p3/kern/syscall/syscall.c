@@ -234,7 +234,7 @@ void readline_syscall(ureg_t state)
         state.eax = 0;
         return;
     }
-    
+
     // Error: len is unreasonable
     if ((arg->len > MAX_LEN)||(arg->len < 0)) {
         state.eax = -1;
@@ -245,11 +245,11 @@ void readline_syscall(ureg_t state)
         state.eax = -2;
         return;
     }
-    
+
     mutex_lock(&sysvars.read_mutex);
     int num_bytes = readline(arg->len, arg->buf, tcb);
     mutex_unlock(&sysvars.read_mutex);
-    
+
     state.eax = num_bytes;
 }
 
@@ -278,7 +278,7 @@ void print_syscall(ureg_t state)
         int len;
         char *buf;
     } args;
-    
+
     if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
         state.eax = -1;
         return;
@@ -443,7 +443,7 @@ int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
                 uint32_t eflags)
 {
     ppd_t *ppd = &tcb->process->directory;
-    
+
     // Error: Provided eip and/or esp3 are unreasonable
     if ((eip != 0)&&(esp != 0)) {
         // Check that eip is user read memory
@@ -455,7 +455,7 @@ int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
             return -2;
         }
     }
-    
+
     // Error: Provided register values are unreasonable
     if (regs != NULL) {
         // Check that newureg is in user memory
@@ -492,7 +492,7 @@ void swexn_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
     ppd_t *ppd = &tcb->process->directory;
-    
+
     struct {
         void *esp3;
         swexn_handler_t eip;
@@ -512,18 +512,18 @@ void swexn_syscall(ureg_t state)
         state.eax = -1;
         return;
     }
-    
+
     // Deregister handler if one is registered
     if ((args.esp3 == 0)||(args.eip == 0)) {
         deregister_swexn(tcb);
     }
-    
+
     // Register a new software exception handler
     else {
         uint32_t stack = (uint32_t)args.esp3 - sizeof(void *);
         register_swexn(tcb, args.eip, args.arg, (void *)stack);
     }
-    
+
     // Adopt specific register values
     if (args.newureg != NULL) {
         state = *(args.newureg);

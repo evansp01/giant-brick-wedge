@@ -103,7 +103,7 @@ void switch_to_next(tcb_t* current, int schedule)
 }
 
 /** @brief Runs the next thread in the runnable queue
- *  
+ *
  *  Interrupts need to be disabled since run_next() can be called in yield()
  *  and not just from within the scheduler.
  *
@@ -149,7 +149,7 @@ int schedule(tcb_t* tcb)
 }
 
 /** @brief Deschedules the current thread
- *  
+ *
  *  Runs the next thread without re-scheduling the current thread
  *
  *  @return void

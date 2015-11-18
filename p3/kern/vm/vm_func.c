@@ -219,7 +219,7 @@ int vm_user_arrlen(ppd_t* ppd, char** start)
     }
 }
 
-/** @brief A vm_operator to determine if pages are user writeable 
+/** @brief A vm_operator to determine if pages are user writeable
  *
  *  @param table The table entry for the current page
  *  @param dir The directory entry for the current page
@@ -373,7 +373,7 @@ int vm_free_alloc_h(entry_t* table, entry_t* dir, address_t addr)
 }
 
 /** @brief Can a user write to a given set of addresses
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check
@@ -385,7 +385,7 @@ int vm_user_can_write(ppd_t* ppd, void* start, uint32_t size)
 }
 
 /** @brief Can a user read from a given set of addresses
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check
@@ -397,7 +397,7 @@ int vm_user_can_read(ppd_t* ppd, void* start, uint32_t size)
 }
 
 /** @brief Set a group of user pages to be user readable and writable
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check
@@ -409,7 +409,7 @@ int vm_set_readwrite(ppd_t* ppd, void* start, uint32_t size)
 }
 
 /** @brief Set a group of user pages to be user read only
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check
@@ -421,7 +421,7 @@ int vm_set_readonly(ppd_t* ppd, void* start, uint32_t size)
 }
 
 /** @brief Safely read from user memory to a kernel buffer using the ppd lock
- *  
+ *
  *  @param ppd The user page directory
  *  @param buffer The buffer to read to
  *  @param start The start address
@@ -437,7 +437,7 @@ int vm_read_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size)
 }
 
 /** @brief Safely read from user memory to a kernel buffer
- *  
+ *
  *  @param ppd The user page directory
  *  @param buffer The buffer to read to
  *  @param start The start address
@@ -454,7 +454,7 @@ int vm_read(ppd_t* ppd, void* buffer, void* start, uint32_t size)
 }
 
 /** @brief Safely write from a kernel buffer to user memory using the ppd lock
- *  
+ *
  *  @param ppd The user page directory
  *  @param buffer The buffer to write from
  *  @param start The start address
@@ -470,7 +470,7 @@ int vm_write_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size)
 }
 
 /** @brief Safely write from a kernel buffer to user memory
- *  
+ *
  *  @param ppd The user page directory
  *  @param buffer The buffer to write from
  *  @param start The start address
@@ -491,7 +491,7 @@ int vm_write(ppd_t* ppd, void* buffer, void* start, uint32_t size)
 }
 
 /** @brief Allocate a section of userspace memory using zfod
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check
@@ -519,7 +519,7 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
 }
 
 /** @brief Back an allocated section of userspace memory with physical pages
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check
@@ -531,7 +531,7 @@ int vm_back(ppd_t* ppd, uint32_t start, uint32_t size)
 }
 
 /** @brief Free a previously allocated a section of userspace memory
- *  
+ *
  *  @param ppd The user page directory
  *  @param start The start address
  *  @param size The size of the section to check

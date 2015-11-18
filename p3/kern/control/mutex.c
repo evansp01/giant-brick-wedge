@@ -5,7 +5,7 @@
  *  @author Evan Palmer (esp)
  *  @bug No known bugs
  **/
- 
+
 #include <mutex.h>
 #include <atomic.h>
 #include <stdlib.h>
@@ -68,7 +68,7 @@ void mutex_lock(mutex_t* mp)
 {
     if (initialized) {
         tcb_t *tcb = get_tcb();
-    
+
         disable_interrupts();
         mp->count--;
         if (mp->count < 0) {
@@ -93,18 +93,19 @@ void mutex_unlock(mutex_t* mp)
         if (mp->count == 1 && mp->owner == UNSPECIFIED) {
             panic("cannot unlock kernel mutex which is destroyed or not owned");
         }
-        
+
         disable_interrupts();
-        
+
         mp->owner = UNSPECIFIED;
         mp->count++;
-        
+
         // wake the next thread up
         if (!Q_IS_EMPTY(&mp->waiting)) {
             tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
             Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
             schedule_interrupts_disabled(tcb_to_schedule);
-        
+        }
+
         enable_interrupts();
     }
 }
@@ -123,10 +124,10 @@ void scheduler_mutex_unlock(mutex_t* mp)
         if (mp->count == 1 && mp->owner == UNSPECIFIED) {
             panic("cannot unlock kernel mutex which is destroyed or not owned");
         }
-        
+
         mp->owner = UNSPECIFIED;
         mp->count++;
-        
+
         // wake the next thread up
         if (!Q_IS_EMPTY(&mp->waiting)) {
             tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);

@@ -82,7 +82,7 @@ void install_syscalls()
 
     set_idt_syscall(NAME_ASM(new_pages_syscall), NEW_PAGES_INT);
     set_idt_syscall(NAME_ASM(remove_pages_syscall), REMOVE_PAGES_INT);
-    
+
     set_idt_syscall(NAME_ASM(getchar_syscall), GETCHAR_INT);
     set_idt_syscall(NAME_ASM(readline_syscall), READLINE_INT);
     set_idt_syscall(NAME_ASM(print_syscall), PRINT_INT);

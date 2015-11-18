@@ -12,7 +12,7 @@
 #include <scheduler.h>
 #include <control.h>
 #include <interrupt_defines.h>
-#include <timer_defines.h> 
+#include <timer_defines.h>
 
 #define TIMER_INTERRUPT_FREQUENCY 1000
 

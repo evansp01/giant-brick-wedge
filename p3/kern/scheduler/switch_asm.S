@@ -4,7 +4,7 @@
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
  **/
- 
+
 .global switch_stack_and_regs
 switch_stack_and_regs:
     pusha                   # save registers

@@ -12,7 +12,7 @@
 
 /** @brief Structure for a list of threads */
 Q_NEW_HEAD(tcb_list_t, tcb);
-    
+
 /** @brief Struct for mutexes */
 typedef struct mutex {
     volatile int owner;

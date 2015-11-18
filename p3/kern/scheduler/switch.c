@@ -33,7 +33,7 @@ typedef struct context_stack {
 
 /** @brief Stores the saved_esp into the tcb
  *
- *  @param addr Stack address of 
+ *  @param addr Stack address of
  *  @param tcb Pointer to tcb
  *  @return void
  **/

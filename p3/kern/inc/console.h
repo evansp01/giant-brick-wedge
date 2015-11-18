@@ -104,7 +104,7 @@ void get_cursor(int* row, int* col);
 void hide_cursor();
 
 /** @brief Shows the cursor.
- *  
+ *
  *  If the cursor is already shown, the function has no effect.
  *
  *  @return Void.

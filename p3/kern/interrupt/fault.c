@@ -59,7 +59,7 @@ void fault_handler(ureg_t state)
     if(state.cs == SEGSEL_KERNEL_CS){
         panic("Thread crashed in kernel space");
     }
-    
+
     switch (state.cause) {
     //page faults
     case IDT_PF:

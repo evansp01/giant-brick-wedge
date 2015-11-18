@@ -3,7 +3,7 @@
  *
  *  @author Ryan Pearl <rpearl>
  *  Updated by Evan Palmer (esp)
- *  
+ *
  */
 
 // TODO: Add more tests for VQ

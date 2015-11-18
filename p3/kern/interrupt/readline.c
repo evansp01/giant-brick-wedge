@@ -1,12 +1,12 @@
 /** @file readline.c
  *
  *  @brief Keyboard interrupt handler and code to handle readline requests
- *  
+ *
  *  @author Evan Palmer (esp)
  *  @author Jonathan Ong (jonathao)
  *  @bug No known bugs
  **/
- 
+
 #include <stdlib.h>
 #include <control.h>
 #include <asm.h>
@@ -66,7 +66,7 @@ static int is_readline()
 }
 
 /** @brief Processes a single scancode into a character
- *  
+ *
  *  @param scancode Scancode to be processed
  *  @return processed character on success, -1 on failure
  *  */
@@ -150,20 +150,20 @@ void keyboard_interrupt(ureg_t state)
  *  This function will block if there are less than 'len' characters in the
  *  buffer, and there are no newline characters. The keyboard interrupt handler
  *  will re-schedule the thread once either condition is met.
- *  
+ *
  *  @param len Length of user buffer
  *  @param buf User buffer to copy characters into
  *  @return number of characters copied into the user buffer
  *  */
 int readline(int len, char *buf, tcb_t *tcb)
-{   
+{
     if ((keyboard.num_chars < len)&&(keyboard.num_newlines == 0)) {
         keyboard.user_buf_len = len;
         keyboard.readline_thread = tcb;
         // deschedule until a new line is available
         deschedule(tcb);
     }
-    
+
     // Copy characters from keyboard buffer to user buffer
     int i;
     for (i = 0; i < len; i++) {

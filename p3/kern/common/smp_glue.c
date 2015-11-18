@@ -10,7 +10,7 @@
  *
  *   This file is included for completeness (having a tss_desc_create()
  *   function is necessary to link against libsmp) but YOU ARE NOT EXPECTED
- *   TO ACTUALLY USE IT unless it is the Spring semester of 2012.  JUST 
+ *   TO ACTUALLY USE IT unless it is the Spring semester of 2012.  JUST
  *   PRETEND YOU NEVER SAW IT HERE.  If you have any questions about why
  *   it is here, DELETE IT BEFORE ASKING, at which point you will be asking
  *   a question about a file that does not exist, which is unlikely to be

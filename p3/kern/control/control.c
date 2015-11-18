@@ -34,7 +34,7 @@ void init_kernel_state()
 }
 
 /** @brief Gives the next available process/thread id number
- *  
+ *
  *  Note this does not take wrapping into account
  *
  *  @return Next sequential id
@@ -91,7 +91,7 @@ void pcb_add_thread(pcb_t* pcb, tcb_t* tcb)
  *
  *  @param pcb The process to remove the thread from
  *  @param tcb The thread to remove
- *  @return The number of threads remaining in the process 
+ *  @return The number of threads remaining in the process
  **/
 int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb)
 {

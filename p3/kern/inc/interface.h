@@ -4,7 +4,7 @@
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  **/
- 
+
 #ifndef INTERFACE_H_
 #define INTERFACE_H_
 
@@ -35,12 +35,12 @@
 /** @def INIT_STRUCT(STRUCT)
  *
  *  @brief Initializes the data structure for use.
- *  
+ *
  *  @param STRUCT Pointer to the data structure
  **/
 #define INIT_STRUCT(STRUCT) \
     Q_INIT_HEAD(STRUCT)
-    
+
 /** @def INIT_ELEM(ELEM, LINK_NAME)
  *
  *  @brief Initializes the link named LINK_NAME in an instance of the structure
@@ -77,4 +77,4 @@
     Q_REMOVE(STRUCT, ELEM, LINK_NAME)
 
 #endif // INTERFACE_H_
-    
+
