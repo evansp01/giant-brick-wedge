@@ -7,6 +7,7 @@
 #include <control.h>
 #include <asm.h>
 #include <malloc_internal.h>
+#include <assert.h>
 
 /** @brief Initialize a process page directory
  *
@@ -19,7 +20,6 @@ ppd_t* init_ppd()
     if (ppd == NULL) {
         return NULL;
     }
-    ppd->frames = 0;
     Q_INIT_HEAD(&ppd->allocations);
     mutex_init(&ppd->lock);
     if ((ppd->dir = alloc_page_directory()) == NULL) {
@@ -204,18 +204,18 @@ free_list_and_return:
  **/
 ppd_t* init_ppd_from(ppd_t* from)
 {
+    assert(get_tcb()->process->directory == from);
     // create inital ppd
     ppd_t* ppd = init_ppd();
     if (ppd == NULL) {
         return NULL;
     }
-    ppd->frames = from->frames;
     //copy over list of allocations
     if(copy_alloc_list(ppd, from) < 0){
         free_ppd_kernel_mem(ppd);
         return NULL;
     }
-        // swap to kernel ppd for copying
+    // swap to kernel ppd for copying
     page_directory_t* from_dir = from->dir;
     //temporarily use identity mapping
     from->dir = virtual_memory.identity;

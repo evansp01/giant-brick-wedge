@@ -453,7 +453,7 @@ int replace_process(tcb_t* tcb, void* k_space,
         ppd_t *tmp = pcb->directory;
         pcb->directory = old_dir;
         free_ppd(tmp, pcb->directory);
-        switch_ppd(old_dir);
+        switch_ppd(pcb->directory);
     } else {
         // De-register the previously running process in simics
         sim_unreg_process(old_dir->dir);
