@@ -326,8 +326,6 @@ uint32_t stack_space(int argvlen, int argc)
 
 /** @brief Allocate the stack for a new program
  *
- *  This function will attempt to leave the user stack space zfod allocated
- *
  *  @param ppd The ppd of the process
  *  @param stack_low The lowest address of the stack to be allocated
  *  @return Zero on success, less than zero on failure
@@ -338,9 +336,9 @@ int allocate_stack(ppd_t* ppd, uint32_t stack_low)
     if (vm_alloc_readwrite(ppd, (void*)stack_low, stack_size) < 0) {
         return -1;
     }
-    // only back what we will write to, leave the rest for zfod
-    uint32_t stack_used = stack_size - USER_STACK_SIZE;
-    return vm_back(ppd, stack_low + USER_STACK_SIZE, stack_used);
+    // might as well allocate the whole stack, the user part is only a page,
+    // and will be used as soon as the program enters usermode
+    return vm_back(ppd, stack_low, stack_size);
 }
 
 /** @brief Popualte an elf structure with a program
