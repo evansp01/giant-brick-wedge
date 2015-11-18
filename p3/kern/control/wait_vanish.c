@@ -12,7 +12,7 @@
  **/
 void _cleanup_process(pcb_t *pcb)
 {
-    _free_ppd_kernel_mem(&pcb->directory);
+    _free_ppd_kernel_mem(pcb->directory);
     _free_pcb(pcb);
 }
 
@@ -55,7 +55,7 @@ int wait(pcb_t* pcb, int *status_ptr)
     int status = child->exit_status;
     int pid = child->id;
     if(status_ptr != NULL){
-        ppd_t *ppd = &pcb->directory;
+        ppd_t *ppd = pcb->directory;
         if(vm_write_locked(ppd, &status,(uint32_t)status_ptr,
                            sizeof(int)) < 0){
             mutex_unlock(&pcb->children_mutex);
@@ -117,7 +117,7 @@ pcb_t *thread_exit(tcb_t *tcb, int failed)
     }
     //We are cleaning up the last thread
     //first deallocate the user memory, we don't need it
-    free_ppd_user_mem(&process->directory);
+    free_ppd_user_mem(process->directory);
     //now we want to see what our parent has to say
     mutex_lock(&process->parent_mutex);
     //notify all children that you are exited

@@ -51,8 +51,8 @@ void swexn_handler(ureg_t* state, tcb_t* tcb)
     swexn_stack.ureg = (void *)((uint32_t)swexn.stack - sizeof(ureg_t));
     swexn_stack.state = *state;
     void *start = (void *)((uint32_t)swexn.stack - sizeof(swexn_stack_t));
-    vm_write(&tcb->process->directory, &swexn_stack, start,
-        sizeof(swexn_stack_t));
+    vm_write_locked(tcb->process->directory, &swexn_stack, (uint32_t)start,
+                    sizeof(swexn_stack_t));
 
     // Setup context to switch to exception handler
     void *new_esp = create_context((uint32_t)tcb->kernel_stack,

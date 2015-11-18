@@ -70,7 +70,7 @@ typedef struct pcb {
     // Other things
     int id;
     int exit_status;
-    ppd_t directory;
+    ppd_t *directory;
     process_state_t state;
 } pcb_t;
 

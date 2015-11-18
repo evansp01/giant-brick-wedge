@@ -71,7 +71,7 @@ void exec_syscall(ureg_t state)
         state.eax = -1;
         return;
     }
-    ppd_t* dir = &tcb->process->directory;
+    ppd_t* dir = tcb->process->directory;
     if (vm_read(dir, &packet, (void*)state.esi, sizeof(packet)) < 0) {
         state.eax = -1;
         return;
@@ -370,13 +370,13 @@ int load_process(tcb_t* tcb, simple_elf_t* elf,
                  int argc, char** argv, int arglen)
 {
     pcb_t* pcb = tcb->process;
-    switch_ppd(&pcb->directory);
-    if (create_proc_pagedir(elf, &pcb->directory) < 0) {
+    switch_ppd(pcb->directory);
+    if (create_proc_pagedir(elf, pcb->directory) < 0) {
         return -1;
     }
     uint32_t stack_low = STACK_HIGH - stack_space(arglen, argc);
     stack_low = page_align(stack_low);
-    if (allocate_stack(&pcb->directory, stack_low) < 0) {
+    if (allocate_stack(pcb->directory, stack_low) < 0) {
         return -1;
     }
     uint32_t stack_entry = setup_main_stack(argc, argv, arglen, stack_low);
@@ -408,7 +408,8 @@ tcb_t* new_program(char* fname, int argc, char** argv)
         panic("Cannot load elf for required program %s", fname);
     }
     pcb_t* pcb = tcb->process;
-    if (init_ppd(&pcb->directory) < 0) {
+    pcb->directory = init_ppd();
+    if (pcb->directory == NULL) {
         panic("Cannot create pcb for required program %s", fname);
     }
     if (load_process(tcb, &elf, argc, argv, argspace) < 0) {
@@ -417,7 +418,7 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     // Add the newly created thread to the thread list
     kernel_add_thread(tcb);
     // Register process for simics user space debugging
-    sim_reg_process(tcb->process->directory.dir, fname);
+    sim_reg_process(tcb->process->directory->dir, fname);
     return tcb;
 }
 
@@ -438,26 +439,27 @@ int replace_process(tcb_t* tcb, void* k_space,
         return -1;
     }
     pcb_t* pcb = tcb->process;
-    ppd_t old_dir = pcb->directory;
-    if (init_ppd(&pcb->directory) < 0) {
-        pcb->directory = old_dir;
+    ppd_t *new = init_ppd();
+    if (new == NULL) {
         return -1;
     }
+    //save the old directory in case we want to revert
+    ppd_t* old_dir = pcb->directory;
+    pcb->directory = new;
+    //switches to new directory;
     int status = load_process(tcb, &elf, argc, k_argv, arglen);
     if (status < 0) {
         // if we failed make sure to restore the old page directory
-        ppd_t tmp = pcb->directory;
+        ppd_t *tmp = pcb->directory;
         pcb->directory = old_dir;
-        free_ppd(&tmp, &pcb->directory);
-        // re initialize mutex since it was copied
-        mutex_init(&tcb->process->directory.lock);
-        switch_ppd(&old_dir);
+        free_ppd(tmp, pcb->directory);
+        switch_ppd(old_dir);
     } else {
         // De-register the previously running process in simics
-        sim_unreg_process(old_dir.dir);
-        sim_reg_process(pcb->directory.dir, k_space);
+        sim_unreg_process(old_dir->dir);
+        sim_reg_process(pcb->directory->dir, k_space);
         //if we succeeded free the old directory
-        free_ppd(&old_dir, &pcb->directory);
+        free_ppd(old_dir, pcb->directory);
     }
     return status;
 }

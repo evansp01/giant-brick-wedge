@@ -145,7 +145,7 @@ tcb_t* create_pcb_entry()
     entry->num_threads = 0;
     entry->id = get_next_id();
     entry->exit_status = 0;
-    // TODO; this is strange
+    entry->directory = NULL;
     entry->state = P_ACTIVE;
 
     // create first process

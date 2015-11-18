@@ -13,15 +13,20 @@
  *  @param ppd A pointer to the directory to initialize
  *  @return Zero on success, less than zero on failure
  **/
-int init_ppd(ppd_t* ppd)
+ppd_t* init_ppd()
 {
+    ppd_t* ppd = malloc(sizeof(ppd_t));
+    if (ppd == NULL) {
+        return NULL;
+    }
     ppd->frames = 0;
     Q_INIT_HEAD(&ppd->allocations);
     mutex_init(&ppd->lock);
     if ((ppd->dir = alloc_page_directory()) == NULL) {
-        return -1;
+        free(ppd);
+        return NULL;
     }
-    return 0;
+    return ppd;
 }
 
 /** @brief Record an allocation to this ppd
@@ -95,7 +100,7 @@ void free_ppd_user_mem(ppd_t* to_free)
 void _free_ppd_kernel_mem(ppd_t* to_free)
 {
     int i;
-    page_directory_t *dir = to_free->dir;
+    page_directory_t* dir = to_free->dir;
     for (i = 0; i < TABLES_PER_DIR; i++) {
         // Check if it is a present user directory entry
         entry_t* dir_entry = &dir->tables[i];
@@ -113,13 +118,13 @@ void _free_ppd_kernel_mem(ppd_t* to_free)
  *  @param to_free The ppd to free
  *  @return void
  **/
-void free_ppd_kernel_mem(ppd_t *to_free){
+void free_ppd_kernel_mem(ppd_t* to_free)
+{
     acquire_malloc();
     _free_ppd_kernel_mem(to_free);
+    _free(to_free);
     release_malloc();
 }
-
-
 
 /** @brief Free all memory associated with a ppd
  *
@@ -170,11 +175,13 @@ void copy_alloc(alloc_t* to, alloc_t* from)
  *  @param from The ppd to copy during initialization
  *  @return Zero on success, less than zero on failure
  **/
-int init_ppd_from(ppd_t* ppd, ppd_t* from)
+ppd_t* init_ppd_from(ppd_t* from)
 {
+    //TODO: This function has memory leaks ;(
     // create inital ppd
-    if (init_ppd(ppd) < 0) {
-        return -1;
+    ppd_t* ppd = init_ppd();
+    if (ppd == NULL) {
+        return NULL;
     }
     ppd->frames = from->frames;
     //copy over list of allocations
@@ -184,7 +191,8 @@ int init_ppd_from(ppd_t* ppd, ppd_t* from)
         alloc_t* copy = malloc(sizeof(alloc_t));
         Q_INIT_ELEM(copy, list);
         if (copy == NULL) {
-            return -1;
+            free(ppd);
+            return NULL;
         }
         copy_alloc(copy, alloc);
         Q_INSERT_TAIL(&ppd->allocations, copy, list);
@@ -197,5 +205,9 @@ int init_ppd_from(ppd_t* ppd, ppd_t* from)
     int status = copy_page_dir(ppd->dir, from_dir);
     from->dir = from_dir;
     switch_ppd(from);
-    return status;
+    if (status < 0) {
+        return NULL;
+    } else {
+        return ppd;
+    }
 }

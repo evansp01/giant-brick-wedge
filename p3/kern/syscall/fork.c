@@ -126,16 +126,18 @@ static int copy_process(tcb_t* tcb_parent, ureg_t* state)
     if (tcb_child == NULL) {
         return -1;
     }
+    pcb_t *child = tcb_child->process;
+
     // Copy memory regions
-    if (init_ppd_from(&tcb_child->process->directory, &pcb_parent->directory)) {
-        pcb_t* proc = tcb_child->process;
+    child->directory = init_ppd_from(pcb_parent->directory);
+    if (child->directory == NULL) {
         free_tcb(tcb_child);
-        free_pcb(proc);
+        free_pcb(child);
         return -1;
     }
     pcb_add_child(pcb_parent, tcb_child->process);
     // Register child process for simics user space debugging
-    sim_reg_child(tcb_child->process->directory.dir, pcb_parent->directory.dir);
+    sim_reg_child(child->directory->dir, pcb_parent->directory->dir);
     copy_thread(tcb_child, tcb_parent, state);
     return tcb_child->process->id;
 }

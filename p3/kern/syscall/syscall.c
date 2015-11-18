@@ -176,7 +176,7 @@ void new_pages_syscall(ureg_t state)
     } args;
 
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
     mutex_lock(&ppd->lock);
     if(vm_read(ppd, &args, (void *)state.esi, sizeof(args)) < 0){
         goto return_fail;
@@ -208,7 +208,7 @@ return_fail:
 void remove_pages_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
     mutex_lock(&ppd->lock);
     int result = vm_free(ppd, (void*)state.esi);
     mutex_unlock(&ppd->lock);
@@ -222,7 +222,7 @@ void remove_pages_syscall(ureg_t state)
 void readline_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
     typedef struct args {
         int len;
         char *buf;
@@ -271,7 +271,7 @@ void getchar_syscall(ureg_t state)
 void print_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
     struct {
         int len;
         char *buf;
@@ -320,7 +320,7 @@ void set_term_color_syscall(ureg_t state)
  */
 void set_cursor_pos_syscall(ureg_t state)
 {
-    ppd_t *ppd = &get_tcb()->process->directory;
+    ppd_t *ppd = get_tcb()->process->directory;
     struct {
         int row;
         int col;
@@ -339,7 +339,7 @@ void set_cursor_pos_syscall(ureg_t state)
 void get_cursor_pos_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
     struct {
         uint32_t row;
         uint32_t col;
@@ -379,7 +379,7 @@ void halt_syscall(ureg_t state)
 void readfile_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
     struct {
         char *filename;
         char *buf;
@@ -440,7 +440,7 @@ void misbehave_syscall(ureg_t state)
 int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
                 uint32_t eflags)
 {
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
 
     // Error: Provided eip and/or esp3 are unreasonable
     if ((eip != 0)&&(esp != 0)) {
@@ -489,7 +489,7 @@ int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
 void swexn_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = &tcb->process->directory;
+    ppd_t *ppd = tcb->process->directory;
 
     struct {
         void *esp3;
