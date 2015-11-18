@@ -67,8 +67,9 @@ void scheduler_pre_switch(tcb_t* from, tcb_t* to)
 void scheduler_post_switch()
 {
     tcb_t* switched_from = scheduler.switched_from;
+    thread_state_t state = switched_from->state;
     enable_interrupts();
-    if (switched_from->state == T_EXITED) {
+    if (state == T_EXITED) {
         finalize_exit(switched_from);
     }
 }
