@@ -33,6 +33,25 @@ void init_kernel_state()
     mutex_init(&kernel_state.threads_mutex);
 }
 
+
+/** @brief Record the init process in the kernel state for later use
+ *
+ *  @param tcb The tcb of the init process
+ *  @return void
+ **/
+void regiser_init_process(tcb_t *tcb)
+{
+    kernel_state.init = tcb;
+}
+
+/** @brief Get the init process
+ *  @return The init process tcb
+ **/
+tcb_t* get_init()
+{
+    return kernel_state.init;
+}
+
 /** @brief Gives the next available process/thread id number
  *
  *  Note this does not take wrapping into account
@@ -106,19 +125,20 @@ int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb)
 
 /** @brief Add a child process to the parent process's list of children
  *
+ *  Note that this only holds the parent lock. The user can decide if the
+ *  child's parent lock needs to be held
+ *
  *  @param parent The parent process
  *  @param child The child process
  *  @return void
  **/
 void pcb_add_child(pcb_t* parent, pcb_t* child)
 {
-    mutex_lock(&child->parent_mutex);
     mutex_lock(&parent->children_mutex);
-    Q_INSERT_TAIL(&parent->children, child, siblings);
     child->parent = parent;
+    Q_INSERT_TAIL(&parent->children, child, siblings);
     parent->num_children++;
     mutex_unlock(&parent->children_mutex);
-    mutex_unlock(&child->parent_mutex);
 }
 
 /** @brief Creates a new pcb for a process and creates a tcb for the first

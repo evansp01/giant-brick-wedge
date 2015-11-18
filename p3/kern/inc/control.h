@@ -85,6 +85,7 @@ typedef struct tcb {
     pcb_t *process;
     void *kernel_stack;
     void *saved_esp;
+    ppd_t *free_pointer;
     thread_state_t state;
     swexn_t swexn;
     unsigned int wake_tick;
@@ -96,11 +97,14 @@ typedef struct kernel_state {
     tcb_ds_t threads;
     mutex_t next_id_mutex;
     int next_id;
+    tcb_t *init;
 } kernel_state_t;
 
 // Headers regarding create process
 kernel_state_t *get_kernel_state();
 void init_kernel_state();
+tcb_t* get_init();
+void regiser_init_process(tcb_t *tcb);
 tcb_t *create_pcb_entry();
 void free_pcb(pcb_t* pcb);
 void _free_pcb(pcb_t* pcb);

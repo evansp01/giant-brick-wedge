@@ -170,11 +170,11 @@ void deschedule(tcb_t* tcb)
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
-void kill_thread(tcb_t* tcb, pcb_t* pcb)
+void kill_thread(tcb_t* tcb, ppd_t* ppd)
 {
     disable_interrupts();
     // store the process to free in the tcb
-    tcb->process = pcb;
+    tcb->free_pointer = ppd;
     remove_runnable(tcb, T_EXITED);
     switch_to_next(tcb, SCHEDULE_MODE);
 }

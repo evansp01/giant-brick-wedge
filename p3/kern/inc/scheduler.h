@@ -17,7 +17,7 @@ void init_scheduler(tcb_t *idle, tcb_t *first);
 void run_scheduler(uint32_t ticks);
 int schedule(tcb_t *tcb);
 int schedule_interrupts_disabled(tcb_t* tcb);
-void kill_thread(tcb_t* tcb, pcb_t *pcb);
+void kill_thread(tcb_t* tcb, ppd_t* ppd);
 void deschedule(tcb_t *tcb);
 int user_deschedule(tcb_t* tcb, uint32_t esi);
 void deschedule_and_drop(tcb_t *tcb, mutex_t *mp);

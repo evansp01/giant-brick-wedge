@@ -135,6 +135,8 @@ static int copy_process(tcb_t* tcb_parent, ureg_t* state)
         free_pcb(child);
         return -1;
     }
+    // we don't need the child lock, since it was just created -- nobody
+    // else can have a reference to it
     pcb_add_child(pcb_parent, tcb_child->process);
     // Register child process for simics user space debugging
     sim_reg_child(child->directory->dir, pcb_parent->directory->dir);
