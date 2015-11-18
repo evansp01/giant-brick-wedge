@@ -18,7 +18,8 @@
 struct autostack {
     unsigned int stack_high;
     unsigned int stack_low;
-    void* handler_stack;
+    char *handler_chunk[EXCEPTION_STACK_SIZE];
+    char *handler_stack;
 };
 
 static struct autostack stack;
@@ -81,11 +82,7 @@ static void threaded_fault(void* arg, ureg_t* ureg)
  **/
 void install_autostack(void* stack_high, void* stack_low)
 {
-    if(gettid() == 1){
-        return;
-    }
-    stack.handler_stack = malloc(EXCEPTION_STACK_SIZE);
-    stack.handler_stack = ((char*)stack.handler_stack) + EXCEPTION_STACK_SIZE;
+    stack.handler_stack = ((char*)stack.handler_chunk) + EXCEPTION_STACK_SIZE;
     stack.stack_low = (unsigned int)stack_low;
     stack.stack_high = (unsigned int)stack_high;
     swexn(stack.handler_stack, autostack_fault, &stack, NULL);
