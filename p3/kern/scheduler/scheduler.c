@@ -173,7 +173,7 @@ void deschedule(tcb_t* tcb, thread_state_t new_state)
 {
     disable_interrupts();
     remove_runnable(tcb, new_state);
-    switch_to_next(tcb, SCHEDULE_MODE);
+    switch_to_next(tcb, YIELD_MODE);
 }
 
 void kill_thread(tcb_t* tcb, ppd_t* ppd)
@@ -182,7 +182,7 @@ void kill_thread(tcb_t* tcb, ppd_t* ppd)
     // store the process to free in the tcb
     tcb->free_pointer = ppd;
     remove_runnable(tcb, T_EXITED);
-    switch_to_next(tcb, SCHEDULE_MODE);
+    switch_to_next(tcb, YIELD_MODE);
 }
 
 int user_deschedule(tcb_t* tcb, uint32_t esi)
@@ -192,9 +192,11 @@ int user_deschedule(tcb_t* tcb, uint32_t esi)
     disable_interrupts();
     int reject;
     if (vm_read(ppd, &reject, (void*)esi, sizeof(esi)) < 0) {
+        mutex_unlock(&ppd->lock);
         return -1;
     }
     if (reject != 0) {
+        mutex_unlock(&ppd->lock);
         return 0;
     }
     scheduler_mutex_unlock(&ppd->lock);
