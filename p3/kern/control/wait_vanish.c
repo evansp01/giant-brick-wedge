@@ -108,12 +108,14 @@ ppd_t *thread_exit(tcb_t *tcb, int failed)
     // Exited people always at front of list for efficient wait
     Q_REMOVE(&parent->children, process, siblings);
     Q_INSERT_FRONT(&parent->children, process, siblings);
-    if(parent->waiting > 0){
+    if (parent->waiting > 0) {
         parent->waiting--;
         cond_signal(&parent->wait);
+        mutex_unlock(&parent->children_mutex);
+    } else {
+        mutex_unlock(&parent->children_mutex);
+        mutex_unlock(&process->parent_mutex);
     }
-    mutex_unlock(&parent->children_mutex);
-    mutex_unlock(&process->parent_mutex);
     return process->directory;
 }
 

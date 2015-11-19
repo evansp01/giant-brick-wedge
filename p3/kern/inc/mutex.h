@@ -20,6 +20,8 @@ typedef struct mutex {
     tcb_list_t waiting;
 } mutex_t;
 
+void lock();
+void unlock();
 void init_mutexes();
 void mutex_init(mutex_t* mp);
 void mutex_destroy(mutex_t* mp);
