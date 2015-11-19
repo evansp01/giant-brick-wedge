@@ -17,12 +17,12 @@ Q_NEW_HEAD(tcb_list_cond_t, tcb);
 /** @brief The structure for condition variables */
 typedef struct cond {
     tcb_list_cond_t waiting;
+    int state;
 } cond_t;
 
 void cond_init( cond_t *cv );
 void cond_destroy( cond_t *cv );
 void cond_wait( cond_t *cv, mutex_t *mp );
 void cond_signal( cond_t *cv );
-void cond_broadcast( cond_t *cv );
 
 #endif // COND_H_

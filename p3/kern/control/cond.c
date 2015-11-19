@@ -11,6 +11,10 @@
 #include <control.h>
 #include <asm.h>
 #include <scheduler.h>
+#include <mutex.h>
+
+#define DESTROYED 0
+#define INITIALIZED 1
 
 /** @brief Initialize a condition variable allocating needed resources
  *  It is not valid to wait, signal, or broadcast on a condition variable
@@ -22,6 +26,7 @@
 void cond_init(cond_t* cv)
 {
     Q_INIT_HEAD(&cv->waiting);
+    cv->state = INITIALIZED;
 }
 
 /** @brief Destroy a condition variable freeing all associated resources
@@ -36,6 +41,7 @@ void cond_destroy(cond_t* cv)
     if (!Q_IS_EMPTY(&cv->waiting)) {
         panic("cond var destroyed while threads are waiting");
     }
+    cv->state = DESTROYED;
 }
 
 /** @brief Wait on a condition variable until signaled by cond_signal
@@ -46,8 +52,11 @@ void cond_destroy(cond_t* cv)
  **/
 void cond_wait(cond_t* cv, mutex_t* mp)
 {
+    if (cv->state != INITIALIZED) {
+        panic("cannot wait on an uninitialized condition variable");
+    }
     tcb_t *tcb = get_tcb();
-    disable_interrupts();
+    lock();
     Q_INSERT_TAIL(&cv->waiting, tcb, suspended_threads);
     scheduler_mutex_unlock(mp);
     deschedule(tcb);
@@ -61,27 +70,14 @@ void cond_wait(cond_t* cv, mutex_t* mp)
  **/
 void cond_signal(cond_t* cv)
 {
-    disable_interrupts();
+    if (cv->state != INITIALIZED) {
+        panic("cannot signal an uninitialized condition variable");
+    }
+    lock();
     if (!Q_IS_EMPTY(&cv->waiting)) {
         tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
         Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
         schedule(tcb_to_schedule);
     }
-    enable_interrupts();
-}
-
-/** @brief Signal all threads currently waiting on the condition variable
- *
- *  @param cv The condition variable to broadcast on
- *  @return void
- **/
-void cond_broadcast(cond_t* cv)
-{
-    disable_interrupts();
-    while (!Q_IS_EMPTY(&cv->waiting)) {
-        tcb_t *tcb_to_schedule = Q_GET_FRONT(&cv->waiting);
-        Q_REMOVE(&cv->waiting, tcb_to_schedule, suspended_threads);
-        schedule(tcb_to_schedule);
-    }
-    enable_interrupts();
+    unlock();
 }

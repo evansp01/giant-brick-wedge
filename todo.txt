@@ -6,12 +6,17 @@ Things to take note of:
 
 Stuff to do:
 
+    mutex unlock, schedule (interrupts disabled) function collapse
+
     mutexes and cvar states
     get rid of atomic functions
     
+    move finalize_exit
+    change mutex state check once finalize_exit has been moved
+    
     different states for threads suspended by user and by kernel
 
-    fast mutexes (disable/enable interrupts) --> multithreaded
+    use fast mutexes
     
     devices change from task gate to interrupt gate (?) (the one which starts with interrupts disabled)
     
