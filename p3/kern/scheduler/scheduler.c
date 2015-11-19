@@ -53,7 +53,7 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
 {
     Q_INIT_HEAD(&scheduler.runnable);
     scheduler.idle = idle;
-    Q_INSERT_TAIL(&scheduler.runnable, first, runnable_threads);
+    add_runnable(first);
     init_sleep();
 }
 
@@ -166,7 +166,7 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp, thread_state_t new_state)
     disable_interrupts();
     scheduler_mutex_unlock(mp);
     remove_runnable(tcb, new_state);
-    switch_to_next(tcb, SCHEDULE_MODE);
+    switch_to_next(tcb, YIELD_MODE);
 }
 
 void deschedule(tcb_t* tcb, thread_state_t new_state)
