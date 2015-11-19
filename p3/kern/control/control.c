@@ -20,7 +20,7 @@
 #include <malloc_internal.h>
 
 // Global kernel state with process and thread info
-static kernel_state_t kernel_state;
+kernel_state_t kernel_state;
 
 /** @brief Initializes the global lists of processes and threads
  *  @return void
@@ -31,25 +31,6 @@ void init_kernel_state()
     kernel_state.next_id = 1;
     mutex_init(&kernel_state.next_id_mutex);
     mutex_init(&kernel_state.threads_mutex);
-}
-
-
-/** @brief Record the init process in the kernel state for later use
- *
- *  @param tcb The tcb of the init process
- *  @return void
- **/
-void regiser_init_process(tcb_t *tcb)
-{
-    kernel_state.init = tcb;
-}
-
-/** @brief Get the init process
- *  @return The init process tcb
- **/
-tcb_t* get_init()
-{
-    return kernel_state.init;
 }
 
 /** @brief Gives the next available process/thread id number

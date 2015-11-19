@@ -128,11 +128,14 @@ void deschedule_syscall(ureg_t state)
  */
 void make_runnable_syscall(ureg_t state)
 {
+    mutex_lock(&kernel_state.threads_mutex);
     tcb_t *make_runnable = get_tcb_by_id(state.esi);
     if(make_runnable == NULL){
+        mutex_unlock(&kernel_state.threads_mutex);
         state.eax = -1;
     } else {
-        state.eax = schedule(make_runnable);
+        // TODO: not cause kernel segfault
+        state.eax = user_schedule(make_runnable, &kernel_state.threads_mutex);
     }
 }
 

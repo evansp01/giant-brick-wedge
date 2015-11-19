@@ -106,7 +106,7 @@ static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state)
     // add child to kernel list of threads
     kernel_add_thread(child);
     // schedule the child thread
-    schedule(child);
+    schedule(child, T_NOT_YET);
     return child->id;
 }
 

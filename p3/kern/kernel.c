@@ -58,7 +58,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     setup_for_switch(idle);
     // Create main program kernel will run
     tcb_t *tcb = new_program("init", 0, NULL);
-    regiser_init_process(tcb);
+    kernel_state.init = tcb;
     init_scheduler(idle, tcb);
     // Switch to thread safe malloc
     // this **MUST** be done after all other initialization has been performed

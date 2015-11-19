@@ -135,7 +135,7 @@ void keyboard_interrupt(ureg_t state)
         if (is_readline()) {
             if ((keyboard.num_chars >= keyboard.user_buf_len)||
                 (keyboard.num_newlines > 0)) {
-                schedule(keyboard.readline_thread);
+                schedule(keyboard.readline_thread, T_KERN_SUSPENDED);
                 keyboard.user_buf_len = 0;
                 keyboard.readline_thread = NULL;
             }
@@ -161,7 +161,7 @@ int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd)
         keyboard.user_buf_len = len;
         keyboard.readline_thread = tcb;
         // deschedule until a new line is available
-        deschedule(tcb);
+        deschedule(tcb, T_KERN_SUSPENDED);
     }
 
     // Copy characters from keyboard buffer to user buffer

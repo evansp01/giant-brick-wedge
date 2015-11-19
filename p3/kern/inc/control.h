@@ -23,6 +23,7 @@ typedef enum {
     T_NOT_YET,
     T_RUNNABLE,
     T_SUSPENDED,
+    T_KERN_SUSPENDED,
     T_SLEEPING,
     T_EXITED,
 } thread_state_t;
@@ -100,11 +101,9 @@ typedef struct kernel_state {
     tcb_t *init;
 } kernel_state_t;
 
+extern kernel_state_t kernel_state;
 // Headers regarding create process
-kernel_state_t *get_kernel_state();
 void init_kernel_state();
-tcb_t* get_init();
-void regiser_init_process(tcb_t *tcb);
 tcb_t *create_pcb_entry();
 void free_pcb(pcb_t* pcb);
 void _free_pcb(pcb_t* pcb);

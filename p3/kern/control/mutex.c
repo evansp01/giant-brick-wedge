@@ -98,40 +98,10 @@ void mutex_lock(mutex_t* mp)
         mp->count--;
         if (mp->count < 0) {
             Q_INSERT_TAIL(&mp->waiting, tcb, suspended_threads);
-            deschedule(tcb);
+            deschedule(tcb, T_KERN_SUSPENDED);
         }
         unlock();
         mp->owner = tcb->id;
-    }
-}
-
-/** @brief Unlock a mutex
- *  Unlocks the given mutex. It is illegal for a thread other than the thread
- *  which called lock to unlock a mutex.
- *
- *  @param mp The mutex to unlock
- *  @return void
- **/
-void mutex_unlock(mutex_t* mp)
-{
-    if (initialized) {
-        // TODO: Replace once finalize_exit has been moved
-        //tcb_t *tcb = get_tcb();
-        //if (mp->count >= DESTROYED || mp->owner != tcb->id) {
-        if (mp->count >= 1 || mp->owner == UNSPECIFIED) {
-            lprintf("count %d, owner %d", mp->count, mp->owner);
-            panic("cannot lock kernel mutex which is destroyed or not owned");
-        }
-        lock();
-        mp->owner = UNSPECIFIED;
-        mp->count++;
-        // wake the next thread up
-        if (!Q_IS_EMPTY(&mp->waiting)) {
-            tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
-            Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
-            schedule(tcb_to_schedule);
-        }
-        unlock();
     }
 }
 
@@ -145,17 +115,35 @@ void mutex_unlock(mutex_t* mp)
 void scheduler_mutex_unlock(mutex_t* mp)
 {
     if (initialized) {
-        tcb_t *tcb = get_tcb();
-        if (mp->count >= DESTROYED || mp->owner != tcb->id) {
-            panic("cannot lock kernel mutex which is destroyed or not owned");
-        }
+        //TODO: uncomment after unlock
+        //tcb_t *tcb = get_tcb();
+        //if (mp->count >= DESTROYED || mp->owner != tcb->id) {
+        //    panic("cannot lock kernel mutex which is destroyed or not owned");
+        //}
         mp->owner = UNSPECIFIED;
         mp->count++;
         // wake the next thread up
         if (!Q_IS_EMPTY(&mp->waiting)) {
             tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
             Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
-            schedule_interrupts_disabled(tcb_to_schedule);
+            schedule_interrupts_disabled(tcb_to_schedule, T_KERN_SUSPENDED);
         }
     }
 }
+
+
+/** @brief Unlock a mutex
+ *  Unlocks the given mutex. It is illegal for a thread other than the thread
+ *  which called lock to unlock a mutex.
+ *
+ *  @param mp The mutex to unlock
+ *  @return void
+ **/
+void mutex_unlock(mutex_t* mp)
+{
+    lock();
+    scheduler_mutex_unlock(mp);
+    unlock();
+}
+
+

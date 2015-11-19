@@ -45,7 +45,6 @@ void remove_runnable(tcb_t* tcb, thread_state_t state)
     Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
 }
 
-
 /** @brief Initializes the scheduler
  *
  *  @return void
@@ -123,13 +122,11 @@ void run_scheduler(uint32_t ticks)
  *  @param tcb Pointer to tcb of thread to schedule
  *  @return void
  */
-int schedule_interrupts_disabled(tcb_t* tcb)
+void schedule(tcb_t* tcb, thread_state_t expected)
 {
-    if (tcb->state != T_SUSPENDED && tcb->state != T_NOT_YET) {
-        return -1;
-    }
-    add_runnable(tcb);
-    return 0;
+    disable_interrupts();
+    schedule_interrupts_disabled(tcb, expected);
+    enable_interrupts();
 }
 
 /** @brief Schedules the thread to be run
@@ -137,10 +134,19 @@ int schedule_interrupts_disabled(tcb_t* tcb)
  *  @param tcb Pointer to tcb of thread to schedule
  *  @return void
  */
-int schedule(tcb_t* tcb)
+void schedule_interrupts_disabled(tcb_t* tcb, thread_state_t expected)
+{
+    if (tcb->state != expected) {
+        panic("Things are not as expected");
+    }
+    add_runnable(tcb);
+}
+
+int user_schedule(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
-    if (tcb->state != T_SUSPENDED && tcb->state != T_NOT_YET) {
+    scheduler_mutex_unlock(mp);
+    if (tcb->state != T_SUSPENDED) {
         enable_interrupts();
         return -1;
     }
@@ -155,18 +161,18 @@ int schedule(tcb_t* tcb)
  *
  *  @return void
  */
-void deschedule_and_drop(tcb_t* tcb, mutex_t* mp)
+void deschedule_and_drop(tcb_t* tcb, mutex_t* mp, thread_state_t new_state)
 {
     disable_interrupts();
     scheduler_mutex_unlock(mp);
-    remove_runnable(tcb, T_SUSPENDED);
+    remove_runnable(tcb, new_state);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
-void deschedule(tcb_t* tcb)
+void deschedule(tcb_t* tcb, thread_state_t new_state)
 {
     disable_interrupts();
-    remove_runnable(tcb, T_SUSPENDED);
+    remove_runnable(tcb, new_state);
     switch_to_next(tcb, SCHEDULE_MODE);
 }
 
@@ -216,21 +222,15 @@ int yield(int yield_tid)
         return 0;
     }
     // Yield to a specific thread
+    mutex_lock(&kernel_state.threads_mutex);
     tcb_t* yield_tcb = get_tcb_by_id(yield_tid);
-    // Thou shalt not yield to threads which don't exist
-    if (yield_tcb == NULL) {
-        return -1;
-    }
-    // Thou shalt not yield to the idle thread
-    if (yield_tcb->id == scheduler.idle->id) {
-        lprintf("Attempted to yield to idle process");
-        return -1;
-    }
-    // Thou shalt not yield to threads which cannot currently be run
-    if (yield_tcb->state != T_RUNNABLE) {
+    // Thou shalt not yield to threads which don't exist, or are not runnable
+    if (yield_tcb == NULL || yield_tcb->state != T_RUNNABLE) {
+        mutex_unlock(&kernel_state.threads_mutex);
         return -1;
     }
     disable_interrupts();
+    scheduler_mutex_unlock(&kernel_state.threads_mutex);
     context_switch(tcb, yield_tcb);
     return 0;
 }

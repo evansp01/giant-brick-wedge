@@ -57,18 +57,17 @@ void pcb_inform_children(pcb_t* pcb)
 {
     pcb_t* child;
     pcb_t* tmp;
-    pcb_t* init = get_init()->process;
-    assert(pcb != init);
+    assert(pcb != kernel_state.init->process);
     // We don't need this pcb's mutex since there are no remaining
     // processes which can
     Q_FOREACH_SAFE(child, tmp, &pcb->children, siblings)
     {
-        assert(child != init);
+        assert(child != kernel_state.init->process);
         mutex_lock(&child->parent_mutex);
         mutex_lock(&pcb->children_mutex);
         Q_REMOVE(&pcb->children, child, siblings);
         pcb->num_children--;
-        pcb_add_child(init, child);
+        pcb_add_child(kernel_state.init->process, child);
         mutex_unlock(&pcb->children_mutex);
         mutex_unlock(&child->parent_mutex);
     }
@@ -110,6 +109,7 @@ ppd_t *thread_exit(tcb_t *tcb, int failed)
     Q_INSERT_FRONT(&parent->children, process, siblings);
     if (parent->waiting > 0) {
         parent->waiting--;
+        mutex_unlock(&process->parent_mutex);
         cond_signal(&parent->wait);
         mutex_unlock(&parent->children_mutex);
     } else {
