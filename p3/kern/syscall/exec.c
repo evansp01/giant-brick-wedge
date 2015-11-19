@@ -399,6 +399,9 @@ int load_process(tcb_t* tcb, simple_elf_t* elf,
 tcb_t* new_program(char* fname, int argc, char** argv)
 {
     tcb_t* tcb = create_pcb_entry();
+    if (tcb == NULL) {
+        panic("cannot create tcb/pcb for new program");
+    }
     int i, argspace = 0;
     for (i = 0; i < argc; i++) {
         argspace += strlen(argv[i]) + 1;

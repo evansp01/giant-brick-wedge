@@ -27,13 +27,12 @@ static unsigned int ticks_so_far;
  *
  *  @return void
  *  */
-int init_timer()
+void init_timer()
 {
     uint16_t frequency = 1 + (TIMER_RATE / TIMER_INTERRUPT_FREQUENCY);
     outb(TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)frequency);
     outb(TIMER_PERIOD_IO_PORT, (uint8_t)(frequency >> 8));
-    return 0;
 }
 
 /** @brief Handler a timer interrupt, accumulate ticks

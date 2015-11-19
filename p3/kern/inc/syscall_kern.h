@@ -19,7 +19,7 @@ void register_swexn(tcb_t *tcb,swexn_handler_t handler,void *arg,void *stack);
 void deregister_swexn(tcb_t *tcb);
 void swexn_handler(ureg_t* state, tcb_t* tcb);
 
-int init_timer();
+void init_timer();
 int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd);
 
 int getbytes( const char *filename, int offset, int size, char *buf );

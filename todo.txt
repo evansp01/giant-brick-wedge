@@ -17,9 +17,6 @@ Stuff to do:
     
     clean up header files --> move to local headers
     
-    check for failure case in malloc calls
-    init/install should panic instead of returning errors
-    
     double check readfile implementation (look at p2 kernel spec)
     
     exec strlen should fail fast
