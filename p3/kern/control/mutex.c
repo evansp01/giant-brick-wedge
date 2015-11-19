@@ -7,7 +7,6 @@
  **/
 
 #include <mutex.h>
-#include <atomic.h>
 #include <stdlib.h>
 #include <control.h>
 #include <scheduler.h>

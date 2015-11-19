@@ -7,9 +7,6 @@ Things to take note of:
 Stuff to do:
 
     mutex unlock, schedule (interrupts disabled) function collapse
-
-    mutexes and cvar states
-    get rid of atomic functions
     
     move finalize_exit
     change mutex state check once finalize_exit has been moved
