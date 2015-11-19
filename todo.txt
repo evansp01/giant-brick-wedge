@@ -15,8 +15,6 @@ Stuff to do:
     
     devices change from task gate to interrupt gate (?) (the one which starts with interrupts disabled)
     
-    lock page directory when using vm_write
-    
     clean up header files --> move to local headers
     
     check for failure case in malloc calls

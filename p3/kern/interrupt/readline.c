@@ -155,7 +155,7 @@ void keyboard_interrupt(ureg_t state)
  *  @param buf User buffer to copy characters into
  *  @return number of characters copied into the user buffer
  *  */
-int readline(int len, char *buf, tcb_t *tcb)
+int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd)
 {
     if ((keyboard.num_chars < len)&&(keyboard.num_newlines == 0)) {
         keyboard.user_buf_len = len;
@@ -166,16 +166,28 @@ int readline(int len, char *buf, tcb_t *tcb)
 
     // Copy characters from keyboard buffer to user buffer
     int i;
+    char c;
     for (i = 0; i < len; i++) {
+        
+        // Get the character from the keyboard buffer
         disable_interrupts();
-        buf[i] = keyboard.buffer[keyboard.consumer];
+        c = keyboard.buffer[keyboard.consumer];
         keyboard.consumer = next_index(keyboard.consumer);
         keyboard.num_chars--;
-        if (buf[i] == '\n') {
+        if (c == '\n') {
             keyboard.num_newlines--;
-            return i + 1;
         }
         enable_interrupts();
+        
+        // Copy the character to the user buffer
+        if (vm_write_locked(ppd, &c, (uint32_t)&buf[i], sizeof(char)) < 0) {
+            return -1;
+        }
+        
+        // Done if we encounter a newline
+        if (c == '\n') {
+            return i + 1;
+        }
     }
     return i;
 }

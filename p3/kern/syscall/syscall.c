@@ -223,29 +223,34 @@ void readline_syscall(ureg_t state)
 {
     tcb_t* tcb = get_tcb();
     ppd_t *ppd = tcb->process->directory;
-    typedef struct args {
+    struct {
         int len;
         char *buf;
-    } args_t;
-    args_t *arg = (args_t *)state.esi;
-    if(arg->len == 0){
+    } args;
+    
+    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+        state.eax = -1;
+        return;
+    }
+    
+    if(args.len == 0){
         state.eax = 0;
         return;
     }
 
     // Error: len is unreasonable
-    if ((arg->len > MAX_LEN)||(arg->len < 0)) {
+    if ((args.len > MAX_LEN)||(args.len < 0)) {
         state.eax = -1;
         return;
     }
     // Error: buf is not a valid memory address
-    if (!vm_user_can_write(ppd, (void *)arg->buf, arg->len)) {
+    if (!vm_user_can_write(ppd, (void *)args.buf, args.len)) {
         state.eax = -2;
         return;
     }
 
     mutex_lock(&sysvars.read_mutex);
-    int num_bytes = readline(arg->len, arg->buf, tcb);
+    int num_bytes = readline(args.len, args.buf, tcb, ppd);
     mutex_unlock(&sysvars.read_mutex);
 
     state.eax = num_bytes;
