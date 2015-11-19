@@ -13,6 +13,7 @@
 #include <simics.h>
 #include <stddef.h>
 #include <assert.h>
+#include <string.h>
 
 // Console macros
 #define GET_CHR(row, col) \
@@ -20,11 +21,13 @@
 #define GET_COLOR(row, col) (GET_CHR(row, col) + 1)
 #define COPY_LINES_MAX GET_CHR(CONSOLE_HEIGHT - 1, 0)
 #define END_CONSOLE GET_CHR(CONSOLE_HEIGHT, 0)
-#define GET_MSB(val) (val >> 8)
-#define GET_LSB(val) (val & 0xFF)
-#define GET_POS(MSB, LSB) ((MSB << 8) | LSB)
-#define GET_ROW(val) (val / CONSOLE_WIDTH)
-#define GET_COL(val) (val % CONSOLE_WIDTH)
+#define GET_MSB(val) ((val) >> 8)
+#define GET_LSB(val) ((val) & 0xFF)
+#define GET_POS(MSB, LSB) (((MSB) << 8) | (LSB))
+#define GET_ROW(val) ((val) / CONSOLE_WIDTH)
+#define GET_COL(val) ((val) % CONSOLE_WIDTH)
+#define GET_PREV_LINE(val) ((val) + LINE_SIZE)
+#define LINE_SIZE (2 * CONSOLE_WIDTH)
 #define INVALID_COLOR 0x90
 
 // Global variables
@@ -104,9 +107,8 @@ void scroll()
 {
     int i;
     // Copy lines up by one
-    for (i = CONSOLE_MEM_BASE; i < COPY_LINES_MAX; i += 2) {
-        *(char*)i = *(char*)(i + (2 * CONSOLE_WIDTH));
-        *(char*)(i + 1) = *(char*)(i + (2 * CONSOLE_WIDTH) + 1);
+    for (i = CONSOLE_MEM_BASE; i < COPY_LINES_MAX; i += LINE_SIZE) {
+        memcpy((void *)i, (void *)GET_PREV_LINE(i), LINE_SIZE);
     }
     // Blank out last line
     for (i = COPY_LINES_MAX; i < END_CONSOLE; i += 2) {

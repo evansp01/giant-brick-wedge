@@ -5,8 +5,6 @@ Things to take note of:
         3. kill the kernel
 
 Stuff to do:
-
-    mutex unlock, schedule (interrupts disabled) function collapse
     
     move finalize_exit
     change mutex state check once finalize_exit has been moved
@@ -17,9 +15,6 @@ Stuff to do:
     
     devices change from task gate to interrupt gate (?) (the one which starts with interrupts disabled)
     
-    fix console scroll code
-    change print implementation (put all bytes then set cursor)
-    
     lock page directory when using vm_write
     
     clean up header files --> move to local headers
@@ -27,13 +22,17 @@ Stuff to do:
     check for failure case in malloc calls
     init/install should panic instead of returning errors
     
-    move tcb/pcb out of control into a new folder
-    
     double check readfile implementation (look at p2 kernel spec)
     
     exec strlen should fail fast
     
+    switch to hash tables for global thread/process lists
+    
+    mutex unlock, schedule (interrupts disabled) function collapse
+    
     change lprintf to also printf to console (non-simics functionality)
+    
+    change print, cursor implementation (put all bytes then set cursor)
     
     run all tests
     
