@@ -113,9 +113,9 @@ AUTOSTACK_OBJS = autostack.o
 KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o syscall/swexn.o \
                syscall/halt.o syscall/console_syscalls.o syscall/wait_vanish.o \
                syscall/readline.o 
-KERN_COMMON = common/int_hash.o common/malloc_wrappers.o common/control.o \
-			  common/console.o 
-KERN_CONTROL = control/mutex.o control/cond.o
+KERN_COMMON = common/int_hash.o common/malloc_wrappers.o common/console.o \
+              common/control_block.o 
+KERN_LOCK = lock/mutex.o lock/cond.o
 KERN_INTERRUPT = interrupt/fault_print.o interrupt/fault.o \
 				 interrupt/mode_switch.o interrupt/mode_switch_asm.o \
 				 interrupt/setup_idt.o 
@@ -127,7 +127,7 @@ KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o vm/ppd.o \
 KERNEL_OBJS = kernel.o
 KERNEL_OBJS +=${KERN_SYSCALL}
 KERNEL_OBJS +=${KERN_COMMON}
-KERNEL_OBJS +=${KERN_CONTROL}
+KERNEL_OBJS +=${KERN_LOCK}
 KERNEL_OBJS +=${KERN_INTERRUPT}
 KERNEL_OBJS +=${KERN_SCHEDULER}
 KERNEL_OBJS +=${KERN_VM}
