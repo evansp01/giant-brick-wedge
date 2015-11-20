@@ -135,15 +135,18 @@ void free_ppd_kernel_mem(ppd_t* to_free)
 void free_ppd(ppd_t* to_free, ppd_t* current)
 {
     page_directory_t* tmp = current->dir;
+
     disable_interrupts();
     current->dir = to_free->dir;
-    switch_ppd(current);
     enable_interrupts();
+    switch_ppd(current);
+
     free_ppd_user_mem(to_free);
+
     disable_interrupts();
     current->dir = tmp;
-    switch_ppd(current);
     enable_interrupts();
+    switch_ppd(current);
     free_ppd_kernel_mem(to_free);
 }
 

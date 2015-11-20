@@ -103,7 +103,7 @@ void install_syscalls()
 void install_devices()
 {
     set_idt_device(NAME_ASM(timer_interrupt), INTERRUPT, TIMER_IDT_ENTRY);
-    set_idt_device(NAME_ASM(keyboard_interrupt), INTERRUPT, KEY_IDT_ENTRY);
+    set_idt_device(NAME_ASM(keyboard_interrupt), TRAP, KEY_IDT_ENTRY);
 }
 
 /** @brief Installs a handler into the IDT
