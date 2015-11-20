@@ -34,15 +34,17 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory.
 #
-410TESTS = fork_test1 exec_basic exec_basic_helper knife \
-           merchant peon coolness getpid_test1 loader_test1 loader_test2 \
-           exec_nonexist mem_permissions new_pages remove_pages_test1 \
-           remove_pages_test2 readline_basic print_basic deschedule_hang \
-           wait_getpid actual_wait fork_wait fork_wait_bomb fork_exit_bomb \
-           stack_test1 swexn_basic_test swexn_cookie_monster swexn_dispatch \
-           swexn_regs swexn_stands_for_swextensible swexn_uninstall_test \
-		   sleep_test1 yield_desc_mkrun make_crash make_crash_helper \
-           halt_test cho cho2 cho_variant chow wild_test1 ack fib
+410TESTS = ack actual_wait bistromath cat cho cho2 cho_variant chow \
+           coolness deschedule_hang exec_basic exec_basic_helper exec_nonexist \
+           fib fork_bomb fork_exit_bomb fork_test1 fork_wait fork_wait_bomb \
+           getpid_test1 halt_test knife loader_test1 loader_test2 make_crash \
+           make_crash_helper mem_eat_test mem_permissions merchant \
+           minclone_mem new_pages peon print_basic readline_basic \
+           register_test remove_pages_test1 remove_pages_test2 \
+           slaughter sleep_test1 stack_test1 swexn_basic_test \
+           swexn_cookie_monster swexn_dispatch swexn_regs \
+           swexn_stands_for_swextensible swexn_uninstall_test wait_getpid \
+		   wild_test1 work yield_desc_mkrun
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -66,7 +68,7 @@ STUDENTTESTS =
 # A list of the data files you want built in from the user/files
 # directory.
 #
-STUDENTFILES =
+STUDENTFILES = textfile.txt
 
 ###########################################################################
 # Object files for your thread library
@@ -118,7 +120,7 @@ KERN_COMMON = common/int_hash.o common/malloc_wrappers.o common/console.o \
 KERN_LOCK = lock/mutex.o lock/cond.o
 KERN_INTERRUPT = interrupt/fault_print.o interrupt/fault.o \
 				 interrupt/mode_switch.o interrupt/mode_switch_asm.o \
-				 interrupt/setup_idt.o 
+				 interrupt/setup_idt.o
 KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
 				 scheduler/switch.o scheduler/sleep.o scheduler/timer.o
 KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o vm/ppd.o \
