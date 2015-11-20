@@ -13,6 +13,7 @@
 #include <control.h>
 #include <interrupt_defines.h>
 #include <timer_defines.h>
+#include <simics.h>
 
 #define TIMER_INTERRUPT_FREQUENCY 1000
 

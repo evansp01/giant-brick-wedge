@@ -14,9 +14,9 @@
 #define OVERCOMMIT_RATIO 1
 
 #define DIVIDE_ROUND_UP(x, y) (1 + ((x) - 1) / (y))
+
 #define KERNEL_TABLES \
     DIVIDE_ROUND_UP(USER_MEM_START, PAGE_SIZE* PAGES_PER_TABLE)
-
 
 #define AS_TYPE(address, type) (*(type*)&(address))
 

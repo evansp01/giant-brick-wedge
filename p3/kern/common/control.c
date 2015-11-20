@@ -266,7 +266,7 @@ tcb_t* get_tcb()
 {
     uint32_t tcb_addr = K_STACK_TOP(K_STACK_BASE(get_esp()));
     tcb_t* tcb = *(tcb_t**)tcb_addr;
-    ASSERT((uint32_t)(tcb->process->directory.dir) == get_cr3());
+    assert((uint32_t)(tcb->process->directory->dir) == get_cr3());
     return tcb;
 }
 

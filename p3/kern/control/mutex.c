@@ -114,19 +114,20 @@ void mutex_lock(mutex_t* mp)
  **/
 void scheduler_mutex_unlock(mutex_t* mp)
 {
-    if (initialized) {
-        tcb_t *tcb = get_tcb();
-        if (mp->count >= DESTROYED || mp->owner != tcb->id) {
-            panic("cannot lock kernel mutex which is destroyed or not owned");
-        }
-        mp->owner = UNSPECIFIED;
-        mp->count++;
-        // wake the next thread up
-        if (!Q_IS_EMPTY(&mp->waiting)) {
-            tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
-            Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
-            schedule_interrupts_disabled(tcb_to_schedule, T_KERN_SUSPENDED);
-        }
+    if (!initialized) {
+        return;
+    }
+    tcb_t *tcb = get_tcb();
+    if (mp->count >= DESTROYED || mp->owner != tcb->id) {
+        panic("cannot lock kernel mutex which is destroyed or not owned");
+    }
+    mp->owner = UNSPECIFIED;
+    mp->count++;
+    // wake the next thread up
+    if (!Q_IS_EMPTY(&mp->waiting)) {
+        tcb_t *tcb_to_schedule = Q_GET_FRONT(&mp->waiting);
+        Q_REMOVE(&mp->waiting, tcb_to_schedule, suspended_threads);
+        schedule_interrupts_disabled(tcb_to_schedule, T_KERN_SUSPENDED);
     }
 }
 
@@ -140,6 +141,9 @@ void scheduler_mutex_unlock(mutex_t* mp)
  **/
 void mutex_unlock(mutex_t* mp)
 {
+    if(!initialized){
+        return;
+    }
     lock();
     scheduler_mutex_unlock(mp);
     unlock();

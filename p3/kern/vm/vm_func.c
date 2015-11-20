@@ -265,11 +265,11 @@ int vm_set_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
         if (is_zfod(table)) {
             // set the zfod write bit
             table->zfod = 1;
-            ASSERT(table->write == 0);
+            assert(table->write == 0);
         } else {
             // set the write bit
             table->write = 1;
-            ASSERT(table->zfod == 0);
+            assert(table->zfod == 0);
         }
         invalidate_page(AS_TYPE(addr, void*));
     }
@@ -291,10 +291,10 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
     if (is_write(table)) {
         if (is_zfod(table)) {
             table->zfod = 0;
-            ASSERT(table->write == 0);
+            assert(table->write == 0);
         } else {
             table->write = 0;
-            ASSERT(table->zfod == 0);
+            assert(table->zfod == 0);
         }
         invalidate_page(AS_TYPE(addr, void*));
     }
@@ -509,7 +509,7 @@ int vm_alloc_readwrite(ppd_t* ppd, void* start, uint32_t size)
         return -1;
     }
     // at this point all memory is allocated
-    ASSERT(vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) >= 0);
+    assert(vm_map_pages(ppd, start, size, vm_alloc_readwrite_h) >= 0);
     return 0;
 }
 
