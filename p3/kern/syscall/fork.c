@@ -14,7 +14,6 @@
 #include <switch.h>
 #include <stdint.h>
 #include <ureg.h>
-#include <mode_switch.h>
 #include <scheduler.h>
 #include <vm.h>
 #include <stack_info.h>

@@ -9,13 +9,13 @@
 
 #include <timer_defines.h>
 #include <keyhelp.h>
-#include <mode_switch.h>
 #include <idt.h>
 #include <seg.h>
 #include <simics.h>
-#include <setup_idt.h>
 #include <syscall_int.h>
 #include <asm.h>
+#include "mode_switch.h"
+#include "setup_idt.h"
 
 /** @brief Struct for Interrupt Descriptor Table (IDT) entries
  */

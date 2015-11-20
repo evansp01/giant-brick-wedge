@@ -8,11 +8,11 @@
  **/
 
 #include <control.h>
-#include <mode_switch.h>
 #include <stdlib.h>
 #include <syscall_kern.h>
 #include <eflags.h>
 #include <seg.h>
+#include <interrupt.h>
 
 
 #define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)

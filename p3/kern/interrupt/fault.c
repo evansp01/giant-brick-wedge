@@ -14,13 +14,13 @@
 #include <control.h>
 #include <stdlib.h>
 #include <cr.h>
-#include <setup_idt.h>
 #include <stack_info.h>
-#include <mode_switch.h>
 #include <common_kern.h>
 #include <syscall_kern.h>
 #include <seg.h>
 #include <asm.h>
+#include "setup_idt.h"
+#include "mode_switch.h"
 
 void dump_registers(ureg_t* ureg);
 

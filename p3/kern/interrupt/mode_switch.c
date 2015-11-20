@@ -7,7 +7,7 @@
  *  @bug No known bugs.
  **/
 
-#include <mode_switch.h>
+#include "mode_switch.h"
 #include <control.h>
 #include <stdlib.h>
 #include <simics.h>

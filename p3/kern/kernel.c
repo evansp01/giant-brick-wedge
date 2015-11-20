@@ -28,11 +28,10 @@
 #include <elf_410.h>
 #include <string.h>
 #include <eflags.h>
-#include <setup_idt.h>
-#include <mode_switch.h>
 #include <scheduler.h>
 #include <switch.h>
 #include <syscall_kern.h>
+#include <interrupt.h>
 
 void init_malloc();
 

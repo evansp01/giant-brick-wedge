@@ -17,7 +17,6 @@
 #include <stdint.h>
 #include <seg.h>
 #include <ureg.h>
-#include <mode_switch.h>
 #include <limits.h>
 #include <eflags.h>
 #include <stack_info.h>
