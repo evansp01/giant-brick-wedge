@@ -1,19 +1,8 @@
-Things to take note of:
-    error handling
-        1. recoverable fault -> fix the problem
-        2. inform the user -> kill the thread / process
-        3. kill the kernel
-
-Stuff to do:
-    //strange bug: schedule() called with conflicting thread status
-    
 Testing:
-    add and run remaining tests
     run cho_variant at varying timer rates (right now 100-125 done)
     write tests
         readline multithreaded
         print multithreaded
-        readfile
         ...
     
 Non-code:
@@ -26,5 +15,4 @@ Non-code:
     
 Optimizations:
     use fast mutexes
-    change print, cursor implementation (put all bytes then set cursor)
     switch to hash tables for global thread/process lists
