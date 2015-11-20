@@ -24,10 +24,16 @@ ppd_t* init_ppd()
     Q_INIT_HEAD(&ppd->allocations);
     mutex_init(&ppd->lock);
     if ((ppd->dir = alloc_page_directory()) == NULL) {
-        free(ppd);
+        mutex_destroy(&ppd->lock);
+        sfree(ppd, sizeof(ppd_t));
         return NULL;
     }
     return ppd;
+}
+
+void free_alloc(alloc_t *alloc)
+{
+    sfree(alloc, sizeof(alloc_t));
 }
 
 /** @brief Record an allocation to this ppd
@@ -39,7 +45,7 @@ ppd_t* init_ppd()
  **/
 int add_alloc(ppd_t* ppd, void* start, uint32_t size)
 {
-    alloc_t* new_alloc = malloc(sizeof(alloc_t));
+    alloc_t* new_alloc = (alloc_t*) smalloc(sizeof(alloc_t));
     if (new_alloc == NULL) {
         return -1;
     }
@@ -72,7 +78,7 @@ int vm_free(ppd_t* ppd, void* start)
     }
     Q_REMOVE(&ppd->allocations, alloc, list);
     vm_free_alloc(ppd, alloc->start, alloc->size);
-    free(alloc);
+    free_alloc(alloc);
     return 0;
 }
 
@@ -89,7 +95,7 @@ void free_ppd_user_mem(ppd_t* to_free)
     {
         Q_REMOVE(&to_free->allocations, alloc, list);
         vm_free_alloc(to_free, alloc->start, alloc->size);
-        free(alloc);
+        free_alloc(alloc);
     }
 }
 
@@ -113,7 +119,7 @@ void _free_ppd_kernel_mem(ppd_t* to_free)
         _sfree(addr, PAGE_SIZE);
     }
     _sfree(to_free->dir, PAGE_SIZE);
-    _free(to_free);
+    _sfree(to_free, sizeof(ppd_t));
 }
 
 /** @brief Free all kernel memory associated with this ppd
@@ -202,7 +208,7 @@ free_list_and_return:
     Q_FOREACH_SAFE(alloc, tmp, &to->allocations, list)
     {
         Q_REMOVE(&to->allocations, alloc, list);
-        free(alloc);
+        free_alloc(alloc);
 
     }
     return -1;
