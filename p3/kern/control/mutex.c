@@ -115,11 +115,10 @@ void mutex_lock(mutex_t* mp)
 void scheduler_mutex_unlock(mutex_t* mp)
 {
     if (initialized) {
-        //TODO: uncomment after unlock
-        //tcb_t *tcb = get_tcb();
-        //if (mp->count >= DESTROYED || mp->owner != tcb->id) {
-        //    panic("cannot lock kernel mutex which is destroyed or not owned");
-        //}
+        tcb_t *tcb = get_tcb();
+        if (mp->count >= DESTROYED || mp->owner != tcb->id) {
+            panic("cannot lock kernel mutex which is destroyed or not owned");
+        }
         mp->owner = UNSPECIFIED;
         mp->count++;
         // wake the next thread up

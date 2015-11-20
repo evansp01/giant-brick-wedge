@@ -6,24 +6,11 @@ Things to take note of:
 
 Stuff to do:
     
-    move finalize_exit
-    change mutex state check once finalize_exit has been moved
-    
-    different states for threads suspended by user and by kernel
-
-    use fast mutexes
-    
-    devices change from task gate to interrupt gate (?) (the one which starts with interrupts disabled)
-    
     clean up header files --> move to local headers
-    
-    double check readfile implementation (look at p2 kernel spec)
     
     exec strlen should fail fast
     
     switch to hash tables for global thread/process lists
-    
-    mutex unlock, schedule (interrupts disabled) function collapse
     
     change lprintf to also printf to console (non-simics functionality)
     
@@ -39,4 +26,6 @@ Stuff to do:
     tests to write
         readline multithreaded
         print multithreaded
-        
+        readfile
+    
+    use fast mutexes
