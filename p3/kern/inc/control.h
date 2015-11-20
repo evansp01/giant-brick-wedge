@@ -123,6 +123,7 @@ int get_next_id();
 void scheduler_release_malloc();
 
 void finalize_exit(tcb_t *tcb);
+void init_malloc();
 void acquire_malloc();
 void release_malloc();
 void free_later(tcb_t *tcb);

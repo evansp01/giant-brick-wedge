@@ -84,7 +84,5 @@ int vm_resolve_pagefault(ppd_t* ppd, uint32_t cr2, int error_code)
         alloc_frame((void *)page, table, e_write_page);
         return 0;
     }
-    // can this code path even happen?
-    lprintf("I have no idea why this is a page fault at %lx", cr2);
     return -1;
 }

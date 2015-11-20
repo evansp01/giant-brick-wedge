@@ -75,28 +75,6 @@ void set_cursor_hardware(int row, int col)
     outb(CRTC_DATA_REG, LSB);
 }
 
-/** @brief Retrieves the coordinate position of the hardware cursor.
- *
- *  @param row Pointer to store row of hardware cursor.
- *  @param col Pointer to store column of hardware cursor.
- *  @return Void
- */
-void get_cursor_hardware(int* row, int* col)
-{
-    // Get MSB of cursor position
-    outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
-    uint8_t MSB = inb(CRTC_DATA_REG);
-
-    // Get LSB of cursor position
-    outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
-    uint8_t LSB = inb(CRTC_DATA_REG);
-
-    // Calculate cursor position
-    uint16_t position = GET_POS(MSB, LSB);
-    *row = GET_ROW(position);
-    *col = GET_COL(position);
-}
-
 /** @brief Scrolls the console display down by 1 line.
  *
  *  Copies the lower 79 lines of display up by 1 and clears the bottom line.
@@ -116,6 +94,21 @@ void scroll()
     }
 }
 
+/** @brief Prints character ch at the current location
+ *         of the cursor.
+ *
+ *  If the character is a newline ('\n'), the cursor is
+ *  be moved to the beginning of the next line (scrolling if necessary).  If
+ *  the character is a carriage return ('\r'), the cursor
+ *  is immediately reset to the beginning of the current
+ *  line, causing any future output to overwrite any existing
+ *  output on the line.  If backsapce ('\b') is encountered,
+ *  the previous character is erased.  See the main console.c description
+ *  for more backspace behavior.
+ *
+ *  @param ch the character to print
+ *  @return The input character
+ */
 int putbyte(char ch)
 {
     int row, col;
@@ -175,6 +168,23 @@ int putbyte(char ch)
     return ch;
 }
 
+/** @brief Prints the string s, starting at the current
+ *         location of the cursor.
+ *
+ *  If the string is longer than the current line, the
+ *  string fills up the current line and then
+ *  continues on the next line. If the string exceeds
+ *  available space on the entire console, the screen
+ *  scrolls up one line, and then the string
+ *  continues on the new line.  If '\n', '\r', and '\b' are
+ *  encountered within the string, they are handled
+ *  as per putbyte. If len is not a positive integer or s
+ *  is null, the function has no effect.
+ *
+ *  @param s The string to be printed.
+ *  @param len The length of the string s.
+ *  @return Void.
+ */
 void putbytes(const char* s, int len)
 {
     int i = 0;
@@ -183,11 +193,31 @@ void putbytes(const char* s, int len)
     if ((s == NULL) || (len <= 0))
         return;
 
+
+
+    int cursor_was_hidden = cursor_hidden;
+    if(!cursor_was_hidden){
+        hide_cursor();
+    }
+
     for (i = 0; i < len; i++) {
         putbyte(s[i]);
     }
+
+    if(!cursor_was_hidden){
+        show_cursor();
+    }
 }
 
+/** @brief Changes the foreground and background color
+ *         of future characters printed on the console.
+ *
+ *  If the color code is invalid, the function has no effect.
+ *
+ *  @param color The new color code.
+ *  @return 0 on success or integer error code less than 0 if
+ *          color code is invalid.
+ */
 int set_term_color(int color)
 {
     if (color >= INVALID_COLOR) {
@@ -197,6 +227,13 @@ int set_term_color(int color)
     return 0;
 }
 
+/** @brief Writes the current foreground and background
+ *         color of characters printed on the console
+ *         into the argument color.
+ *  @param color The address to which the current color
+ *         information will be written.
+ *  @return Void.
+ */
 void get_term_color(int* color)
 {
     if (color == NULL)
@@ -204,50 +241,64 @@ void get_term_color(int* color)
     *color = global_color;
 }
 
+/** @brief Sets the position of the cursor to the
+ *         position (row, col).
+ *
+ *  Subsequent calls to putbytes should cause the console
+ *  output to begin at the new position. If the cursor is
+ *  currently hidden, a call to set_cursor() does not show
+ *  the cursor.
+ *
+ *  @param row The new row for the cursor.
+ *  @param col The new column for the cursor.
+ *  @return 0 on success or integer error code less than 0 if
+ *          cursor location is invalid.
+ */
 int set_cursor(int row, int col)
 {
     // Check if the cursor location given is valid
     if (!cursor_valid(row, col))
         return -1;
 
-    // Update the global position if cursor is hidden
-    if (cursor_hidden) {
-        cursor_row = row;
-        cursor_col = col;
-    }
+    // Update the global position
+    cursor_row = row;
+    cursor_col = col;
     // Update actual hardware position is cursor is shown
-    else
+    if (!cursor_hidden) {
         set_cursor_hardware(row, col);
-
+    }
     return 0;
 }
 
+/** @brief Writes the current position of the cursor
+ *         into the arguments row and col.
+ *  @param row The address to which the current cursor
+ *         row will be written.
+ *  @param col The address to which the current cursor
+ *         column will be written.
+ *  @return Void.
+ */
 void get_cursor(int* row, int* col)
 {
     if ((row == NULL) || (col == NULL))
         return;
 
-    *row = 0;
-    *col = 0;
-
-    // Return stored values if cursor is hidden
-    if (cursor_hidden) {
-        *row = cursor_row;
-        *col = cursor_col;
-    }
-    // Return actual hardware values if cursor is shown
-    else
-        get_cursor_hardware(row, col);
+    *row = cursor_row;
+    *col = cursor_col;
 }
 
+/** @brief Hides the cursor.
+ *
+ *  Subsequent calls to putbytes do not cause the
+ *  cursor to show again.
+ *
+ *  @return Void.
+ */
 void hide_cursor()
 {
     // Do nothing if cursor already hidden
     if (cursor_hidden)
         return;
-
-    // Store current cursor position in global variables
-    get_cursor_hardware(&cursor_row, &cursor_col);
 
     // Move cursor position offscreen
     set_cursor_hardware(CONSOLE_HEIGHT, CONSOLE_WIDTH);
@@ -255,6 +306,12 @@ void hide_cursor()
     cursor_hidden = 1;
 }
 
+/** @brief Shows the cursor.
+ *
+ *  If the cursor is already shown, the function has no effect.
+ *
+ *  @return Void.
+ */
 void show_cursor()
 {
     // Do nothing if cursor already shown
@@ -267,6 +324,12 @@ void show_cursor()
     cursor_hidden = 0;
 }
 
+/** @brief Clears the entire console.
+ *
+ * The cursor is reset to the first row and column
+ *
+ *  @return Void.
+ */
 void clear_console()
 {
     int i;
@@ -281,6 +344,17 @@ void clear_console()
     assert(set_cursor(0, 0) == 0);
 }
 
+/** @brief Prints character ch with the specified color
+ *         at position (row, col).
+ *
+ *  If any argument is invalid, the function has no effect.
+ *
+ *  @param row The row in which to display the character.
+ *  @param col The column in which to display the character.
+ *  @param ch The character to display.
+ *  @param color The color to use to display the character.
+ *  @return Void.
+ */
 void draw_char(int row, int col, int ch, int color)
 {
     if (!cursor_valid(row, col))
@@ -291,6 +365,11 @@ void draw_char(int row, int col, int ch, int color)
     *(char*)(GET_COLOR(row, col)) = color;
 }
 
+/** @brief Returns the character displayed at position (row, col).
+ *  @param row Row of the character.
+ *  @param col Column of the character.
+ *  @return The character at (row, col).
+ */
 char get_char(int row, int col)
 {
     // Check validity of inputs

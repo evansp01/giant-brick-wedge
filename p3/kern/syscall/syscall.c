@@ -205,7 +205,7 @@ void readfile_syscall(ureg_t state)
         goto return_fail;
     }
     // make sure the filename is readable and short enough
-    int strlen = vm_user_strlen(ppd, args.filename);
+    int strlen = vm_user_strlen(ppd, args.filename, MAX_EXECNAME_LEN);
     if(strlen > MAX_EXECNAME_LEN || strlen < 0){
         goto return_fail;
     }
