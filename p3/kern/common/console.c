@@ -193,8 +193,19 @@ void putbytes(const char* s, int len)
     if ((s == NULL) || (len <= 0))
         return;
 
+
+
+    int cursor_was_hidden = cursor_hidden;
+    if(!cursor_was_hidden){
+        hide_cursor();
+    }
+
     for (i = 0; i < len; i++) {
         putbyte(s[i]);
+    }
+
+    if(!cursor_was_hidden){
+        show_cursor();
     }
 }
 
