@@ -15,6 +15,9 @@
 #include "vm_internal.h"
 #include <vm.h>
 
+
+#define DIVIDE_ROUND_UP(x, y) (1 + ((x) - 1) / (y))
+
 /** @brief Structure for the frame allocator */
 static struct frame_alloc {
     int total_frames;

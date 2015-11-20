@@ -23,6 +23,8 @@
 #include <seg.h>
 #include <asm.h>
 
+void dump_registers(ureg_t* ureg);
+
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     if (tcb->swexn.handler != NULL) {
