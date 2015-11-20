@@ -13,7 +13,6 @@
 #include <vm.h>
 #include <mutex.h>
 #include <cond.h>
-#include <setup_idt.h>
 #include <ureg.h>
 
 #define THREAD_EXIT_SUCCESS 0

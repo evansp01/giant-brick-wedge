@@ -12,9 +12,9 @@
 #include <simics.h>
 #include <scheduler.h>
 #include <asm.h>
-#include <mode_switch.h>
 #include <stack_info.h>
 #include "scheduler_internal.h"
+#include "interrupt.h"
 
 /** @brief A struct representing the stack before a context switch */
 typedef struct context_stack {
