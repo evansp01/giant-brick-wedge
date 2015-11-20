@@ -11,7 +11,6 @@
 
 
 #include <vm.h>
-#include <interface.h>
 #include <mutex.h>
 #include <cond.h>
 #include <setup_idt.h>

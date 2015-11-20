@@ -27,7 +27,7 @@ kernel_state_t kernel_state;
  **/
 void init_kernel_state()
 {
-    INIT_STRUCT(&kernel_state.threads);
+    Q_INIT_HEAD(&kernel_state.threads);
     kernel_state.next_id = 1;
     mutex_init(&kernel_state.next_id_mutex);
     mutex_init(&kernel_state.threads_mutex);
@@ -137,12 +137,12 @@ tcb_t* create_pcb_entry()
     mutex_init(&entry->parent_mutex);
     entry->parent = NULL;
     mutex_init(&entry->children_mutex);
-    INIT_STRUCT(&entry->children);
+    Q_INIT_HEAD(&entry->children);
     entry->num_children = 0;
     cond_init(&entry->wait);
     entry->waiting = 0;
     mutex_init(&entry->threads_mutex);
-    INIT_STRUCT(&entry->threads);
+    Q_INIT_HEAD(&entry->threads);
     entry->num_threads = 0;
     entry->id = get_next_id();
     entry->exit_status = 0;
