@@ -11,7 +11,7 @@
 #include <simics.h>
 #include <ureg.h>
 #include <stdint.h>
-#include <control.h>
+#include <control_block.h>
 #include <stdlib.h>
 #include <cr.h>
 #include <stack_info.h>

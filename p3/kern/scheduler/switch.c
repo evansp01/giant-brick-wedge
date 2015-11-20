@@ -7,7 +7,7 @@
  *  @bug No known bugs.
  **/
 
-#include <control.h>
+#include <control_block.h>
 #include <switch.h>
 #include <simics.h>
 #include <scheduler.h>

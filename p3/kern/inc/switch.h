@@ -5,12 +5,12 @@
  *  @bug No known bugs
  **/
 
-#ifndef SWITCH_H_
-#define SWITCH_H_
+#ifndef KERN_INC_SWITCH_H
+#define KERN_INC_SWITCH_H
 
 #include <seg.h>
 #include <stdint.h>
-#include <control.h>
+#include <control_block.h>
 
 /** @brief Restores the context to another kernel stack
  *
@@ -31,5 +31,4 @@ void context_switch(tcb_t *from, tcb_t *to);
 void first_context_switch(void *iret_ptr);
 void setup_for_switch(tcb_t* tcb);
 
-
-#endif // SWITCH_H_
+#endif // KERN_INC_SWITCH_H

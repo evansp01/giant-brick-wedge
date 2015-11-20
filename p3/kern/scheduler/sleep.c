@@ -1,5 +1,5 @@
 #include <variable_queue.h>
-#include <control.h>
+#include <control_block.h>
 #include <scheduler.h>
 #include <asm.h>
 #include <simics.h>

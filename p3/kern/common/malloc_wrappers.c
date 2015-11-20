@@ -10,7 +10,7 @@
 #include <malloc.h>
 #include <malloc_internal.h>
 #include <mutex.h>
-#include <control.h>
+#include <control_block.h>
 #include <assert.h>
 
 static mutex_t mutex;

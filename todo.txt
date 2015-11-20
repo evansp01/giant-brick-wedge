@@ -6,7 +6,6 @@ Testing:
         ...
     
 Non-code:
-    clean up header files --> move to local headers
     re-read code
     change lprintf to also printf to console (define print macro)
     doxygen
@@ -16,3 +15,4 @@ Non-code:
 Optimizations:
     use fast mutexes
     switch to hash tables for global thread/process lists
+    console pre-shell printout

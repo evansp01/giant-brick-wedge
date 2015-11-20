@@ -7,13 +7,14 @@
  *  @bug No known bugs.
  **/
 
-#include <control.h>
+#include <control_block.h>
 #include <scheduler.h>
 #include <switch.h>
 #include <variable_queue.h>
 #include <simics.h>
 #include <asm.h>
 #include <contracts.h>
+#include <malloc_wrappers.h>
 #include "scheduler_internal.h"
 
 /** @brief Structure for a list of threads */

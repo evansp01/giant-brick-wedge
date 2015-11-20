@@ -6,10 +6,10 @@
  *  @bug No known bugs
  **/
 
-#ifndef SYSCALL_KERN_H_
-#define SYSCALL_KERN_H_
+#ifndef KERN_INC_SYSCALL_KERN_H
+#define KERN_INC_SYSCALL_KERN_H
 
-#include <control.h>
+#include <control_block.h>
 #include <ureg.h>
 #include <stdint.h>
 
@@ -27,4 +27,4 @@ int getbytes( const char *filename, int offset, int size, char *buf );
 void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);
 tcb_t* new_program(char* fname, int argc, char** argv);
 
-#endif // SYSCALL_KERN_H_
+#endif // KERN_INC_SYSCALL_KERN_H

@@ -5,10 +5,8 @@
  *  @bug No known bugs
  **/
 
-#ifndef CONTROL_H_
-#define CONTROL_H_
-
-
+#ifndef KERN_INC_CONTROL_BLOCK_H
+#define KERN_INC_CONTROL_BLOCK_H
 
 #include <vm.h>
 #include <mutex.h>
@@ -119,17 +117,6 @@ void pcb_add_thread(pcb_t* pcb, tcb_t* tcb);
 void kernel_remove_thread(tcb_t* tcb);
 void kernel_add_thread(tcb_t* tcb);
 int get_next_id();
-
-void scheduler_release_malloc();
-
 void finalize_exit(tcb_t *tcb);
-void init_malloc();
-void acquire_malloc();
-void release_malloc();
-void free_later(tcb_t *tcb);
-void _free_tcb(tcb_t* tcb);
-void _free_pcb(pcb_t* pcb);
 
-
-
-#endif // CONTROL_H_
+#endif // KERN_INC_CONTROL_BLOCK_H

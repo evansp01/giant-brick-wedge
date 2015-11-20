@@ -1,5 +1,12 @@
-#ifndef INTERRUPT_H
-#define INTERRUPT_H
+/** @file interrupt.h
+ *  @brief Interface for interrupt module
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+ 
+#ifndef KERN_INC_INTERRUPT_H
+#define KERN_INC_INTERRUPT_H
 
 void install_exceptions();
 void install_syscalls();
@@ -12,5 +19,5 @@ void install_devices();
 void go_to_user_mode(void *esp);
 
 
-#endif
+#endif // KERN_INC_INTERRUPT_H
 

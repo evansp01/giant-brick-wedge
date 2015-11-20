@@ -8,7 +8,7 @@
  **/
 
 #include "mode_switch.h"
-#include <control.h>
+#include <control_block.h>
 #include <stdlib.h>
 #include <simics.h>
 #include <cr.h>

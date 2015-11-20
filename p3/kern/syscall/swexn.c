@@ -7,7 +7,7 @@
  *  @bug No known bugs.
  **/
 
-#include <control.h>
+#include <control_block.h>
 #include <stdlib.h>
 #include <syscall_kern.h>
 #include <eflags.h>

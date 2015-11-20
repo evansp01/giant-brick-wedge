@@ -21,7 +21,7 @@
 #include <x86/asm.h> /* enable_interrupts() */
 
 /* additional includes */
-#include <control.h>
+#include <control_block.h>
 #include <switch.h>
 #include <vm.h>
 #include <malloc.h>
@@ -33,7 +33,7 @@
 #include <syscall_kern.h>
 #include <interrupt.h>
 #include <console.h>
-
+#include <malloc_wrappers.h>
 
 /** @brief Kernel entrypoint.
  *

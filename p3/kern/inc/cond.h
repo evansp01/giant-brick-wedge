@@ -5,8 +5,8 @@
  *  @bug No known bugs
  **/
 
-#ifndef COND_H_
-#define COND_H_
+#ifndef KERN_INC_COND_H
+#define KERN_INC_COND_H
 
 #include <mutex.h>
 #include <variable_queue.h>
@@ -25,4 +25,4 @@ void cond_destroy( cond_t *cv );
 void cond_wait( cond_t *cv, mutex_t *mp );
 void cond_signal( cond_t *cv );
 
-#endif // COND_H_
+#endif // KERN_INC_COND_H

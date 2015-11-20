@@ -11,7 +11,7 @@
 #include <ureg.h>
 #include <stdint.h>
 #include <common_kern.h>
-#include <control.h>
+#include <control_block.h>
 #include <scheduler.h>
 #include <stdlib.h>
 #include <string.h>

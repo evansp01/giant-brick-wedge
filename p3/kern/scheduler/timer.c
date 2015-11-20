@@ -10,7 +10,7 @@
 
 #include <asm.h>
 #include <scheduler.h>
-#include <control.h>
+#include <control_block.h>
 #include <interrupt_defines.h>
 #include <timer_defines.h>
 #include <simics.h>

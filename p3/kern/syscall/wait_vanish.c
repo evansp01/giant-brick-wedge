@@ -1,10 +1,11 @@
-#include <control.h>
+#include <control_block.h>
 #include <cond.h>
 #include <variable_queue.h>
 #include <stdlib.h>
 #include <contracts.h>
 #include <simics.h>
 #include <scheduler.h>
+#include <malloc_wrappers.h>
 
 /** @brief The vanish syscall
  *  @param state The current state in user mode

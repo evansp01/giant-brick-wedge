@@ -7,7 +7,7 @@
  *  @bug No known bugs.
  **/
 
-#include <control.h>
+#include <control_block.h>
 #include <malloc.h>
 #include <page.h>
 #include <simics.h>
@@ -18,6 +18,7 @@
 #include <cr.h>
 #include <contracts.h>
 #include <malloc_internal.h>
+#include <malloc_wrappers.h>
 
 // Global kernel state with process and thread info
 kernel_state_t kernel_state;

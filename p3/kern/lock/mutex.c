@@ -8,7 +8,7 @@
 
 #include <mutex.h>
 #include <stdlib.h>
-#include <control.h>
+#include <control_block.h>
 #include <scheduler.h>
 #include <asm.h>
 

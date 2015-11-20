@@ -1,6 +1,12 @@
+/** @file scheduler.h
+ *  @brief Interface for stack related macros
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
 
-#ifndef _STACK_INFO_H
-#define _STACK_INFO_H
+#ifndef KERN_INC_STACK_INFO_H
+#define KERN_INC_STACK_INFO_H
 
 #include <page.h>
 #include <stdint.h>
@@ -21,4 +27,4 @@
 #define K_STACK_BASE(x) ((uint32_t)(x) & K_STACK_BASE_MASK)
 #define K_STACK_ADDR(x) ((uint32_t)(x) & K_STACK_ADDR_MASK)
 
-#endif /* _STACK_INFO_H */
+#endif /* KERN_INC_STACK_INFO_H */

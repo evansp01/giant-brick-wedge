@@ -1,5 +1,13 @@
-#ifndef PAGE_STRUCTS_H_
-#define PAGE_STRUCTS_H_
+/** @file syscall.h
+ *  @brief Interface for syscall related functions
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
+#ifndef KERN_INC_VM_H
+#define KERN_INC_VM_H
 
 #include <variable_queue.h>
 #include <mutex.h>
@@ -25,8 +33,6 @@ typedef struct ppd {
 } ppd_t;
 
 void init_virtual_memory();
-
-
 uint32_t page_align(uint32_t address);
 
 ppd_t *init_ppd();
@@ -58,4 +64,4 @@ int vm_write_locked(ppd_t* ppd, void* buffer, uint32_t start, uint32_t size);
 
 int vm_resolve_pagefault(ppd_t *ppd, uint32_t cr2, int error_code);
 
-#endif // PAGE_STRUCTS_H_
+#endif // KERN_INC_VM_H

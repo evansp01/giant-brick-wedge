@@ -1,10 +1,11 @@
 /** @file variable_queue.h
- *
  *  @brief Generalized queue module for data collection
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  **/
 
+#ifndef KERN_INC_VARIABLE_QUEUE_H
+#define KERN_INC_VARIABLE_QUEUE_H
 
 /** @def Q_NEW_HEAD(Q_HEAD_TYPE, Q_ELEM_TYPE)
  *
@@ -355,3 +356,4 @@
 #define Q_IS_EMPTY(Q_HEAD) \
     ((*Q_HEAD).head == NULL)
 
+#endif // KERN_INC_VARIABLE_QUEUE_H

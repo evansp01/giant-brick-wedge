@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 #include <idt.h>
-#include <control.h>
+#include <control_block.h>
 
 #define _NAME_ASM(name) name##_asm
 /** @def CONSTRUCT_HANDLER_H(NAME)

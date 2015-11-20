@@ -4,10 +4,11 @@
 #include "vm_internal.h"
 #include <stdlib.h>
 #include <malloc.h>
-#include <control.h>
+#include <control_block.h>
 #include <asm.h>
 #include <malloc_internal.h>
 #include <assert.h>
+#include <malloc_wrappers.h>
 
 /** @brief Initialize a process page directory
  *

@@ -5,11 +5,11 @@
  *  @bug No known bugs
  **/
 
-#ifndef SCHEDULER_H_
-#define SCHEDULER_H_
+#ifndef KERN_INC_SCHEDULER_H
+#define KERN_INC_SCHEDULER_H
 
 #include <stdint.h>
-#include <control.h>
+#include <control_block.h>
 
 uint32_t get_ticks();
 int yield(int yield_tid);
@@ -28,4 +28,4 @@ int user_deschedule(tcb_t* tcb, uint32_t esi);
 int add_sleeper(tcb_t* tcb, uint32_t ticks);
 void release_sleeper(tcb_t *tcb);
 
-#endif // SCHEDULER_H_
+#endif // KERN_INC_SCHEDULER_H

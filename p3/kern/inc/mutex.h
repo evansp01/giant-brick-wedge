@@ -5,8 +5,8 @@
  *  @bug No known bugs
  **/
 
-#ifndef MUTEX_H_
-#define MUTEX_H_
+#ifndef KERN_INC_MUTEX_H
+#define KERN_INC_MUTEX_H
 
 #include <variable_queue.h>
 
@@ -29,4 +29,4 @@ void mutex_lock(mutex_t* mp);
 void mutex_unlock(mutex_t* mp);
 void scheduler_mutex_unlock(mutex_t* mp);
 
-#endif // MUTEX_H_
+#endif // KERN_INC_MUTEX_H

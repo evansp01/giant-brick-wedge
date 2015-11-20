@@ -8,7 +8,7 @@
  **/
 
 #include <stdlib.h>
-#include <control.h>
+#include <control_block.h>
 #include <asm.h>
 #include <keyhelp.h>
 #include <console.h>

@@ -8,7 +8,7 @@
 #include <cond.h>
 #include <simics.h>
 #include <stdlib.h>
-#include <control.h>
+#include <control_block.h>
 #include <asm.h>
 #include <scheduler.h>
 #include <mutex.h>

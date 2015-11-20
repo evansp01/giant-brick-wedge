@@ -1,10 +1,12 @@
 /** @file variable_htable.h
- *
  * @brief Generalized hash table based on variable queue
  *
  * @author Evan Palmer (esp)
  **/
 
+#ifndef KERN_INC_VARIABLE_HTABLE_H
+#define KERN_INC_VARIABLE_HTABLE_H
+ 
 #include <stdint.h>
 #include <stdlib.h>
 #include "variable_queue.h"
@@ -399,3 +401,5 @@ uint32_t hash_int(uint32_t x);
             _H_RESIZE_TABLE(table, key_field, link, _H_CAP(table) / 2); \
         }                                                               \
     } while (0)
+
+#endif // KERN_INC_VARIABLE_HTABLE_H
