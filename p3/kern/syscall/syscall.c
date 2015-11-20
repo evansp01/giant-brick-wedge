@@ -18,31 +18,21 @@
 #include <asm.h>
 #include <mutex.h>
 #include <console.h>
-#include <video_defines.h>
 #include <seg.h>
 #include <eflags.h>
 #include <syscall_kern.h>
 #include <exec2obj.h>
 
-
-#define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
 #define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
 
-/** @brief Struct for variables required for syscalls */
-typedef struct {
-    mutex_t read_mutex;
-    mutex_t print_mutex;
-} sysvars_t;
-
-static sysvars_t sysvars;
+static mutex_t print_mutex;
 
 /** @brief Initializes the mutexes used in the console syscalls
  *  @return void
  */
-void init_syscalls()
+void init_print()
 {
-    mutex_init(&sysvars.read_mutex);
-    mutex_init(&sysvars.print_mutex);
+    mutex_init(&print_mutex);
 }
 
 /** @brief The set_status syscall
@@ -218,47 +208,6 @@ void remove_pages_syscall(ureg_t state)
     state.eax = result;
 }
 
-/** @brief The readline syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void readline_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    struct {
-        int len;
-        char *buf;
-    } args;
-    
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
-        state.eax = -1;
-        return;
-    }
-    
-    if(args.len == 0){
-        state.eax = 0;
-        return;
-    }
-
-    // Error: len is unreasonable
-    if ((args.len > MAX_LEN)||(args.len < 0)) {
-        state.eax = -1;
-        return;
-    }
-    // Error: buf is not a valid memory address
-    if (!vm_user_can_write(ppd, (void *)args.buf, args.len)) {
-        state.eax = -2;
-        return;
-    }
-
-    mutex_lock(&sysvars.read_mutex);
-    int num_bytes = readline(args.len, args.buf, tcb, ppd);
-    mutex_unlock(&sysvars.read_mutex);
-
-    state.eax = num_bytes;
-}
-
 /** @brief The getchar syscall
  *  @param state The current state in user mode
  *  @return void
@@ -295,7 +244,7 @@ void print_syscall(ureg_t state)
         return;
     }
     // Error: len is unreasonable
-    if ((args.len > MAX_LEN)||(args.len < 0)) {
+    if (args.len < 0) {
         state.eax = -1;
         return;
     }
@@ -305,9 +254,9 @@ void print_syscall(ureg_t state)
         state.eax = -2;
         return;
     }
-    mutex_lock(&sysvars.print_mutex);
+    mutex_lock(&print_mutex);
     putbytes(args.buf, args.len);
-    mutex_unlock(&sysvars.print_mutex);
+    mutex_unlock(&print_mutex);
     mutex_unlock(&ppd->lock);
     state.eax = 0;
 }

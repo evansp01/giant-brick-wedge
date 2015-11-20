@@ -48,7 +48,8 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     install_exceptions();
     init_timer();
     install_devices();
-    init_syscalls();
+    init_print();
+    init_readline();
     install_syscalls();
     init_virtual_memory();
     init_kernel_state();

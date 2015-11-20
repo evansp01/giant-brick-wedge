@@ -13,7 +13,8 @@
 #include <ureg.h>
 #include <stdint.h>
 
-void init_syscalls();
+void init_print();
+void init_readline();
 void halt_asm();
 void register_swexn(tcb_t *tcb,swexn_handler_t handler,void *arg,void *stack);
 void deregister_swexn(tcb_t *tcb);

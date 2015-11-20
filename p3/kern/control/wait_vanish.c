@@ -23,9 +23,7 @@ int wait(pcb_t* pcb, int *status_ptr)
     pcb_t* child = Q_GET_FRONT(&pcb->children);
     if(child->state != P_EXITED){
         pcb->waiting++;
-        if(child->id < 0){
-            MAGIC_BREAK;
-        }
+        assert(child->id > 0);
         cond_wait(&pcb->wait, &pcb->children_mutex);
         child = Q_GET_FRONT(&pcb->children);
     }

@@ -14,8 +14,13 @@
 #include <console.h>
 #include <scheduler.h>
 #include <interrupt_defines.h>
+#include <video_defines.h>
 
 #define KEYBOARD_BUFFER_SIZE 2048
+#define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
+
+static char temp[MAX_LEN];
+static mutex_t read_mutex;
 
 /** @brief A circlular buffer for storing and reading keystrokes */
 typedef struct {
@@ -135,9 +140,8 @@ void keyboard_interrupt(ureg_t state)
         if (is_readline()) {
             if ((keyboard.num_chars >= keyboard.user_buf_len)||
                 (keyboard.num_newlines > 0)) {
-                schedule(keyboard.readline_thread, T_KERN_SUSPENDED);
                 keyboard.user_buf_len = 0;
-                keyboard.readline_thread = NULL;
+                schedule(keyboard.readline_thread, T_KERN_SUSPENDED);
             }
         }
     }
@@ -166,28 +170,77 @@ int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd)
 
     // Copy characters from keyboard buffer to user buffer
     int i;
-    char c;
     for (i = 0; i < len; i++) {
         
         // Get the character from the keyboard buffer
         disable_interrupts();
-        c = keyboard.buffer[keyboard.consumer];
+        temp[i] = keyboard.buffer[keyboard.consumer];
         keyboard.consumer = next_index(keyboard.consumer);
         keyboard.num_chars--;
-        if (c == '\n') {
+        if (temp[i] == '\n') {
             keyboard.num_newlines--;
         }
         enable_interrupts();
         
-        // Copy the character to the user buffer
-        if (vm_write_locked(ppd, &c, (uint32_t)&buf[i], sizeof(char)) < 0) {
-            return -1;
-        }
-        
         // Done if we encounter a newline
-        if (c == '\n') {
-            return i + 1;
+        if (temp[i] == '\n') {
+            i++;
+            break;
         }
     }
+    
+    // Copy to the user buffer
+    if (vm_write_locked(ppd, temp, (uint32_t)buf, i*sizeof(char)) < 0) {
+        return -1;
+    }
     return i;
+}
+
+/** @brief Initializes the mutexes used in the console syscalls
+ *  @return void
+ */
+void init_readline()
+{
+    mutex_init(&read_mutex);
+}
+
+/** @brief The readline syscall
+ *  @param state The current state in user mode
+ *  @return void
+ */
+void readline_syscall(ureg_t state)
+{
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = tcb->process->directory;
+    struct {
+        int len;
+        char *buf;
+    } args;
+    
+    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+        state.eax = -1;
+        return;
+    }
+    
+    if(args.len == 0){
+        state.eax = 0;
+        return;
+    }
+
+    // Error: len is unreasonable
+    if ((args.len > MAX_LEN)||(args.len < 0)) {
+        state.eax = -1;
+        return;
+    }
+    // Error: buf is not a valid memory address
+    if (!vm_user_can_write(ppd, (void *)args.buf, args.len)) {
+        state.eax = -2;
+        return;
+    }
+    
+    mutex_lock(&read_mutex);
+    int num_bytes = readline(args.len, args.buf, tcb, ppd);
+    mutex_unlock(&read_mutex);
+
+    state.eax = num_bytes;
 }

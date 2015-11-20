@@ -5,27 +5,32 @@ Things to take note of:
         3. kill the kernel
 
 Stuff to do:
-    
-    clean up header files --> move to local headers
-    
     exec strlen should fail fast
+    copy to p3ck3, give status update
+    strange bug: schedule() called with conflicting thread status
     
-    switch to hash tables for global thread/process lists
-    
-    change lprintf to also printf to console (non-simics functionality)
-    
-    change print, cursor implementation (put all bytes then set cursor)
-    
-    run all tests
-    
-    readline
-        keep two buffers, scancodes and chars
-        process only if readline is active
-        disable interrupts
-    
-    tests to write
+Testing:
+    re-run all kernel tests
+    copy user tests into user/progs
+    run user tests
+    write tests
         readline multithreaded
         print multithreaded
         readfile
     
+Non-code:
+    get rid of all TODO, useless code
+    organize files/folders
+    change lprintf to also printf to console (define print macro)
+    clean up header files --> move to local headers
+    doxygen
+    design docs
+    
+Optimizations:
     use fast mutexes
+    change print, cursor implementation (put all bytes then set cursor)
+    switch to hash tables for global thread/process lists
+    readline
+        keep two buffers, scancodes and chars
+        process only if readline is active
+        disable interrupts
