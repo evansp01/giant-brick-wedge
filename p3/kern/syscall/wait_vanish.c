@@ -6,6 +6,26 @@
 #include <simics.h>
 #include <scheduler.h>
 
+/** @brief The vanish syscall
+ *  @param state The current state in user mode
+ *  @return void
+ */
+void vanish_syscall(ureg_t state)
+{
+    tcb_t* tcb = get_tcb();
+    vanish_thread(tcb, THREAD_EXIT_SUCCESS);
+}
+
+/** @brief The wait syscall
+ *  @param state The current state in user mode
+ *  @return void
+ */
+void wait_syscall(ureg_t state)
+{
+    tcb_t* tcb = get_tcb();
+    state.eax = wait(tcb->process, (int*)state.esi);
+}
+
 /** @brief Waits on children of a process if any children exist
  *
  *  @param pcb The process whose children should be waited on

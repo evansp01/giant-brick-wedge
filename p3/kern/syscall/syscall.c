@@ -32,16 +32,6 @@ void set_status_syscall(ureg_t state)
     pcb->exit_status = state.esi;
 }
 
-/** @brief The vanish syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void vanish_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    vanish_thread(tcb, THREAD_EXIT_SUCCESS);
-}
-
 /** @brief The task_vanish syscall
  *  @param state The current state in user mode
  *  @return void
@@ -53,16 +43,6 @@ void task_vanish_syscall(ureg_t state)
     while(1) {
         continue;
     }
-}
-
-/** @brief The wait syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void wait_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    state.eax = wait(tcb->process, (int*)state.esi);
 }
 
 /** @brief The gettid syscall
@@ -109,7 +89,6 @@ void make_runnable_syscall(ureg_t state)
         mutex_unlock(&kernel_state.threads_mutex);
         state.eax = -1;
     } else {
-        // TODO: not cause kernel segfault
         state.eax = user_schedule(make_runnable, &kernel_state.threads_mutex);
     }
 }

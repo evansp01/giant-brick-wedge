@@ -9,8 +9,6 @@
 #define CONTROL_H_
 
 
-#define THREAD_EXIT_SUCCESS 0
-#define THREAD_EXIT_FAILED 1
 
 #include <vm.h>
 #include <interface.h>
@@ -18,6 +16,9 @@
 #include <cond.h>
 #include <setup_idt.h>
 #include <ureg.h>
+
+#define THREAD_EXIT_SUCCESS 0
+#define THREAD_EXIT_FAILED 1
 
 typedef enum {
     T_NOT_YET,
@@ -106,16 +107,12 @@ extern kernel_state_t kernel_state;
 void init_kernel_state();
 tcb_t *create_pcb_entry();
 void free_pcb(pcb_t* pcb);
-void _free_pcb(pcb_t* pcb);
 tcb_t *create_tcb_entry(int id);
 void free_tcb(tcb_t* tcb);
-void _free_tcb(tcb_t* tcb);
-void *allocate_kernel_stack();
 void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child);
 tcb_t *get_tcb();
 tcb_t* get_tcb_by_id(int tid);
 int get_thread_count(pcb_t *pcb);
-void finalize_exit(tcb_t *tcb);
 void vanish_thread(tcb_t *tcb, int failed);
 int wait(pcb_t* pcb, int *status_ptr);
 void pcb_add_child(pcb_t *parent, pcb_t *child);
@@ -125,11 +122,15 @@ void kernel_remove_thread(tcb_t* tcb);
 void kernel_add_thread(tcb_t* tcb);
 int get_next_id();
 
+void scheduler_release_malloc();
 
-
+void finalize_exit(tcb_t *tcb);
 void acquire_malloc();
 void release_malloc();
-void scheduler_release_malloc();
 void free_later(tcb_t *tcb);
+void _free_tcb(tcb_t* tcb);
+void _free_pcb(pcb_t* pcb);
+
+
 
 #endif // CONTROL_H_
