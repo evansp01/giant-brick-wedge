@@ -23,6 +23,7 @@
 #include <stack_info.h>
 #include <stdlib.h>
 #include <mutex.h>
+#include <asm.h>
 
 #define STACK_HIGH 0xFFFFFFF0
 #define NUM_PARAMS_TO_MAIN 5
@@ -370,7 +371,6 @@ int load_process(tcb_t* tcb, simple_elf_t* elf,
                  int argc, char** argv, int arglen)
 {
     pcb_t* pcb = tcb->process;
-    switch_ppd(pcb->directory);
     if (create_proc_pagedir(elf, pcb->directory) < 0) {
         return -1;
     }
@@ -415,6 +415,7 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     if (pcb->directory == NULL) {
         panic("Cannot create pcb for required program %s", fname);
     }
+    switch_ppd(pcb->directory);
     if (load_process(tcb, &elf, argc, argv, argspace) < 0) {
         panic("Cannot exec required program %s", fname);
     }
@@ -423,6 +424,20 @@ tcb_t* new_program(char* fname, int argc, char** argv)
     // Register process for simics user space debugging
     sim_reg_process(tcb->process->directory->dir, fname);
     return tcb;
+}
+
+/** @brief Replace the directory in the pcb and update cr3
+ *
+ *  @param pcb Process whose directory will be replaced
+ *  @param dir New directory
+ *  @return void
+ **/
+void replace_pcb_dir(pcb_t *pcb, ppd_t* dir)
+{
+    disable_interrupts();
+    pcb->directory = dir;
+    switch_ppd(pcb->directory);
+    enable_interrupts();
 }
 
 /** @brief Replace the current program in this process with another program
@@ -448,15 +463,15 @@ int replace_process(tcb_t* tcb, void* k_space,
     }
     //save the old directory in case we want to revert
     ppd_t* old_dir = pcb->directory;
-    pcb->directory = new;
+    replace_pcb_dir(pcb, new);
+
     //switches to new directory;
     int status = load_process(tcb, &elf, argc, k_argv, arglen);
     if (status < 0) {
         // if we failed make sure to restore the old page directory
         ppd_t *tmp = pcb->directory;
-        pcb->directory = old_dir;
+        replace_pcb_dir(pcb, old_dir);
         free_ppd(tmp, pcb->directory);
-        switch_ppd(pcb->directory);
     } else {
         // De-register the previously running process in simics
         sim_unreg_process(old_dir->dir);

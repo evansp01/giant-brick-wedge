@@ -126,6 +126,20 @@ void free_ppd_kernel_mem(ppd_t* to_free)
     release_malloc();
 }
 
+/** @brief Switch dir and ppd
+ *
+ *  @param current The current ppd
+ *  @param new The page directory to replace it with
+ *  @return void
+ **/
+void switch_dir_ppd(ppd_t* current, page_directory_t* new)
+{
+    disable_interrupts();
+    current->dir = new;
+    switch_ppd(current);
+    enable_interrupts();
+}
+
 /** @brief Free all memory associated with a ppd
  *
  *  @param to_free The ppd to free
@@ -135,18 +149,12 @@ void free_ppd_kernel_mem(ppd_t* to_free)
 void free_ppd(ppd_t* to_free, ppd_t* current)
 {
     page_directory_t* tmp = current->dir;
-
-    disable_interrupts();
-    current->dir = to_free->dir;
-    switch_ppd(current);
-    enable_interrupts();
-
+    
+    // switch page directory to free user memory
+    switch_dir_ppd(current, to_free->dir);
     free_ppd_user_mem(to_free);
-
-    disable_interrupts();
-    current->dir = tmp;
-    switch_ppd(current);
-    enable_interrupts();
+    switch_dir_ppd(current, tmp);
+    
     free_ppd_kernel_mem(to_free);
 }
 
@@ -220,16 +228,12 @@ ppd_t* init_ppd_from(ppd_t* from)
     }
     // swap to kernel ppd for copying
     page_directory_t* from_dir = from->dir;
+    
     //temporarily use identity mapping
-    disable_interrupts();
-    from->dir = virtual_memory.identity;
-    switch_ppd(from);
-    enable_interrupts();
+    switch_dir_ppd(from, virtual_memory.identity);
     int status = copy_page_dir(ppd->dir, from_dir);
-    disable_interrupts();
-    from->dir = from_dir;
-    switch_ppd(from);
-    enable_interrupts();
+    switch_dir_ppd(from, from_dir);
+    
     if (status < 0) {
         free_ppd(ppd, from);
         return NULL;

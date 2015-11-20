@@ -6,13 +6,12 @@ Things to take note of:
 
 Stuff to do:
     exec strlen should fail fast
-    ppd switch atomic
     destroy mutexes before they are freed
     //strange bug: schedule() called with conflicting thread status
     
 Testing:
     add and run remaining tests
-    run cho_variant at varying timer rates (right now 100-120 done)
+    run cho_variant at varying timer rates (right now 100-125 done)
     write tests
         readline multithreaded
         print multithreaded
