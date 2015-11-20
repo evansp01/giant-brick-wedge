@@ -11,20 +11,12 @@
 #define UTILITIES_H_
 #include <simics.h>
 #include <page.h>
-#include <ureg.h>
 #include <vm.h>
 
-#define LEA(address, size, index) \
-    (((char*)(address)) + ((unsigned int)(size) * (unsigned int)(index)))
-#define DIVIDE_ROUND_UP(x, y) (1 + ((x) - 1) / (y))
-#define SET_BIT(var, bit) ((var) | 1 << (bit))
-#define UNSET_BIT(var, bit) ((var) & (~(1 << (bit))))
-#define AS_TYPE(address, type) (*(type*)&(address))
-void dump_registers(ureg_t* ureg);
 
-#define DEBUG
+#define DEBUG_ASSERTS
 
-#ifdef DEBUG
+#ifdef DEBUG_ASSERTS
 // assert macros courtesy of
 // http://stackoverflow.com/questions/3385515/static-assert-in-c
 #define STATIC_ASSERT(COND, MSG) \

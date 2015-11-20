@@ -3,7 +3,6 @@
 #include <page.h>
 #include <common_kern.h>
 #include <string.h>
-#include <utilities.h>
 #include <stdio.h>
 #include <vm.h>
 #include <malloc.h>

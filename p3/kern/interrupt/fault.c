@@ -11,7 +11,6 @@
 #include <simics.h>
 #include <ureg.h>
 #include <stdint.h>
-#include <utilities.h>
 #include <control.h>
 #include <stdlib.h>
 #include <cr.h>
@@ -22,6 +21,8 @@
 #include <syscall_kern.h>
 #include <seg.h>
 #include <asm.h>
+
+void dump_registers(ureg_t* ureg);
 
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {

@@ -14,7 +14,6 @@
 #include <simics.h>
 #include <asm.h>
 #include <contracts.h>
-#include <utilities.h>
 #include "scheduler_internal.h"
 
 /** @brief Structure for a list of threads */

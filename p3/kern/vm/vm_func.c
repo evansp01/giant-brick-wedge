@@ -1,5 +1,4 @@
 #include <vm.h>
-#include <utilities.h>
 #include <contracts.h>
 #include <string.h>
 #include "vm_internal.h"

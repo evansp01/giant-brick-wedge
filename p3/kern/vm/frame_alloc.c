@@ -10,7 +10,6 @@
 #include <page.h>
 #include <common_kern.h>
 #include <string.h>
-#include <utilities.h>
 #include <mutex.h>
 #include "vm_internal.h"
 #include <vm.h>

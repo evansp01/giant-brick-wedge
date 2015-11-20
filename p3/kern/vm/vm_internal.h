@@ -2,18 +2,23 @@
 #define H_VM_INTERNAL_
 
 #include <common_kern.h>
-#include <utilities.h>
 #include <stdint.h>
 #include <page.h>
 #include <stddef.h>
 #include <mutex.h>
+#include "debug_assert.h"
 
 #define PAGES_PER_TABLE 1024
 #define TABLES_PER_DIR 1024
 #define ENTRY_ADDRESS_SHIFT 12
 #define OVERCOMMIT_RATIO 1
 
-#define KERNEL_TABLES DIVIDE_ROUND_UP(USER_MEM_START, PAGE_SIZE* PAGES_PER_TABLE)
+#define DIVIDE_ROUND_UP(x, y) (1 + ((x) - 1) / (y))
+#define KERNEL_TABLES \
+    DIVIDE_ROUND_UP(USER_MEM_START, PAGE_SIZE* PAGES_PER_TABLE)
+
+
+#define AS_TYPE(address, type) (*(type*)&(address))
 
 typedef struct {
     uint32_t present : 1;       /* bit 0 */
