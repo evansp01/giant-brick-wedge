@@ -25,8 +25,6 @@ void deschedule(tcb_t* tcb, thread_state_t new_state);
 void deschedule_and_drop(tcb_t* tcb, mutex_t* mp, thread_state_t new_state);
 int user_deschedule(tcb_t* tcb, uint32_t esi);
 
-void scheduler_pre_switch(tcb_t* from, tcb_t* to);
-
 int add_sleeper(tcb_t* tcb, uint32_t ticks);
 void release_sleeper(tcb_t *tcb);
 

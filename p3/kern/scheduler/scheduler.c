@@ -27,17 +27,31 @@ static struct {
     uint32_t ticks;
 } scheduler = { 0 };
 
+/** @brief Gets the number of ticks since system start
+ *
+ *  @return The number of ticks
+ **/
 uint32_t get_ticks()
 {
     return scheduler.ticks;
 }
 
+/** @brief Add a thread to the runnable list
+ *
+ *  @param tcb The thread to add
+ *  @return void
+ **/
 void add_runnable(tcb_t* tcb)
 {
     tcb->state = T_RUNNABLE;
     Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
 }
 
+/** @brief Remove a thread from the runnable list, and update it's state
+ *
+ *  @param tcb The thread to remove
+ *  @param state The new state of the removed thread
+ **/
 void remove_runnable(tcb_t* tcb, thread_state_t state)
 {
     tcb->state = state;
@@ -45,6 +59,9 @@ void remove_runnable(tcb_t* tcb, thread_state_t state)
 }
 
 /** @brief Initializes the scheduler
+ *
+ *  @param idle The idle thread
+ *  @param first The first thread which should be run
  *
  *  @return void
  */
@@ -103,6 +120,7 @@ void run_scheduler(uint32_t ticks)
 /** @brief Schedules the thread to be run
  *
  *  @param tcb Pointer to tcb of thread to schedule
+ *  @param state The state the scheduling thread expects to find the tcb in
  *  @return void
  */
 void schedule(tcb_t* tcb, thread_state_t expected)
@@ -115,16 +133,25 @@ void schedule(tcb_t* tcb, thread_state_t expected)
 /** @brief Schedules the thread to be run
  *
  *  @param tcb Pointer to tcb of thread to schedule
+ *  @param state The state the scheduling thread expects to find the tcb in
  *  @return void
  */
 void schedule_interrupts_disabled(tcb_t* tcb, thread_state_t expected)
 {
     if (tcb->state != expected) {
-        panic("Things are not as expected");
+        panic("Thread schedule attempted, thread not in expected state");
     }
     add_runnable(tcb);
 }
 
+/** @brief Schedule a thread using the make_runnable thread
+ *
+ *  The thread must have been suspended by the user
+ *
+ *  @param tcb The thread the schedule
+ *  @param mp The thread list mutex, which we will drop
+ *  @return Zero on success, less than zero on failure
+ **/
 int user_schedule(tcb_t* tcb, mutex_t* mp)
 {
     disable_interrupts();
@@ -138,12 +165,13 @@ int user_schedule(tcb_t* tcb, mutex_t* mp)
     return 0;
 }
 
-/** @brief Deschedules the current thread
+/** @brief Deschedules the current thread, and drops a mutex
  *
- *  Runs the next thread without re-scheduling the current thread
- *
+ *  @param tcb The thread to deschedule
+ *  @param mp The mutex to drop
+ *  @param new_state The threads new state upon being descheduled
  *  @return void
- */
+ **/
 void deschedule_and_drop(tcb_t* tcb, mutex_t* mp, thread_state_t new_state)
 {
     disable_interrupts();
@@ -152,6 +180,12 @@ void deschedule_and_drop(tcb_t* tcb, mutex_t* mp, thread_state_t new_state)
     switch_to_next(tcb, YIELD_MODE);
 }
 
+/** @brief Deschedules the current thread
+ *
+ *  @param tcb The thread to deschedule
+ *  @param new_state The threads new state upon being descheduled
+ *  @return void
+ **/
 void deschedule(tcb_t* tcb, thread_state_t new_state)
 {
     disable_interrupts();
@@ -159,6 +193,15 @@ void deschedule(tcb_t* tcb, thread_state_t new_state)
     switch_to_next(tcb, YIELD_MODE);
 }
 
+/** @brief Kills the current thread, setting it's exit status to T_EXITED
+ *
+ *  kill_thread must be called with the malloc_mutex held, so that the threads
+ *  memory cannot be freed before it is deschedule, kill_thread will drop
+ *  this mutex
+ *
+ *  @param tcb The thread to kill
+ *  @return void
+ **/
 void kill_thread(tcb_t* tcb)
 {
     disable_interrupts();
@@ -167,6 +210,12 @@ void kill_thread(tcb_t* tcb)
     switch_to_next(tcb, YIELD_MODE);
 }
 
+/** @brief Deschedule a runnable thread using the deschedule call
+ *
+ *  @param tcb The thread to deschedule
+ *  @param esi The reject pointer passed by the user
+ *  @return Zero on success, less than zero on failure
+ **/
 int user_deschedule(tcb_t* tcb, uint32_t esi)
 {
     ppd_t* ppd = tcb->process->directory;
