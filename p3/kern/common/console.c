@@ -75,28 +75,6 @@ void set_cursor_hardware(int row, int col)
     outb(CRTC_DATA_REG, LSB);
 }
 
-/** @brief Retrieves the coordinate position of the hardware cursor.
- *
- *  @param row Pointer to store row of hardware cursor.
- *  @param col Pointer to store column of hardware cursor.
- *  @return Void
- */
-void get_cursor_hardware(int* row, int* col)
-{
-    // Get MSB of cursor position
-    outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
-    uint8_t MSB = inb(CRTC_DATA_REG);
-
-    // Get LSB of cursor position
-    outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
-    uint8_t LSB = inb(CRTC_DATA_REG);
-
-    // Calculate cursor position
-    uint16_t position = GET_POS(MSB, LSB);
-    *row = GET_ROW(position);
-    *col = GET_COL(position);
-}
-
 /** @brief Scrolls the console display down by 1 line.
  *
  *  Copies the lower 79 lines of display up by 1 and clears the bottom line.
@@ -210,15 +188,13 @@ int set_cursor(int row, int col)
     if (!cursor_valid(row, col))
         return -1;
 
-    // Update the global position if cursor is hidden
-    if (cursor_hidden) {
-        cursor_row = row;
-        cursor_col = col;
-    }
+    // Update the global position
+    cursor_row = row;
+    cursor_col = col;
     // Update actual hardware position is cursor is shown
-    else
+    if (!cursor_hidden) {
         set_cursor_hardware(row, col);
-
+    }
     return 0;
 }
 
@@ -227,17 +203,8 @@ void get_cursor(int* row, int* col)
     if ((row == NULL) || (col == NULL))
         return;
 
-    *row = 0;
-    *col = 0;
-
-    // Return stored values if cursor is hidden
-    if (cursor_hidden) {
-        *row = cursor_row;
-        *col = cursor_col;
-    }
-    // Return actual hardware values if cursor is shown
-    else
-        get_cursor_hardware(row, col);
+    *row = cursor_row;
+    *col = cursor_col;
 }
 
 void hide_cursor()
@@ -245,9 +212,6 @@ void hide_cursor()
     // Do nothing if cursor already hidden
     if (cursor_hidden)
         return;
-
-    // Store current cursor position in global variables
-    get_cursor_hardware(&cursor_row, &cursor_col);
 
     // Move cursor position offscreen
     set_cursor_hardware(CONSOLE_HEIGHT, CONSOLE_WIDTH);

@@ -32,8 +32,8 @@
 #include <switch.h>
 #include <syscall_kern.h>
 #include <interrupt.h>
+#include <console.h>
 
-void init_malloc();
 
 /** @brief Kernel entrypoint.
  *
@@ -43,6 +43,7 @@ void init_malloc();
  */
 int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
 {
+    clear_console();
     install_exceptions();
     init_timer();
     install_devices();
