@@ -8,3 +8,80 @@
 Same drill as last time.
 
 */
+
+
+Scheduler
+
+    round robin
+
+    progress guarantees
+
+
+Mutexes / Cvars
+
+    don't yield loop
+
+    disable interrupts
+
+    nodes on stack
+
+
+Virtual Memory
+
+    frame allocation (implicit list)
+
+    vm_map
+
+    zfod
+
+    recording allocations
+
+Exceptions
+    
+    No kernel mode faults are allowed  (vm_back)
+
+
+Premptability
+
+    We undersand context vs mode switch
+
+
+Wait vanish:
+
+    Memory is freed quickly by acquire malloc (at most one tcb/ppd unfreed)
+
+    How races are managed
+
+Readline
+
+    Doesn't disable interrupts for so long
+    
+    Suspends threads until they need to be awoken
+
+Sleep
+
+    Sorted lists of threads, schedule O(1) interrupts disabled O(1)
+
+Exec / Fork
+    
+    Limited to processes with one thread, don't need any locks for any real
+    period of time
+
+Exec
+
+    Zfod/Read only for text/bss/data/rodata and stack
+
+General Syscalls
+
+   Hold ppd lock when reading and writing to avoid races
+
+
+Gettid
+
+   Tcb stored on top of kernel stack, can be accessed with macro
+
+Thread States (make runnable / deschedule)
+
+    special state so they can't make kernel suspended threads runnable
+
+
