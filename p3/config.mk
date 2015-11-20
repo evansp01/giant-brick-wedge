@@ -111,7 +111,7 @@ AUTOSTACK_OBJS = autostack.o
 # Kernel object files you provide in from kern/
 #
 KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o syscall/swexn.o \
-               syscall/halt.o
+               syscall/halt.o syscall/console_syscalls.o
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o
 KERN_CONTROL = control/control.o control/mutex.o control/cond.o \
                control/wait_vanish.o

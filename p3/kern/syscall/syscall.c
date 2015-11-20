@@ -15,25 +15,10 @@
 #include <scheduler.h>
 #include <stdlib.h>
 #include <string.h>
-#include <asm.h>
 #include <mutex.h>
 #include <console.h>
-#include <seg.h>
-#include <eflags.h>
 #include <syscall_kern.h>
 #include <exec2obj.h>
-
-#define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
-
-static mutex_t print_mutex;
-
-/** @brief Initializes the mutexes used in the console syscalls
- *  @return void
- */
-void init_print()
-{
-    mutex_init(&print_mutex);
-}
 
 /** @brief The set_status syscall
  *  @param state The current state in user mode
@@ -208,113 +193,6 @@ void remove_pages_syscall(ureg_t state)
     state.eax = result;
 }
 
-/** @brief The getchar syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void getchar_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called getchar. Not needed for p3", tcb->id);
-    while(1) {
-        continue;
-    }
-}
-
-/** @brief The print syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void print_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    struct {
-        int len;
-        char *buf;
-    } args;
-
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
-        state.eax = -1;
-        return;
-    }
-    // printing zero characters is easy
-    if(args.len == 0){
-        state.eax = 0;
-        return;
-    }
-    // Error: len is unreasonable
-    if (args.len < 0) {
-        state.eax = -1;
-        return;
-    }
-    mutex_lock(&ppd->lock);
-    // Error: buf is not a valid memory address
-    if (!vm_user_can_read(ppd, (void *)args.buf, args.len)) {
-        state.eax = -2;
-        return;
-    }
-    mutex_lock(&print_mutex);
-    putbytes(args.buf, args.len);
-    mutex_unlock(&print_mutex);
-    mutex_unlock(&ppd->lock);
-    state.eax = 0;
-}
-
-/** @brief The set_term_color syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void set_term_color_syscall(ureg_t state)
-{
-    int color = (int)state.esi;
-    state.eax = set_term_color(color);
-}
-
-/** @brief The set_cursor_pos syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void set_cursor_pos_syscall(ureg_t state)
-{
-    ppd_t *ppd = get_tcb()->process->directory;
-    struct {
-        int row;
-        int col;
-    } args;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
-        state.eax = -1;
-        return;
-    }
-    state.eax = set_cursor(args.row, args.col);
-}
-
-/** @brief The get_cursor_pos syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void get_cursor_pos_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    struct {
-        uint32_t row;
-        uint32_t col;
-    } args;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
-        state.eax = -1;
-        return;
-    }
-    // get the row and column
-    int row, col;
-    get_cursor(&row, &col);
-    if(vm_write_locked(ppd, &row, args.row, sizeof(int)) < 0 ||
-       vm_write_locked(ppd, &col, args.col, sizeof(int)) < 0) {
-        state.eax = -1;
-        return;
-    }
-    state.eax = 0;
-}
 /** @brief The halt syscall
  *  @param state The current state in user mode
  *  @return void
@@ -373,7 +251,6 @@ return_fail:
 
 }
 
-
 /** @brief The misbehave syscall
  *  @param state The current state in user mode
  *  @return void
@@ -384,106 +261,5 @@ void misbehave_syscall(ureg_t state)
     lprintf("Thread %d called misbehave. Not yet implemented", tcb->id);
     while(1) {
         continue;
-    }
-}
-
-/** @brief Checks the user provided arguments for swexn
- *  @param tcb TCB of current thread
- *  @param eip Address of first instruction of user exception handler
- *  @param esp User exception stack
- *  @param regs User provided return register state
- *  @return 0 on success, a negative integer on failure
- */
-int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
-                uint32_t eflags)
-{
-    ppd_t *ppd = tcb->process->directory;
-
-    // Error: Provided eip and/or esp3 are unreasonable
-    if ((eip != 0)&&(esp != 0)) {
-        // Check that eip is user read memory
-        if (!vm_user_can_read(ppd, eip, sizeof(void*))) {
-            return -1;
-        }
-        // Check that esp3 is in user write memory
-        if (!vm_user_can_write(ppd, esp, sizeof(void*))) {
-            return -2;
-        }
-    }
-
-    // Error: Provided register values are unreasonable
-    if (regs != NULL) {
-        // Check that newureg is in user memory
-        if (!vm_user_can_read(ppd, regs, sizeof(void*))) {
-            return -3;
-        }
-        // Check ds/es/fs/gs/ss/cs
-        if ((regs->ds != SEGSEL_USER_DS)||(regs->es != SEGSEL_USER_DS)||
-            (regs->fs != SEGSEL_USER_DS)||(regs->gs != SEGSEL_USER_DS)||
-            (regs->ss != SEGSEL_USER_DS)||(regs->cs != SEGSEL_USER_CS)) {
-            return -4;
-        }
-        // Check that eip is in user read memory
-        if (!vm_user_can_read(ppd, (void *)regs->eip, sizeof(void*))) {
-            return -5;
-        }
-        // Check eflags
-        if ((eflags&(~USER_FLAGS)&(~EFL_RF)) != (regs->eflags&(~USER_FLAGS))) {
-            return -6;
-        }
-        // Check that esp is in user write memory
-        if (!vm_user_can_write(ppd, (void *)regs->esp, sizeof(void*))) {
-            return -7;
-        }
-    }
-    return 0;
-}
-
-/** @brief The swexn syscall
- *  @param state The current state in user mode
- *  @return void
- */
-void swexn_syscall(ureg_t state)
-{
-    tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-
-    struct {
-        void *esp3;
-        swexn_handler_t eip;
-        void *arg;
-        ureg_t *newureg;
-    } args;
-
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
-        state.eax = -1;
-        return;
-    }
-    mutex_lock(&ppd->lock);
-    int ret = check_swexn(tcb, args.eip, args.esp3, args.newureg, state.eflags);
-    mutex_unlock(&ppd->lock);
-    // If either request cannot be carried out, syscall must fail
-    if (ret < 0) {
-        state.eax = -1;
-        return;
-    }
-
-    // Deregister handler if one is registered
-    if ((args.esp3 == 0)||(args.eip == 0)) {
-        deregister_swexn(tcb);
-    }
-
-    // Register a new software exception handler
-    else {
-        uint32_t stack = (uint32_t)args.esp3 - sizeof(void *);
-        register_swexn(tcb, args.eip, args.arg, (void *)stack);
-    }
-
-    // Adopt specific register values
-    if (args.newureg != NULL) {
-        state = *(args.newureg);
-    }
-    else {
-        state.eax = 0;
     }
 }
