@@ -168,9 +168,10 @@ int vm_get_address(ppd_t* ppd, void* addr, entry_t** table, entry_t** dir)
  *
  *  @param ppd The page directory of the userspace program
  *  @param start The starting address of the string
+ *  @param max_len The maximum allowed length of the string
  *  @return The length of the string on success, less than zero on failure
  **/
-int vm_user_strlen(ppd_t* ppd, char* start)
+int vm_user_strlen(ppd_t* ppd, char* start, int max_len)
 {
     entry_t* table, *dir;
     int space = 0;
@@ -186,6 +187,10 @@ int vm_user_strlen(ppd_t* ppd, char* start)
             if (start[space + i] == '\0') {
                 return space + i;
             }
+            // string too long
+            if(space + i > max_len){
+                return -1;
+            }
         }
         space += length;
     }
@@ -195,9 +200,10 @@ int vm_user_strlen(ppd_t* ppd, char* start)
  *
  *  @param ppd The page directory of the userspace program
  *  @param start The starting address of the string array
+ *  @param max_len The maximum allowed length of the string
  *  @return The length of the string on success, less than zero on failure
  **/
-int vm_user_arrlen(ppd_t* ppd, char** start)
+int vm_user_arrlen(ppd_t* ppd, char** start, int max_len)
 {
     entry_t* table, *dir;
     int space = 0;
@@ -210,8 +216,12 @@ int vm_user_arrlen(ppd_t* ppd, char** start)
             return -1;
         }
         for (i = 0; i < length; i++) {
-            if (start[space + i] == '\0') {
+            if (start[space + i] == NULL) {
                 return space + i;
+            }
+            // string too long
+            if(space + i > max_len){
+                return -1;
             }
         }
         space += length;

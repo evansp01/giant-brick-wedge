@@ -45,11 +45,14 @@ int get_argv_length(ppd_t* ppd, int argc, char** argv)
     int i;
     int total_length = 0;
     for (i = 0; i < argc; i++) {
-        int length = vm_user_strlen(ppd, argv[i]);
+        int length = vm_user_strlen(ppd, argv[i], EXEC_MAX_BYTES);
         if (length < 0) {
             return -1;
         }
         total_length += length + 1;
+        if(total_length > EXEC_MAX_BYTES){
+            return -1;
+        }
     }
     return total_length;
 }
@@ -77,12 +80,12 @@ void exec_syscall(ureg_t state)
         return;
     }
     int argc, argvlen;
-    int flen = vm_user_strlen(dir, packet.fname) + 1;
+    int flen = vm_user_strlen(dir, packet.fname, EXEC_MAX_BYTES) + 1;
     if (flen <= 0) {
         state.eax = -1;
         return;
     }
-    if ((argc = vm_user_arrlen(dir, packet.argv)) < 0) {
+    if ((argc = vm_user_arrlen(dir, packet.argv, EXEC_MAX_BYTES)) < 0) {
         state.eax = -1;
         return;
     }

@@ -41,8 +41,8 @@ int vm_alloc_readwrite(ppd_t *ppd, void *start, uint32_t size);
 int vm_back(ppd_t *ppd, uint32_t start, uint32_t size);
 int vm_free(ppd_t *ppd, void *start);
 
-int vm_user_strlen(ppd_t *ppd, char* start);
-int vm_user_arrlen(ppd_t *ppd, char** start);
+int vm_user_strlen(ppd_t *ppd, char* start, int max_len);
+int vm_user_arrlen(ppd_t* ppd, char** start, int max_len);
 
 int vm_set_readonly(ppd_t *ppd, void* start, uint32_t size);
 int vm_set_readwrite(ppd_t *ppd, void* start, uint32_t size);
