@@ -1,0 +1,39 @@
+Component                     Status         Estimated    Actual
+gettid()                      done                     
+[context switch]              done                     
+fork()                        done                     
+exec()                        done                     
+halt()                        done                     
+new_pages()                   done                     
+print()                       done                     
+readline()                    done                     
+set_term_color()              done                     
+set_cursor_pos()              done                     
+vanish()                      done                     
+wait()                        done                     
+[page fault handler]          done                     
+swexn()                       solid                    
+sleep()                       done                     
+yield()                       done                     
+deschedule()/make_runnable()  solid                     
+thread_fork()                 done                     
+remove_pages()                solid
+get_ticks()                   done
+get_cursor_pos()              done
+ls()                          done
+test-suite bugs found         and fixed
+handout re-scanned            needs rescan    11/20        
+doxygen reviewed              started         11/20        
+
+Please fill out the "Status", "Estimated", and "Actual" columns.
+If something's status is "done", dates are optional.  If something
+
+Sample values for "Status":
+ nothing
+ designed
+ started
+ written
+ runs
+ bugs
+ solid
+ done
