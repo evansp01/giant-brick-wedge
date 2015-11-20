@@ -11,7 +11,6 @@
 #include <simics.h>
 #include <ureg.h>
 #include <stdint.h>
-#include <utilities.h>
 #include <control.h>
 #include <stdlib.h>
 #include <cr.h>

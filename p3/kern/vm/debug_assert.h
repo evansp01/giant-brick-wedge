@@ -14,9 +14,9 @@
 #include <vm.h>
 
 
-#define DEBUG
+#define DEBUG_ASSERTS
 
-#ifdef DEBUG
+#ifdef DEBUG_ASSERTS
 // assert macros courtesy of
 // http://stackoverflow.com/questions/3385515/static-assert-in-c
 #define STATIC_ASSERT(COND, MSG) \

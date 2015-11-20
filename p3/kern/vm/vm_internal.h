@@ -2,11 +2,11 @@
 #define H_VM_INTERNAL_
 
 #include <common_kern.h>
-#include <utilities.h>
 #include <stdint.h>
 #include <page.h>
 #include <stddef.h>
 #include <mutex.h>
+#include "debug_assert.h"
 
 #define PAGES_PER_TABLE 1024
 #define TABLES_PER_DIR 1024

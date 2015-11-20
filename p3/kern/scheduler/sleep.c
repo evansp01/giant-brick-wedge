@@ -1,10 +1,8 @@
 #include <variable_queue.h>
-#include <variable_htable.h>
 #include <control.h>
 #include <scheduler.h>
 #include <asm.h>
 #include <simics.h>
-#include <utilities.h>
 #include "scheduler_internal.h"
 
 static tcb_ds_t sleep_list;

@@ -24,7 +24,6 @@
 #include <control.h>
 #include <switch.h>
 #include <vm.h>
-#include <utilities.h>
 #include <malloc.h>
 #include <elf_410.h>
 #include <string.h>
