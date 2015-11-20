@@ -13,8 +13,6 @@ Stuff to do:
 Testing:
     add and run remaining tests
     run cho_variant at varying timer rates (right now 100-120 done)
-    copy user tests into user/progs
-    run user tests
     write tests
         readline multithreaded
         print multithreaded
