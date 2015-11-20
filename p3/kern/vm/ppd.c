@@ -101,6 +101,7 @@ void _free_ppd_kernel_mem(ppd_t* to_free)
 {
     int i;
     page_directory_t* dir = to_free->dir;
+    mutex_destroy(&to_free->lock);
     for (i = 0; i < TABLES_PER_DIR; i++) {
         // Check if it is a present user directory entry
         entry_t* dir_entry = &dir->tables[i];
@@ -111,6 +112,7 @@ void _free_ppd_kernel_mem(ppd_t* to_free)
         _sfree(addr, PAGE_SIZE);
     }
     _sfree(to_free->dir, PAGE_SIZE);
+    _free(to_free);
 }
 
 /** @brief Free all kernel memory associated with this ppd
@@ -122,7 +124,6 @@ void free_ppd_kernel_mem(ppd_t* to_free)
 {
     acquire_malloc();
     _free_ppd_kernel_mem(to_free);
-    _free(to_free);
     release_malloc();
 }
 

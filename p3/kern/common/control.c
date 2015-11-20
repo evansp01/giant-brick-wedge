@@ -242,6 +242,9 @@ void free_tcb(tcb_t* tcb)
  **/
 void _free_pcb(pcb_t* pcb)
 {
+    mutex_destroy(&pcb->parent_mutex);
+    mutex_destroy(&pcb->children_mutex);
+    mutex_destroy(&pcb->threads_mutex);
     _sfree(pcb, sizeof(pcb_t));
 }
 

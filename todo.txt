@@ -6,7 +6,6 @@ Things to take note of:
 
 Stuff to do:
     exec strlen should fail fast
-    destroy mutexes before they are freed
     //strange bug: schedule() called with conflicting thread status
     
 Testing:
