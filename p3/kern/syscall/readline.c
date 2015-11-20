@@ -86,8 +86,6 @@ static int readchar(uint8_t scancode)
     return KH_GETCHAR(key);
 }
 
-// TODO: '\r' character behavior
-
 /** @brief Handle a ketboard interrupt, read the scancode and store in buffer
  *
  *  Reads the scancode from the keyboard and stores it in the keyboard buffer
@@ -100,49 +98,51 @@ void keyboard_interrupt(ureg_t state)
 {
     char c;
     uint8_t scancode = inb(KEYBOARD_PORT);
-    if ((c = readchar(scancode)) != -1) {
-        // Backspace character
-        if (c == '\b') {
-            // If there are characters to delete
-            if ((keyboard.num_chars != 0)&&
-                (keyboard.buffer[prev_index(keyboard.producer)] != '\n')) {
-                // Delete previous character from buffer
-                keyboard.num_chars--;
-                keyboard.producer = prev_index(keyboard.producer);
-                // Echo deletion to console
-                if (is_readline()){
-                    putbyte(c);
-                }
+    if ((c = readchar(scancode)) == -1) {
+        outb(INT_CTL_PORT, INT_ACK_CURRENT);
+        return;
+    }
+    // Backspace character
+    if (c == '\b') {
+        // If there are characters to delete
+        if ((keyboard.num_chars != 0)&&
+            (keyboard.buffer[prev_index(keyboard.producer)] != '\n')) {
+            // Delete previous character from buffer
+            keyboard.num_chars--;
+            keyboard.producer = prev_index(keyboard.producer);
+            // Echo deletion to console
+            if (is_readline()){
+                putbyte(c);
             }
         }
-        // Standard character
-        else {
-            // If we aren't about to run into the consumer
-            if (next_index(keyboard.producer) != keyboard.consumer) {
-                // Add character to buffer
-                keyboard.buffer[keyboard.producer] = c;
-                keyboard.producer = next_index(keyboard.producer);
-                keyboard.num_chars++;
-                // Echo character to console
-                if (is_readline()){
-                    putbyte(c);
-                }
-            } else {
-                //ignore the character, we don't have room
-                //the program is more than KEYBOARD_BUFFER_SIZE characters
-                //behind so it's probably okay.
+    }
+    // Standard character (ignore carriage return)
+    else if (c != '\r') {
+        // If we aren't about to run into the consumer
+        if (next_index(keyboard.producer) != keyboard.consumer) {
+            // Add character to buffer
+            keyboard.buffer[keyboard.producer] = c;
+            keyboard.producer = next_index(keyboard.producer);
+            keyboard.num_chars++;
+            // Echo character to console
+            if (is_readline()){
+                putbyte(c);
             }
-            if (c == '\n') {
-                keyboard.num_newlines++;
-            }
+        } else {
+            //ignore the character, we don't have room
+            //the program is more than KEYBOARD_BUFFER_SIZE characters
+            //behind so it's probably okay.
         }
-        // Signal waiting readline thread if sufficient chars or newline
-        if (is_readline()) {
-            if ((keyboard.num_chars >= keyboard.user_buf_len)||
-                (keyboard.num_newlines > 0)) {
-                keyboard.user_buf_len = 0;
-                schedule(keyboard.readline_thread, T_KERN_SUSPENDED);
-            }
+        if (c == '\n') {
+            keyboard.num_newlines++;
+        }
+    }
+    // Signal waiting readline thread if sufficient chars or newline
+    if (is_readline()) {
+        if ((keyboard.num_chars >= keyboard.user_buf_len)||
+            (keyboard.num_newlines > 0)) {
+            keyboard.user_buf_len = 0;
+            schedule(keyboard.readline_thread, T_KERN_SUSPENDED);
         }
     }
     //ack interrupt

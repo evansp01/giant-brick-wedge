@@ -35,7 +35,7 @@ void autostack_fault(void* arg, ureg_t* ureg)
 {
     // If not a pagefault, return and let default handler run
     if (ureg->cause != SWEXN_CAUSE_PAGEFAULT) {
-        //TODO: should we do something else here?
+        swexn(NULL, NULL, NULL, ureg);
         return;
     }
     if ((ureg->error_code & 0x1) != 0) {

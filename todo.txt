@@ -10,27 +10,25 @@ Stuff to do:
     //strange bug: schedule() called with conflicting thread status
     
 Testing:
-    re-run all kernel tests
+    add and run remaining tests
+    run cho_variant at varying timer rates (right now 100-120 done)
     copy user tests into user/progs
     run user tests
     write tests
         readline multithreaded
         print multithreaded
         readfile
+        ...
     
 Non-code:
-    get rid of all TODO, useless code
-    organize files/folders
-    change lprintf to also printf to console (define print macro)
     clean up header files --> move to local headers
+    
+    change lprintf to also printf to console (define print macro)
     doxygen
     design docs
+        
     
 Optimizations:
     use fast mutexes
     change print, cursor implementation (put all bytes then set cursor)
     switch to hash tables for global thread/process lists
-    readline
-        keep two buffers, scancodes and chars
-        process only if readline is active
-        disable interrupts
