@@ -70,7 +70,6 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // Interrupts cannot yet be enabled, as they will trigger a fault since
     // there is no pcb entry for this kernel stack
     // Interrupts will be enabled upon switching to user mode
-    scheduler_pre_switch(NULL, tcb);
     go_to_user_mode(tcb->saved_esp);
 
     while (1) {

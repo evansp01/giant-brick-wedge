@@ -123,8 +123,13 @@ int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb);
 void pcb_add_thread(pcb_t* pcb, tcb_t* tcb);
 void kernel_remove_thread(tcb_t* tcb);
 void kernel_add_thread(tcb_t* tcb);
+int get_next_id();
+
+
+
 void acquire_malloc();
 void release_malloc();
-int get_next_id();
+void scheduler_release_malloc();
+void free_later(tcb_t *tcb);
 
 #endif // CONTROL_H_

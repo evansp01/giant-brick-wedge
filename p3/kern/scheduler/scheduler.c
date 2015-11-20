@@ -24,7 +24,6 @@ Q_NEW_HEAD(runnable_queue_t, tcb);
 static struct {
     tcb_t* idle;
     runnable_queue_t runnable;
-    tcb_t* switched_from;
     uint32_t ticks;
 } scheduler = { 0 };
 
@@ -55,22 +54,6 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
     scheduler.idle = idle;
     add_runnable(first);
     init_sleep();
-}
-
-void scheduler_pre_switch(tcb_t* from, tcb_t* to)
-{
-    scheduler.switched_from = from;
-    switch_ppd(to->process->directory);
-}
-
-void scheduler_post_switch()
-{
-    tcb_t* switched_from = scheduler.switched_from;
-    thread_state_t state = switched_from->state;
-    enable_interrupts();
-    if (state == T_EXITED) {
-        finalize_exit(switched_from);
-    }
 }
 
 /** @brief Switches to the next thread to be run
@@ -176,11 +159,10 @@ void deschedule(tcb_t* tcb, thread_state_t new_state)
     switch_to_next(tcb, YIELD_MODE);
 }
 
-void kill_thread(tcb_t* tcb, ppd_t* ppd)
+void kill_thread(tcb_t* tcb)
 {
     disable_interrupts();
-    // store the process to free in the tcb
-    tcb->free_pointer = ppd;
+    scheduler_release_malloc();
     remove_runnable(tcb, T_EXITED);
     switch_to_next(tcb, YIELD_MODE);
 }

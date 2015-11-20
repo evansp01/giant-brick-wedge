@@ -50,9 +50,9 @@ void store_esp(void* saved_esp, tcb_t* tcb)
  **/
 void context_switch(tcb_t* from, tcb_t* to)
 {
-    scheduler_pre_switch(from, to);
+    switch_ppd(to->process->directory);
     switch_stack_and_regs(to->saved_esp, from);
-    scheduler_post_switch();
+    enable_interrupts();
 }
 
 /** @brief The entry point for a thread the first time it is context switched
@@ -62,7 +62,6 @@ void context_switch(tcb_t* from, tcb_t* to)
  **/
 void first_context_switch(void* iret_ptr)
 {
-    scheduler_post_switch();
     go_to_user_mode(iret_ptr);
 }
 

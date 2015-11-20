@@ -131,7 +131,6 @@ void finalize_exit(tcb_t* tcb)
         _free_ppd_kernel_mem(tcb->free_pointer);
     }
     _free_tcb(tcb);
-    release_malloc();
 }
 
 /** @brief Cleans up a deschedules a thread
@@ -141,7 +140,8 @@ void finalize_exit(tcb_t* tcb)
  **/
 void vanish_thread(tcb_t *tcb, int failed)
 {
-    ppd_t* to_free = thread_exit(tcb, failed);
+    tcb->free_pointer = thread_exit(tcb, failed);
     acquire_malloc();
-    kill_thread(tcb, to_free);
+    free_later(tcb);
+    kill_thread(tcb);
 }

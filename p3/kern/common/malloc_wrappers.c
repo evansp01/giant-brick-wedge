@@ -10,9 +10,12 @@
 #include <malloc.h>
 #include <malloc_internal.h>
 #include <mutex.h>
+#include <control.h>
+#include <assert.h>
 
 static mutex_t mutex;
 static int initialized = 0;
+static tcb_t *free_later_tcb = NULL;
 
 void init_malloc()
 {
@@ -23,12 +26,30 @@ void init_malloc()
 void acquire_malloc()
 {
     mutex_lock(&mutex);
+    if(free_later_tcb != NULL){
+        finalize_exit(free_later_tcb);
+        free_later_tcb = NULL;
+    }
+}
+
+
+void free_later(tcb_t *tcb)
+{
+    assert(free_later_tcb == NULL);
+    free_later_tcb = tcb;
 }
 
 void release_malloc()
 {
     mutex_unlock(&mutex);
 }
+
+
+void scheduler_release_malloc()
+{
+    scheduler_mutex_unlock(&mutex);
+}
+
 
 /** @brief Allocates memory of size bytes
  *
