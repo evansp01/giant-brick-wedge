@@ -7,7 +7,7 @@ Things to take note of:
 Stuff to do:
     exec strlen should fail fast
     copy to p3ck3, give status update
-    strange bug: schedule() called with conflicting thread status
+    //strange bug: schedule() called with conflicting thread status
     
 Testing:
     re-run all kernel tests

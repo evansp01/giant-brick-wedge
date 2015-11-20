@@ -16,10 +16,10 @@
 #include <interrupt_defines.h>
 #include <video_defines.h>
 
-#define KEYBOARD_BUFFER_SIZE 2048
-#define MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
+#define KEYBOARD_BUFFER_SIZE (READLINE_MAX_LEN * 2)
+#define READLINE_MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
 
-static char temp[MAX_LEN];
+static char temp[READLINE_MAX_LEN];
 static mutex_t read_mutex;
 
 /** @brief A circlular buffer for storing and reading keystrokes */
@@ -228,7 +228,7 @@ void readline_syscall(ureg_t state)
     }
 
     // Error: len is unreasonable
-    if ((args.len > MAX_LEN)||(args.len < 0)) {
+    if ((args.len > READLINE_MAX_LEN)||(args.len < 0)) {
         state.eax = -1;
         return;
     }
