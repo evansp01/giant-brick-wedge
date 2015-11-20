@@ -6,7 +6,7 @@ Things to take note of:
 
 Stuff to do:
     exec strlen should fail fast
-    copy to p3ck3, give status update
+    ppd switch atomic
     //strange bug: schedule() called with conflicting thread status
     
 Testing:
@@ -22,7 +22,7 @@ Testing:
     
 Non-code:
     clean up header files --> move to local headers
-    
+    re-read code
     change lprintf to also printf to console (define print macro)
     doxygen
     design docs
