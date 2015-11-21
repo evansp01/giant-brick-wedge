@@ -1,4 +1,4 @@
-/** @file control.h
+/** @file control_block.h
  *  @brief Interface for process and thread control blocks
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
@@ -13,30 +13,39 @@
 #include <cond.h>
 #include <ureg.h>
 
-#define THREAD_EXIT_SUCCESS 0
-#define THREAD_EXIT_FAILED 1
+/** @brief Thread exit states */
+typedef enum {
+    THREAD_EXIT_SUCCESS,
+    THREAD_EXIT_FAILED
+} thread_exit_state_t;
 
+/** @brief Thread states */
 typedef enum {
     T_NOT_YET,
     T_RUNNABLE,
     T_SUSPENDED,
     T_KERN_SUSPENDED,
     T_SLEEPING,
-    T_EXITED,
+    T_EXITED
 } thread_state_t;
 
+/** @brief Process states */
 typedef enum {
     P_EXITED,
-    P_ACTIVE,
+    P_ACTIVE
 } process_state_t;
 
+/** @brief Function pointer for swexn handler */
 typedef void (*swexn_handler_t)(void *arg, ureg_t *ureg);
+
+/** @brief Struct for swexn syscall */
 typedef struct swexn {
     swexn_handler_t handler;
     void *arg;
     void *stack;
 } swexn_t;
 
+/** @brief Struct of stack data swexn syscall */
 typedef struct swexn_stack {
     void *ret_addr;
     void *arg;
@@ -109,7 +118,7 @@ void copy_kernel_stack(tcb_t *tcb_parent, tcb_t *tcb_child);
 tcb_t *get_tcb();
 tcb_t* get_tcb_by_id(int tid);
 int get_thread_count(pcb_t *pcb);
-void vanish_thread(tcb_t *tcb, int failed);
+void vanish_thread(tcb_t *tcb, thread_exit_state_t failed);
 int wait(pcb_t* pcb, int *status_ptr);
 void pcb_add_child(pcb_t *parent, pcb_t *child);
 int pcb_remove_thread(pcb_t* pcb, tcb_t* tcb);

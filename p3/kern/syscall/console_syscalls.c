@@ -20,7 +20,7 @@
 #include <syscall_kern.h>
 #include <exec2obj.h>
 
-
+/** @brief Global mutex to prevent interleaving print calls **/
 static mutex_t print_mutex;
 
 /** @brief Initializes the mutexes used in the console syscalls
@@ -30,8 +30,6 @@ void init_print()
 {
     mutex_init(&print_mutex);
 }
-
-
 
 /** @brief The getchar syscall
  *  @param state The current state in user mode

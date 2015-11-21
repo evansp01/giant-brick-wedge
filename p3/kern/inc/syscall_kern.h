@@ -1,4 +1,4 @@
-/** @file syscall.h
+/** @file syscall_kern.h
  *  @brief Interface for syscall related functions
  *
  *  @author Jonathan Ong (jonathao)

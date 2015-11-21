@@ -1,5 +1,5 @@
-/** @file syscall.h
- *  @brief Interface for syscall related functions
+/** @file vm.h
+ *  @brief Interface for VM related functions
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
@@ -19,12 +19,14 @@ typedef struct page_directory page_directory_t;
 
 Q_NEW_HEAD(alloc_list_t, alloc);
 
+/** @brief Struct for allocated frames */
 typedef struct alloc {
     Q_NEW_LINK(alloc) list;
     uint32_t start;
     uint32_t size;
 } alloc_t;
 
+/** @brief Struct for page directories */
 typedef struct ppd {
     page_directory_t* dir;
     int frames;

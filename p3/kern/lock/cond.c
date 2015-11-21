@@ -13,9 +13,6 @@
 #include <scheduler.h>
 #include <mutex.h>
 
-#define DESTROYED 0
-#define INITIALIZED 1
-
 /** @brief Initialize a condition variable allocating needed resources
  *  It is not valid to wait, signal, or broadcast on a condition variable
  *  before it has been initialized

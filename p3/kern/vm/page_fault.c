@@ -1,5 +1,15 @@
+/** @file page_fault.c
+ *
+ *  @brief Functions to handle page faults
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include "vm_internal.h"
 
+/** @brief Struct for addresses */
 typedef struct {
     uint32_t present : 1;  /* bit 0 */
     uint32_t write : 1;    /* bit 1 */

@@ -4,15 +4,19 @@ Testing:
         readline multithreaded
         print multithreaded
         ...
-    
+        
+Code:
+    Scheduler runnable thread insertion
+        
 Non-code:
-    re-read code
     change lprintf to also printf to console (define print macro)
     doxygen
+        292 lines of warnings
     design docs
-        
     
 Optimizations:
-    use fast mutexes
     switch to hash tables for global thread/process lists
     console pre-shell printout
+    
+End game:
+    re-read code

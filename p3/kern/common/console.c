@@ -16,24 +16,58 @@
 #include <string.h>
 
 // Console macros
+/** @brief Gets the memory address of a character at a console position
+ *  @param row Row of the char
+ *  @param col Column of the char
+ *  @return Memory address of the character at the given position
+ **/
 #define GET_CHR(row, col) \
     (CONSOLE_MEM_BASE + 2 * (((row) * CONSOLE_WIDTH) + (col)))
+/** @brief Gets the memory address of a color at a console position
+ *  @param row Row of the char
+ *  @param col Column of the char
+ *  @return Memory address of the color at the given position
+ **/
 #define GET_COLOR(row, col) (GET_CHR(row, col) + 1)
+/** @brief Returns the address of the maximum line to copy when scrolling
+ *  @return Address of the last line to copy
+ **/
 #define COPY_LINES_MAX GET_CHR(CONSOLE_HEIGHT - 1, 0)
+/** @brief Returns the address of the last line of the console
+ *  @return Address of the last line
+ **/
 #define END_CONSOLE GET_CHR(CONSOLE_HEIGHT, 0)
+/** @brief Gets the upper 8 bits of a value
+ *  @param val Value whose upper 8 bits is to be retrieved
+ *  @return Upper 8 bits of the given value
+ **/
 #define GET_MSB(val) ((val) >> 8)
+/** @brief Gets the lower 8 bits of a value
+ *  @param val Value whose lower 8 bits is to be retrieved
+ *  @return Lower 8 bits of the given value
+ **/
 #define GET_LSB(val) ((val) & 0xFF)
-#define GET_POS(MSB, LSB) (((MSB) << 8) | (LSB))
-#define GET_ROW(val) ((val) / CONSOLE_WIDTH)
-#define GET_COL(val) ((val) % CONSOLE_WIDTH)
+/** @brief Gets the address of the same column on the previous row
+ *  @param val Current console address
+ *  @return Previous console address
+ **/
 #define GET_PREV_LINE(val) ((val) + LINE_SIZE)
+/** @brief Returns the size of a single console line in memory
+ *  @return The size of a line on the console
+ **/
 #define LINE_SIZE (2 * CONSOLE_WIDTH)
+/** @brief The value above which all colors are invalid in the color scheme
+ **/
 #define INVALID_COLOR 0x90
 
 // Global variables
+/** @brief Global console color */
 static int global_color = FGND_WHITE | BGND_BLACK;
+/** @brief Global variable to determine if cursor should be hidden */
 static int cursor_hidden = 0;
+/** @brief Global cursor row position */
 static int cursor_row = 0;
+/** @brief Global cursor column position */
 static int cursor_col = 0;
 
 /** @brief Is the row and colum pair provided a valid cursor position
@@ -96,15 +130,15 @@ void scroll()
 
 /** @brief Prints character ch at the current location
  *         of the cursor.
- *
- *  If the character is a newline ('\n'), the cursor is
- *  be moved to the beginning of the next line (scrolling if necessary).  If
- *  the character is a carriage return ('\r'), the cursor
+ *  
+ *  If the character is a newline, the cursor is
+ *  be moved to the beginning of the next line (scrolling if necessary).
+ *  If the character is a carriage return, the cursor
  *  is immediately reset to the beginning of the current
  *  line, causing any future output to overwrite any existing
- *  output on the line.  If backsapce ('\b') is encountered,
- *  the previous character is erased.  See the main console.c description
- *  for more backspace behavior.
+ *  output on the line.  If backspace is encountered,
+ *  the previous character is erased.  See the main console.c
+ *  description for more backspace behavior.
  *
  *  @param ch the character to print
  *  @return The input character
@@ -175,11 +209,11 @@ int putbyte(char ch)
  *  string fills up the current line and then
  *  continues on the next line. If the string exceeds
  *  available space on the entire console, the screen
- *  scrolls up one line, and then the string
- *  continues on the new line.  If '\n', '\r', and '\b' are
- *  encountered within the string, they are handled
- *  as per putbyte. If len is not a positive integer or s
- *  is null, the function has no effect.
+ *  scrolls up one line, and then the string continues
+ *  on the new line.  If newline, carriage return, or
+ *  backspace are encountered within the string, they
+ *  are handled as per putbyte. If len is not a positive
+ *  integer or is null, the function has no effect.
  *
  *  @param s The string to be printed.
  *  @param len The length of the string s.

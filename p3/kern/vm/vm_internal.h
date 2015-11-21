@@ -1,5 +1,12 @@
-#ifndef H_VM_INTERNAL_
-#define H_VM_INTERNAL_
+/** @file vm_internal.h
+ *  @brief Interface for internally used VM functions
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
+#ifndef H_VM_INTERNAL
+#define H_VM_INTERNAL
 
 #include <common_kern.h>
 #include <stdint.h>
@@ -20,6 +27,7 @@
 
 #define AS_TYPE(address, type) (*(type*)&(address))
 
+/** @brief Struct for page directory/table entries */
 typedef struct {
     uint32_t present : 1;       /* bit 0 */
     uint32_t write : 1;         /* bit 1 */
@@ -35,20 +43,24 @@ typedef struct {
     uint32_t address : 20;      /* bit 12 - 31 */
 } entry_t;
 
+/** @brief Struct for a page directory */
 typedef struct page_directory{
     entry_t tables[TABLES_PER_DIR];
 } page_directory_t;
 
+/** @brief Struct for a page table */
 typedef struct {
     entry_t pages[PAGES_PER_TABLE];
 } page_table_t;
 
+/** @brief Struct for addresses */
 typedef struct {
     uint32_t page_address : 12;     /* bits 0  - 11 */
     uint32_t page_table_index : 10; /* bits 12 - 21 */
     uint32_t page_dir_index : 10;   /* bits 22 - 31 */
 } address_t;
 
+/** @brief Global struct for virtual memory */
 struct virtual_memory{
     page_directory_t *identity;
     page_table_t* kernel_pages[KERNEL_TABLES];
@@ -113,4 +125,4 @@ void free_frame(void* virtual, void *physical);
 
 int allocate_tables(ppd_t* ppd, void* start, uint32_t size);
 
-#endif //H_VM_INTERNAL_
+#endif //H_VM_INTERNAL

@@ -15,7 +15,7 @@
 #include <control_block.h>
 
 #define _NAME_ASM(name) name##_asm
-/** @def CONSTRUCT_HANDLER_H(NAME)
+/** @def NAME_ASM_H(NAME)
  *
  *  @brief Constructs the assembly wrapper function declaration
  *
@@ -24,7 +24,7 @@
  **/
 #define NAME_ASM_H(name) void _NAME_ASM(name)()
 
-/** @def CONSTRUCT_HANDLER_C(NAME)
+/** @def NAME_ASM(NAME)
  *
  *  @brief Constructs the C handler function name
  *

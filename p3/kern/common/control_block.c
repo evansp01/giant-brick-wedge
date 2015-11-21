@@ -1,4 +1,4 @@
-/** @file control.c
+/** @file control_block.c
  *
  *  @brief Functions to create and manage PCBs and TCBs
  *
@@ -20,7 +20,7 @@
 #include <malloc_internal.h>
 #include <malloc_wrappers.h>
 
-// Global kernel state with process and thread info
+/** @brief Global kernel state with process and thread info **/
 kernel_state_t kernel_state;
 
 /** @brief Initializes the global lists of processes and threads
@@ -262,8 +262,6 @@ void free_pcb(pcb_t* pcb)
 }
 
 /** @brief Gets the tcb from the top of the kernel stack
- *
- *  @param An address on the current kernel stack
  *  @return Pointer to the tcb for the current kernel thread
  **/
 tcb_t* get_tcb()

@@ -1,4 +1,4 @@
-/** @file idt.c
+/** @file setup_idt.c
  *
  *  @brief Functions to perform fault handling
  *

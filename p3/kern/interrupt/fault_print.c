@@ -1,4 +1,4 @@
-/** @file debug.c
+/** @file fault_print.c
  *  @brief Implementation of functions to print debug messages for faults
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)

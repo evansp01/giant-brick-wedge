@@ -24,10 +24,15 @@
 #include <mutex.h>
 #include <asm.h>
 
+/** @brief Address of the top of a kernel stack */
 #define STACK_HIGH 0xFFFFFFF0
+/** @brief Number of paramaters to the user main function */
 #define NUM_PARAMS_TO_MAIN 5
+/** @brief Size of a user stack */
 #define USER_STACK_SIZE PAGE_SIZE
+/** @brief Max size allowed for copying user input for exec */
 #define EXEC_MAX_BYTES (4 * PAGE_SIZE)
+/** @brief Magic unused stack address */
 #define MAGIC_NUMBER 0xDEAD1337
 
 static int user_exec(tcb_t* tcb, int flen, char* fname,
@@ -203,8 +208,7 @@ uint32_t max(uint32_t array[], int len)
  *  with data which needs to be written
  *
  *  @param elf Struct containing elf file information
- *  @param ppd The page directory to load the process image into
- *  @param zfod Should memory be initialized using zfod
+ *  @param dir Page directory to fill out
  *  @return Zero on success, less than zero on failure
  **/
 int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)

@@ -98,7 +98,7 @@ void pcb_inform_children(pcb_t* pcb)
  *  @param failed Is this thread being killed because it failed
  *  @return pcb The process pcb if it needs to be freed, NULL otherwise
  **/
-ppd_t *thread_exit(tcb_t *tcb, int failed)
+ppd_t *thread_exit(tcb_t *tcb, thread_exit_state_t failed)
 {
     pcb_t* process = tcb->process;
     kernel_remove_thread(tcb);
@@ -107,7 +107,7 @@ ppd_t *thread_exit(tcb_t *tcb, int failed)
     if (thread_count != 0) {
         return NULL;
     }
-    if(failed){
+    if(failed == THREAD_EXIT_FAILED){
         process->exit_status = -2;
     }
     //We are cleaning up the last thread
@@ -141,7 +141,7 @@ ppd_t *thread_exit(tcb_t *tcb, int failed)
 /** @brief Frees memory associated with a thread and process which cannot
  *         be freed conveniently by the thread
  *
- *  @param The thread to free
+ *  @param tcb The thread to free
  *  @return void
  **/
 void finalize_exit(tcb_t* tcb)
@@ -157,7 +157,7 @@ void finalize_exit(tcb_t* tcb)
  *  @param failed Is this thread being killed because it failed?
  *  @return void
  **/
-void vanish_thread(tcb_t *tcb, int failed)
+void vanish_thread(tcb_t *tcb, thread_exit_state_t failed)
 {
     tcb->free_pointer = thread_exit(tcb, failed);
     acquire_malloc();

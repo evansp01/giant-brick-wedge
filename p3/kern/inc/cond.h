@@ -14,10 +14,16 @@
 /** @brief Structure for a list of threads */
 Q_NEW_HEAD(tcb_list_cond_t, tcb);
 
+/** @brief Condition variable states */
+typedef enum {
+    DESTROYED,
+    INITIALIZED
+} cond_state_t;
+
 /** @brief The structure for condition variables */
 typedef struct cond {
     tcb_list_cond_t waiting;
-    int state;
+    cond_state_t state;
 } cond_t;
 
 void cond_init( cond_t *cv );
