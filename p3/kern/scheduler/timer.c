@@ -15,7 +15,7 @@
 #include <timer_defines.h>
 #include <simics.h>
 
-#define TIMER_INTERRUPT_FREQUENCY 1000
+#define TIMER_INTERRUPT_FREQUENCY 100000
 
 /** @brief The number of ticks which have occured so far */
 static unsigned int ticks_so_far;
