@@ -7,7 +7,7 @@
  *  @bug No known bugs.
  **/
 
-#include <simics.h>
+#include <debug_print.h>
 #include <ureg.h>
 #include <stdint.h>
 #include <common_kern.h>
@@ -38,8 +38,7 @@ void set_status_syscall(ureg_t state)
  */
 void task_vanish_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called task_vanish. Not needed for p3", tcb->id);
+    KPRINTF("Thread %d called task_vanish. Not needed for p3\n", get_tcb()->id);
     while(1) {
         continue;
     }
@@ -142,7 +141,7 @@ void new_pages_syscall(ureg_t state)
         goto return_fail;
     }
     if(!vm_user_can_alloc(ppd, (void *)args.start, args.size)){
-        lprintf("Space no allocable");
+        DPRINTF("Space not allocable\n");
         goto return_fail;
     }
     if(vm_alloc_readwrite(ppd, (void *)args.start, args.size) < 0){
@@ -236,9 +235,5 @@ return_fail:
  */
 void misbehave_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called misbehave. Not yet implemented", tcb->id);
-    while(1) {
-        continue;
-    }
+    DPRINTF("Our kernel is probably already misbehaving.\n");
 }

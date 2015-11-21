@@ -1,3 +1,12 @@
+/** @file wait_vanish.c
+ *
+ *  @brief Functions to handle wait and vanish for processes
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <control_block.h>
 #include <cond.h>
 #include <variable_queue.h>

@@ -8,7 +8,7 @@
  **/
 
 #include <idt.h>
-#include <simics.h>
+#include <debug_print.h>
 #include <ureg.h>
 #include <stdint.h>
 #include <control_block.h>
@@ -105,7 +105,7 @@ void fault_handler(ureg_t state)
         default_fault_handler(&state, tcb);
         break;
     default:
-        lprintf("Never heard of cause %d, you sure about that?", state.cause);
+        DPRINTF("Never heard of cause %d, you sure about that?\n", state.cause);
         panic("Unknown fault");
         break;
     }

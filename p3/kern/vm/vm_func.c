@@ -1,3 +1,12 @@
+/** @file vm_func.c
+ *
+ *  @brief Helper functions for kernel virtual memory
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <vm.h>
 #include <contracts.h>
 #include <string.h>
@@ -68,7 +77,7 @@ int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
         entry_t* dir_entry = &dir->tables[i];
         if (!dir_entry->present) {
-            lprintf("Page dir entry not present");
+            DPRINTF("Page dir entry not present\n");
             return -1;
         }
         int start_index = 0;
@@ -106,7 +115,6 @@ int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)
     address_t vm_start = AS_TYPE(start, address_t);
     address_t vm_end = AS_TYPE(end, address_t);
     if (AS_TYPE(vm_start, uint32_t) > AS_TYPE(vm_end, uint32_t)) {
-        lprintf("Something");
         return 0;
     }
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
@@ -321,7 +329,7 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
 int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (table->present) {
-        lprintf("Error already allocated");
+        DPRINTF("Error already allocated\n");
         return -1;
     }
     *table = create_entry(get_zero_page(), e_zfod_page);

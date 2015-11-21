@@ -7,7 +7,7 @@
  *  @bug No known bugs.
  **/
 
-#include <simics.h>
+#include <debug_print.h>
 #include <ureg.h>
 #include <stdint.h>
 #include <common_kern.h>
@@ -37,8 +37,7 @@ void init_print()
  */
 void getchar_syscall(ureg_t state)
 {
-    tcb_t* tcb = get_tcb();
-    lprintf("Thread %d called getchar. Not needed for p3", tcb->id);
+    KPRINTF("Thread %d called getchar. Not needed for p3.\n", get_tcb()->id);
     while(1) {
         continue;
     }

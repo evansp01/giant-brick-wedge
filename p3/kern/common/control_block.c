@@ -10,7 +10,7 @@
 #include <control_block.h>
 #include <malloc.h>
 #include <page.h>
-#include <simics.h>
+#include <debug_print.h>
 #include <string.h>
 #include <switch.h>
 #include <mutex.h>
@@ -181,7 +181,7 @@ int get_thread_count(pcb_t* pcb)
 tcb_t* create_tcb_entry(int id)
 {
     if(id < 0){
-        lprintf("Thread id has wrapped, cannot create more threads");
+        DPRINTF("Thread id has wrapped, cannot create more threads\n");
         return NULL;
     }
     tcb_t* entry = (tcb_t*)smalloc(sizeof(tcb_t));

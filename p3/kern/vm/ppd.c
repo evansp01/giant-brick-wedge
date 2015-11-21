@@ -1,3 +1,12 @@
+/** @file ppd.c
+ *
+ *  @brief Functions to handle page directories
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <vm.h>
 #include <mutex.h>
 #include <cr.h>

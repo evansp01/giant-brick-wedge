@@ -12,20 +12,21 @@
 #include <common_kern.h>
 #include <eflags.h>
 #include <vm.h>
+#include <debug_print.h>
 
 /** @brief Gets a specified bit from a word */
 #define GET_BIT(bit, value) (((value) >> (bit)) & 1)
 /** @brief Prints the contents of two segmentation registers */
 #define DUMP_SEGS(name1, value1, name2, value2) \
-    lprintf("%s = 0x%04x, %s = 0x%04x", name1,  \
+    KPRINTF("%s = 0x%04x, %s = 0x%04x\n", name1,  \
             (uint16_t)value1, name2, (uint16_t)value2)
 /** @brief Prints the contents of the 32 and 16 bit components of a register */
 #define DUMP_REG(name, short, value)           \
-    lprintf("%s = 0x%08lx, %s = 0x%04x", name, \
+    KPRINTF("%s = 0x%08lx, %s = 0x%04x\n", name, \
             (uint32_t)value, short, (uint16_t)value)
 /** @brief Prints the contents a segment and a register */
 #define DUMP_SEGR(name1, value1, name2, value2) \
-    lprintf("%s = 0x%04x, %s = 0x%08lx", name1, \
+    KPRINTF("%s = 0x%04x, %s = 0x%08lx\n", name1, \
             (uint16_t)value1, name2, (uint32_t)value2)
 
 /** @brief Identifies exceptions based on IDT indexes
@@ -86,8 +87,8 @@ char* exception_name(int code)
  **/
 void dump_registers(ureg_t* ureg)
 {
-    lprintf("%s (Exception %d)", exception_name(ureg->cause), ureg->cause);
-    lprintf("Error code: %d", ureg->error_code);
+    KPRINTF("%s (Exception %d)\n", exception_name(ureg->cause), ureg->cause);
+    KPRINTF("Error code: %d\n", ureg->error_code);
     DUMP_SEGR("cs", ureg->cs, "eip", ureg->eip);
     if (ureg->eip > USER_MEM_START) {
         DUMP_SEGR("ss", ureg->ss, "esp", ureg->esp);
@@ -101,9 +102,9 @@ void dump_registers(ureg_t* ureg)
     DUMP_REG("ebp", "bp", ureg->ebp);
     DUMP_REG("esi", "si", ureg->esi);
     DUMP_REG("edi", "di", ureg->edi);
-    lprintf(
+    KPRINTF(
         "eflags = %d %d %d %d %d %d %d %d %d %d %d"
-        " %d %d %d %d %d %d %d %d %d %d %d = 0x%x",
+        " %d %d %d %d %d %d %d %d %d %d %d = 0x%x\n",
         GET_BIT(21, ureg->eflags),
         GET_BIT(20, ureg->eflags),
         GET_BIT(19, ureg->eflags),
@@ -127,10 +128,10 @@ void dump_registers(ureg_t* ureg)
         GET_BIT(1, ureg->eflags),
         GET_BIT(0, ureg->eflags),
         ureg->eflags);
-    lprintf("         I V V A V R - N I I O D I T S Z - A - P - C");
-    lprintf("         D I I C M F   T O O F F F F F F   F   F   F");
-    lprintf("                         P F");
-    lprintf("                         L L");
+    KPRINTF("         I V V A V R - N I I O D I T S Z - A - P - C\n");
+    KPRINTF("         D I I C M F   T O O F F F F F F   F   F   F\n");
+    KPRINTF("                         P F\n");
+    KPRINTF("                         L L\n");
 }
 
 

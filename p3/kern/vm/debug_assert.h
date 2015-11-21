@@ -10,7 +10,7 @@
 #ifndef H_DEBUG_ASSERT
 #define H_DEBUG_ASSERT
 
-#include <simics.h>
+#include <debug_print.h>
 #include <page.h>
 #include <vm.h>
 
@@ -32,12 +32,12 @@
 #define COMPILE_TIME_ASSERT(X) COMPILE_TIME_ASSERT2(X, __LINE__)
 
 /** @brief Macro to assert that a frame is page aligned */
-#define ASSERT_PAGE_ALIGNED(frame)                                      \
-    do {                                                                \
-        unsigned int aligned = ((unsigned int)(frame)) >> PAGE_SHIFT;   \
-        if (aligned << PAGE_SHIFT != (unsigned int)(frame)) {           \
-            lprintf("WARN: physical frame misaligned at %d", __LINE__); \
-        }                                                               \
+#define ASSERT_PAGE_ALIGNED(frame)                                        \
+    do {                                                                  \
+        unsigned int aligned = ((unsigned int)(frame)) >> PAGE_SHIFT;     \
+        if (aligned << PAGE_SHIFT != (unsigned int)(frame)) {             \
+            DPRINTF("WARN: physical frame misaligned at %d\n", __LINE__); \
+        }                                                                 \
     } while (0)
 
 #else

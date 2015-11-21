@@ -1,3 +1,12 @@
+/** @file sleep.c
+ *
+ *  @brief Functions to sleep threads
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <variable_queue.h>
 #include <control_block.h>
 #include <scheduler.h>

@@ -1,4 +1,4 @@
-/** @file control_block_structs.h
+/** @file control_block_struct.h
  *  @brief Interface for process and thread control blocks
  *
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
