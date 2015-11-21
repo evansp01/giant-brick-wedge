@@ -14,8 +14,8 @@
 
 /** @brief A structure for integer nodes in a linked queue */
 typedef struct node {
-    Q_NEW_LINK(node) link; /** @brief A link for the queue */
-    int data; /** @brief The data */
+    Q_NEW_LINK(node) link;
+    int data;
 } node_t;
 
 /** @brief A queue of intergers */

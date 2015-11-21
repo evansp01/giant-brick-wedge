@@ -143,7 +143,7 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
  *  @param schedule Should this switch update the scheduling queue
  *  @return void
  **/
-void switch_to_next(tcb_t* current, int schedule)
+void switch_to_next(tcb_t* current, schedule_mode_t schedule)
 {
 
     tcb_t* next = get_next_runnable();

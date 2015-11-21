@@ -1,32 +1,54 @@
+/** @file vhtest.c
+ *  @brief Functions to test variable hash tables
+ *
+ *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
+ *  @bug No known bugs
+ **/
+
 #include "variable_htable.h"
 #include <stdio.h>
 
+/** @brief Structure for a list of items */
 Q_NEW_HEAD(hash_list_t, item);
+/** @brief Structure for a new hash table */
 H_NEW_TABLE(hash_table_t, hash_list_t);
 
+/** @brief Structure for hash table items */
 typedef struct item {
     Q_NEW_LINK(item) links;
     int key;
     int value;
 } item_t;
 
+/** @brief Aborts the test upon error */
 #define ABORT_ERROR(error) \
     do {                   \
         puts(error);       \
-        return 1;          \
+        return -1;         \
     } while (0)
 
-float variance = 0.0;
-float mean = 0;
+/** @brief Global variance for the table */
+static float variance = 0.0;
+/** @brief Global mean for the table */
+static float mean = 0;
 
-
+/** @brief Number of hash table elements to test */
 #define TEST_SIZE 1000000
 
-int bucket_print(i, count) {
+/** @brief Calculates the variance
+ *
+ *  @param i Index of the bucket
+ *  @param count Number of elements in the bucket
+ *  @return Variance of the bucket
+ **/
+int calc_var(i, count) {
     variance += (count - mean)*(count - mean);
     return 0;
 }
 
+/** @brief Tests the variable hash tables
+ *  @return 0 on success, a negative integer on failure
+ **/
 int main()
 {
     hash_table_t table;
@@ -83,7 +105,7 @@ int main()
         H_INSERT(&table, node, key, links);
     }
     mean = ((float)H_SIZE(&table)) / H_CAPACITY(&table);
-    H_DEBUG_BUCKETS(&table, key, links, bucket_print);
+    H_DEBUG_BUCKETS(&table, key, links, calc_var);
     printf("Mean bucket size %f  Variance %f\n",
             mean, variance/H_CAPACITY(&table));
     for (i = 0; i < TEST_SIZE; i++) {

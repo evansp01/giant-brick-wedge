@@ -1,5 +1,4 @@
 Testing:
-    run cho_variant at varying timer rates
     write tests
         readline multithreaded
         print multithreaded
