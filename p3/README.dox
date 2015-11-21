@@ -5,28 +5,49 @@
 @author Jonathan Ong (jonathao)
 @author Evan Palmer (esp)
 
-Same drill as last time.
-
-*/
-
 
 Scheduler
+=========
 
-    round robin
+Our scheduler implements a round robin system. We maintain two queues, a
+priority queue and a standard queue. Threads which were either suspended or
+asleep and are being scheduled by the kernel are added to the priority queue.
+Threads which are already running and are being re-scheduled on a timer
+interrupt are added to the standard queue.
 
-    progress guarantees
+We want to give priority to threads which are being newly scheduled. Threads
+are typically descheduled on a mutex when a critical resource is unavailable.
+Giving such threads priority when resuming execution reduces te amount of time
+for which the critical resources are left unused. Placing newly scheduled
+threads in a FIFO queue ensures that the order of scheduling is maintained.
+
+We guarantee progress of the threads in the standard queue by ensuring that 1
+thread from the standard queue runs for every 2 threads that run from the
+priority queue. This ensures that there does exist a scenario where threads
+in the standard queue are starved by an continuous stream of newly scheduled
+threads in the priority queue.
 
 
 Mutexes / Cvars
+===============
 
-    don't yield loop
+Our mutexes and condition variables keep a list of the number of threads
+waiting on it, along with the appropriate count of waiting threads. Threads are
+descheduled if the mutex is currently locked. Whenever the mutex is unlocked or
+the condition variable is signalled, the next thread in the list will be
+re-scheduled by the unlocking/signalling thread. Thus our mutexes do not cause
+threads to spin in a yield loop.
 
-    disable interrupts
-
-    nodes on stack
+We ensure that the sections of our mutex and condition variable code which
+insert and remove from the list of waiting threads are kept atomic by
+disabling interrupts across such sections.
+    
+We do not use malloc in our implementation of mutexes and condition variables.
+Nodes for the linked lists of waiting threads are allocated on the stack.
 
 
 Virtual Memory
+==============
 
     frame allocation (implicit list)
 
@@ -36,29 +57,82 @@ Virtual Memory
 
     recording allocations
 
+    
 Exceptions
+==========
     
     No kernel mode faults are allowed  (vm_back)
 
 
-Premptability
+Preemption
+==========
 
     We undersand context vs mode switch
 
+Wait / Vanish
+=============
 
-Wait vanish:
+Processes have a lock for their parent pointer and their children list. To
+detach a child process from its parent, the parent mutex must be held to remove
+the parent pointer from the child, and the children mutex of the parent must be
+held to remove the child process from the parent's list of processes.
 
-    Memory is freed quickly by acquire malloc (at most one tcb/ppd unfreed)
+In all cases in wait/vanish, the parent lock is acquired before the child lock.
+This standardization ensures that we avoid deadlock. 
 
-    How races are managed
 
-Readline
+Thread/Process Exit
+===================
 
-    Doesn't disable interrupts for so long
+We free as much memory as possible from the thread/process data structures when
+a thread/process exits, so as to minimize the size of the zombie threads and
+processes. A thread/process is unable to free its own TCB and kernel page
+directory, as that would prevent it from context switching to other threads.
+
+We ensure that the memory for its TCB and kernel page directory is freed
+quickly, by doing so whenever a thread acquires the malloc mutex. This ensures
+that at any point in time, there is at most one TCB/page directory which is
+left unfreed. This also ensures that whenever a call to malloc is made, we are
+assured that there is no unfreed memory from zombie threads, since the thread
+must acquire the malloc pointer before calling malloc, and the zombie thread
+memory is freed before the acquire malloc call returns.
+
     
-    Suspends threads until they need to be awoken
+Readline
+========
+
+Our keyboard interrupt handler converts the input scancodes into characters and
+places them in a keyboard buffer. Processing the characters ensure that
+backspace characters take immediate effect, and thus we can accurately keep
+track of the number of available characters in the buffer. This allows us to
+determine if a thread in the readline syscall should immediately retrieve
+characters from the buffer, or to deschedule and wait until there are enough
+characters or a newline available.
+
+Interrupts are only disabled in the readline function each time a character is
+removed from the keyboard buffer, to prevent interleavings of adding and
+removing from the buffer. We keep the period of disabled interrupts small to
+ensure that readline is largely pre-emptible.
+
+We keep track of the number of processed characters in the keyboard buffer, as
+well as the number of newline characters. Each time a readline syscall is made,
+a check is performed to see if there is a line available in the buffer (i.e.
+either there is a newline character or there are at least enough characters to
+fill the length of the user buffer). If there is no available line, then the
+calling thread is suspended until one is available, at which point the keyboard
+interrupt handler will signal the descheduled readline thread.
+
+We define the readline buffer size to be CONSOLE_WIDTH*(CONSOLE_HEIGHT-1),
+i.e. the size of the console screen minus one line. This is to prevent users
+from being able to type until characters have scrolled offscreen, as echoed
+characters which are scrolled offscreen are no longer kept in console memory.
+The 'minus one line' accounts for the cursor being at any possible column
+position on the current row. This maximum buffer size would prevent scrolling
+even if the cursor was at the last column of the row.
+
 
 Sleep
+=====
 
 Our sleep function is implemented by adding threads to a sorted linked list. In
 order to read from the list, threads must hold a mutex, and in order to modify
@@ -77,26 +151,45 @@ The scheduler needs only to check if the first item in the list is still
 sleeping and is ready to wake up. This takes O(1) time and does not require
 the list lock.
 
+
 Exec / Fork
+===========
     
     Limited to processes with one thread, don't need any locks for any real
     period of time
 
+    
 Exec
+====
 
     Zfod/Read only for text/bss/data/rodata and stack
 
+    
 General Syscalls
+================
 
    Hold ppd lock when reading and writing to avoid races
 
 
 Gettid
+======
 
-   Tcb stored on top of kernel stack, can be accessed with macro
+We store the pointer to the kernel thread's control block at the top of its
+thread stack. This allows us to look up any TCB variables, including the thread
+id, rather quickly in normal circumstances. We access the TCB pointer using a
+macro to get the top of the current kernel stack.
 
-Thread States (make runnable / deschedule)
 
-    special state so they can't make kernel suspended threads runnable
+Thread States
+=============
+
+We define specific thread states to ensure that functions which handle
+scheduling/descheduling and sleeping only work on threads which are in the
+appropriate state for the function. For instance, kernel descheduled threads
+are set to T_KERN_SUSPENDED, while threads which requested to be descheduled by
+hthe user are set to T_SUSPENDED. This separation of states ensures that the
+user cannot call make_runnable() to reschedule threads which have been
+descheduled or put to sleep by the kernel.
 
 
+*/

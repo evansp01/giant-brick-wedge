@@ -1,17 +1,15 @@
 Testing:
-    run cho_variant at varying timer rates (right now 100-125 done)
+    run cho_variant at varying timer rates
     write tests
         readline multithreaded
         print multithreaded
+        user code tries to schedule descheduled/sleeping kernel threads
         ...
-        
-Code:
-    Scheduler runnable thread insertion
-        
+   
 Non-code:
+    cleanup control_block.h
     change lprintf to also printf to console (define print macro)
     doxygen
-        292 lines of warnings
     design docs
     
 Optimizations:
