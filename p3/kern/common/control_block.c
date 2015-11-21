@@ -7,7 +7,6 @@
  *  @bug No known bugs.
  **/
 
-#include <control_block.h>
 #include <malloc.h>
 #include <page.h>
 #include <debug_print.h>
@@ -19,6 +18,7 @@
 #include <contracts.h>
 #include <malloc_internal.h>
 #include <malloc_wrappers.h>
+#include <control_block.h>
 
 /** @brief Global kernel state with process and thread info **/
 kernel_state_t kernel_state;
@@ -28,7 +28,9 @@ kernel_state_t kernel_state;
  **/
 void init_kernel_state()
 {
-    Q_INIT_HEAD(&kernel_state.threads);
+    if(H_INIT_TABLE(&kernel_state.thread_table) < 0){
+        panic("Cannot allocate global thread hash");
+    }
     kernel_state.next_id = 1;
     mutex_init(&kernel_state.next_id_mutex);
     mutex_init(&kernel_state.threads_mutex);
@@ -56,7 +58,8 @@ int get_next_id()
 void kernel_add_thread(tcb_t* tcb)
 {
     mutex_lock(&kernel_state.threads_mutex);
-    Q_INSERT_TAIL(&kernel_state.threads, tcb, all_threads);
+    // assert that what we are adding wasn't already there
+    assert(H_INSERT(&kernel_state.thread_table, tcb, id, all_threads) == NULL);
     mutex_unlock(&kernel_state.threads_mutex);
 }
 
@@ -67,8 +70,17 @@ void kernel_add_thread(tcb_t* tcb)
 void kernel_remove_thread(tcb_t* tcb)
 {
     mutex_lock(&kernel_state.threads_mutex);
-    Q_REMOVE(&kernel_state.threads, tcb, all_threads);
+    H_REMOVE(&kernel_state.thread_table, tcb->id, id, all_threads);
     mutex_unlock(&kernel_state.threads_mutex);
+}
+
+/** @brief Get the tcb of a thread by the threads id
+ *  @param tid The id of the thread to get
+ *  @return The tcb of the thread
+ **/
+tcb_t* get_tcb_by_id(int tid)
+{
+    return  H_GET(&kernel_state.thread_table, tid, id, all_threads);
 }
 
 /** @brief Add a thread to a process's thread list
@@ -272,18 +284,4 @@ tcb_t* get_tcb()
     return tcb;
 }
 
-/** @brief Get the tcb of a thread by the threads id
- *  @param tid The id of the thread to get
- *  @return The tcb of the thread
- **/
-tcb_t* get_tcb_by_id(int tid)
-{
-    tcb_t* tcb;
-    Q_FOREACH(tcb, &kernel_state.threads, all_threads)
-    {
-        if (tcb->id == tid && tcb->state != T_EXITED) {
-            return tcb;
-        }
-    }
-    return NULL;
-}
+

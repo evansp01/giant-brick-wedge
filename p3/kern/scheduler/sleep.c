@@ -14,7 +14,8 @@
 #include <simics.h>
 #include "scheduler_internal.h"
 
-static tcb_ds_t sleep_list;
+Q_NEW_HEAD(sleeper_list_t, tcb);
+static sleeper_list_t sleep_list;
 static mutex_t sleep_mutex;
 
 

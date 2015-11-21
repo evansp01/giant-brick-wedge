@@ -14,7 +14,9 @@
 /* User defined hash function */
 uint32_t hash_int(uint32_t x);
 
-/** @brief The maximum ratio of size to capacity before a grow */
+/** @brief The maximum ratio of size to capacity before a grow. In the go
+ *         runtime, they ran some tests and chose 6.5. I ran no tests and
+ *         chose 6 */
 #define MAX_LOAD_FACTOR 6
 /** @brief The maximum ratio of capcity to size before a shrink */
 #define MIN_LOAD_FACTOR 4

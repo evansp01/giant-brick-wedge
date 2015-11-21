@@ -8,10 +8,6 @@
 #ifndef KERN_INC_CONTROL_BLOCK_H
 #define KERN_INC_CONTROL_BLOCK_H
 
-#include <vm.h>
-#include <mutex.h>
-#include <cond.h>
-#include <ureg.h>
 #include <control_block_struct.h>
 
 extern kernel_state_t kernel_state;

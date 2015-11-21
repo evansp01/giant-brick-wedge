@@ -8,7 +8,12 @@
 #ifndef KERN_INC_CONTROL_BLOCK_STRUCTS_H
 #define KERN_INC_CONTROL_BLOCK_STRUCTS_H
 
-#include <control_block.h>
+#include <cond.h>
+#include <ureg.h>
+#include <vm.h>
+#include <mutex.h>
+#include <variable_queue.h>
+#include <variable_htable.h>
 
 /** @brief Thread exit states */
 typedef enum {
@@ -52,9 +57,11 @@ typedef struct swexn_stack {
 } swexn_stack_t;
 
 /** @brief Structure for a list of processes */
-Q_NEW_HEAD(pcb_ds_t, pcb);
+Q_NEW_HEAD(pcb_queue_t, pcb);
 /** @brief Structure for a list of threads */
-Q_NEW_HEAD(tcb_ds_t, tcb);
+Q_NEW_HEAD(tcb_queue_t, tcb);
+/** @brief Structure for hash table of tcbs */
+H_NEW_TABLE(thread_hash_t, tcb_queue_t);
 
 /** @brief Structure for a process control block */
 typedef struct pcb {
@@ -64,15 +71,15 @@ typedef struct pcb {
     struct pcb *parent;
     // Stuff protected by children_mutex
     mutex_t children_mutex;
-    pcb_ds_t children;
+    pcb_queue_t children;
     int num_children;
     cond_t wait;
     int waiting;
     // Stuff protected by threads_mutex
     mutex_t threads_mutex;
-    tcb_ds_t threads;
+    tcb_queue_t threads;
     int num_threads;
-    // Other things
+    // Things not protected by a mutex
     int id;
     int exit_status;
     ppd_t *directory;
@@ -99,7 +106,7 @@ typedef struct tcb {
 /** @brief Structure for the overall kernel state */
 typedef struct kernel_state {
     mutex_t threads_mutex;
-    tcb_ds_t threads;
+    thread_hash_t thread_table;
     mutex_t next_id_mutex;
     int next_id;
     tcb_t *init;
