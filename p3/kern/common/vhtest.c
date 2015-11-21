@@ -7,6 +7,7 @@
 
 #include "variable_htable.h"
 #include <stdio.h>
+#include <math.h>
 
 /** @brief Structure for a list of items */
 Q_NEW_HEAD(hash_list_t, item);
@@ -106,8 +107,8 @@ int main()
     }
     mean = ((float)H_SIZE(&table)) / H_CAPACITY(&table);
     H_DEBUG_BUCKETS(&table, key, links, calc_var);
-    printf("Mean bucket size %f  Variance %f\n",
-            mean, variance/H_CAPACITY(&table));
+    printf("Mean bucket size %f  Stddev %f\n",
+            mean, sqrt(variance/H_CAPACITY(&table)));
     for (i = 0; i < TEST_SIZE; i++) {
         item_t* node = malloc(sizeof(item_t));
         node->key = i;
@@ -124,6 +125,16 @@ int main()
         }
     }
     puts("Insert of existing keys works");
+    item_t *iter, *swap;
+    int count = 0;
+    H_FOREACH_SAFE(i, iter, swap, &table, links){
+        count++;
+    }
+    if(!count == H_SIZE(&table)){
+        ABORT_ERROR("foreach safe reached too few elements");
+    } else {
+        puts("Foreach safe reached the correct number of elements");
+    }
     for (i = 0; i < TEST_SIZE; i++) {
         if (H_CONTAINS(&table, i, key, links)) {
             if (H_GET(&table, i, key, links)->value == i + 2) {

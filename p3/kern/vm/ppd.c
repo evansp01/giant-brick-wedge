@@ -29,7 +29,10 @@ ppd_t* init_ppd()
     if (ppd == NULL) {
         return NULL;
     }
-    Q_INIT_HEAD(&ppd->allocations);
+    if(H_INIT_TABLE(&ppd->alloc_table) < 0){
+        sfree(ppd, sizeof(ppd_t));
+        return NULL;
+    }
     mutex_init(&ppd->lock);
     if ((ppd->dir = alloc_page_directory()) == NULL) {
         mutex_destroy(&ppd->lock);
@@ -37,6 +40,18 @@ ppd_t* init_ppd()
         return NULL;
     }
     return ppd;
+}
+
+/** @brief Copy a user allocation
+ *
+ *  @param to The allocation to copy to
+ *  @param from The allocation to copy from
+ *  @return void
+ **/
+void copy_alloc(alloc_t* to, alloc_t* from)
+{
+    to->start = from->start;
+    to->size = from->size;
 }
 
 /** @brief Free the memory associated with an alloc_t struct
@@ -65,7 +80,7 @@ int add_alloc(ppd_t* ppd, void* start, uint32_t size)
     Q_INIT_ELEM(new_alloc, list);
     new_alloc->start = (uint32_t)start;
     new_alloc->size = size;
-    Q_INSERT_TAIL(&ppd->allocations, new_alloc, list);
+    H_INSERT(&ppd->alloc_table, new_alloc, start, list);
     return 0;
 }
 
@@ -77,23 +92,51 @@ int add_alloc(ppd_t* ppd, void* start, uint32_t size)
  **/
 int vm_free(ppd_t* ppd, void* start)
 {
-    alloc_t* alloc;
-    int found = 0;
-    Q_FOREACH(alloc, &ppd->allocations, list)
-    {
-        if (alloc->start == (uint32_t)start) {
-            found = 1;
-            break;
-        }
-    }
-    if (!found) {
+    alloc_t* alloc = H_REMOVE(&ppd->alloc_table, (uint32_t)start, start, list);
+    if(alloc == NULL){
         return -1;
     }
-    Q_REMOVE(&ppd->allocations, alloc, list);
     vm_free_alloc(ppd, alloc->start, alloc->size);
     free_alloc(alloc);
     return 0;
 }
+
+/** @brief Copies the list of allocations from one process to another
+ *
+ *  @param to The ppd to copy the list to
+ *  @param from The ppd to copy the list from
+ *  @returns Zero on success, less than 0 on failure
+ **/
+int copy_alloc_list(ppd_t* to, ppd_t* from)
+{
+    int i;
+    alloc_t* alloc;
+    int success = 1;
+    H_FOREACH(i, alloc, &from->alloc_table, list)
+    {
+        alloc_t* copy = malloc(sizeof(alloc_t));
+        Q_INIT_ELEM(copy, list);
+        if (copy == NULL) {
+            success = 0;
+            break;
+        }
+        copy_alloc(copy, alloc);
+        H_INSERT(&to->alloc_table, copy, start, list);
+    }
+    if (success) {
+        return 0;
+    }
+    // free the hash table memory
+    alloc_t* swap;
+    H_FOREACH_SAFE(i, alloc, swap, &to->alloc_table, list)
+    {
+        free_alloc(alloc);
+    }
+    H_FREE_TABLE(&to->alloc_table);
+    return -1;
+}
+
+
 
 /** @brief Free all user memory allocations associated with this ppd
  *
@@ -102,14 +145,16 @@ int vm_free(ppd_t* ppd, void* start)
  **/
 void free_ppd_user_mem(ppd_t* to_free)
 {
+    int i;
     alloc_t* alloc;
     alloc_t* swap;
-    Q_FOREACH_SAFE(alloc, swap, &to_free->allocations, list)
+    H_FOREACH_SAFE(i, alloc, swap, &to_free->alloc_table, list)
     {
-        Q_REMOVE(&to_free->allocations, alloc, list);
+        //Q_REMOVE(&to_free->allocations, alloc, list);
         vm_free_alloc(to_free, alloc->start, alloc->size);
         free_alloc(alloc);
     }
+    H_FREE_TABLE(&to_free->alloc_table);
 }
 
 /** @brief Free all kernel memory associated with this ppd without locks
@@ -187,51 +232,6 @@ void free_ppd(ppd_t* to_free, ppd_t* current)
 void switch_ppd(ppd_t* ppd)
 {
     set_cr3((uint32_t)ppd->dir);
-}
-
-/** @brief Copy a user allocation
- *
- *  @param to The allocation to copy to
- *  @param from The allocation to copy from
- *  @return void
- **/
-void copy_alloc(alloc_t* to, alloc_t* from)
-{
-    to->start = from->start;
-    to->size = from->size;
-}
-
-/** @brief Copies the list of allocations from one process to another
- *
- *  @param to The ppd to copy the list to
- *  @param from The ppd to copy the list from
- *  @returns Zero on success, less than 0 on failure
- **/
-int copy_alloc_list(ppd_t* to, ppd_t* from)
-{
-    alloc_t* alloc;
-    alloc_t* tmp;
-    int success = 1;
-    Q_FOREACH(alloc, &from->allocations, list)
-    {
-        alloc_t* copy = malloc(sizeof(alloc_t));
-        Q_INIT_ELEM(copy, list);
-        if (copy == NULL) {
-            success = 0;
-            break;
-        }
-        copy_alloc(copy, alloc);
-        Q_INSERT_TAIL(&to->allocations, copy, list);
-    }
-    if (success) {
-        return 0;
-    }
-    Q_FOREACH_SAFE(alloc, tmp, &to->allocations, list)
-    {
-        Q_REMOVE(&to->allocations, alloc, list);
-        free_alloc(alloc);
-    }
-    return -1;
 }
 
 /** @brief Initialize a ppd by copying all contents of another ppd
