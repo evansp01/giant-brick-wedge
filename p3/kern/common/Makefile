@@ -5,7 +5,7 @@
 VQTEST=vqtest
 VHTEST=vhtest
 CC=gcc
-CFLAGS = -g -fno-strict-aliasing -Wall -gdwarf-2 -Werror -m32 -I../inc
+CFLAGS = -g -fno-strict-aliasing -Wall -gdwarf-2 -Werror -m32 -I../inc -lm
 
 all: $(VQTEST) $(VHTEST) $(AQTEST)
 

@@ -10,6 +10,7 @@
 #define KERN_INC_VM_H
 
 #include <variable_queue.h>
+#include <variable_htable.h>
 #include <mutex.h>
 #include <page.h>
 #include <stdint.h>
@@ -20,6 +21,7 @@ typedef struct page_directory page_directory_t;
 
 /** @brief A struct for a list of allocations */
 Q_NEW_HEAD(alloc_list_t, alloc);
+H_NEW_TABLE(alloc_table_t, alloc_list_t);
 
 /** @brief Struct for allocated frames */
 typedef struct alloc {
@@ -32,7 +34,7 @@ typedef struct alloc {
 typedef struct ppd {
     page_directory_t* dir;
     int frames;
-    alloc_list_t allocations;
+    alloc_table_t alloc_table;
     mutex_t lock;
 } ppd_t;
 
