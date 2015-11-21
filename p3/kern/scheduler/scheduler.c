@@ -23,7 +23,9 @@ Q_NEW_HEAD(runnable_queue_t, tcb);
 // Global scheduler list of runnable threads
 static struct {
     tcb_t* idle;
-    runnable_queue_t runnable;
+    runnable_queue_t runnable_p0;
+    runnable_queue_t runnable_p1;
+    int p0_run_count;
     uint32_t ticks;
 } scheduler = { 0 };
 
@@ -43,8 +45,14 @@ uint32_t get_ticks()
  **/
 void add_runnable(tcb_t* tcb)
 {
-    tcb->state = T_RUNNABLE;
-    Q_INSERT_FRONT(&scheduler.runnable, tcb, runnable_threads);
+    tcb->state = T_RUNNABLE_P0;
+    // add threads to the end of the high priority queue
+    Q_INSERT_TAIL(&scheduler.runnable_p0, tcb, runnable_threads);
+}
+
+int is_runnable(tcb_t* tcb)
+{
+    return tcb->state == T_RUNNABLE_P0 || tcb->state == T_RUNNABLE_P1;
 }
 
 /** @brief Remove a thread from the runnable list, and update it's state
@@ -54,8 +62,47 @@ void add_runnable(tcb_t* tcb)
  **/
 void remove_runnable(tcb_t* tcb, thread_state_t state)
 {
+    if (tcb->state == T_RUNNABLE_P0) {
+        Q_REMOVE(&scheduler.runnable_p0, tcb, runnable_threads);
+    } else if (tcb->state == T_RUNNABLE_P1) {
+        Q_REMOVE(&scheduler.runnable_p1, tcb, runnable_threads);
+    } else {
+        panic("Removing runnable called on thread which is not runnable");
+    }
     tcb->state = state;
-    Q_REMOVE(&scheduler.runnable, tcb, runnable_threads);
+}
+
+#define P0_PRIORITY 2
+
+tcb_t* get_next_runnable()
+{
+    // if there is a low priority thread to run and we have run too many
+    // high priority threads recently
+    if (scheduler.p0_run_count >= P0_PRIORITY &&
+            !Q_IS_EMPTY(&scheduler.runnable_p1)) {
+        scheduler.p0_run_count = 0;
+        return Q_GET_FRONT(&scheduler.runnable_p1);
+    }
+    // if there is a high priority thread to run
+    if (!Q_IS_EMPTY(&scheduler.runnable_p0)) {
+        scheduler.p0_run_count++;
+        return Q_GET_FRONT(&scheduler.runnable_p0);
+    }
+    // if there is a low priority thread to run
+    if (!Q_IS_EMPTY(&scheduler.runnable_p1)) {
+        scheduler.p0_run_count = 0;
+        return Q_GET_FRONT(&scheduler.runnable_p1);
+    }
+    // if there is no thread to run
+    return NULL;
+}
+
+void rotate_runnable()
+{
+    tcb_t* next = get_next_runnable();
+    // add the thread to the low priority queue
+    remove_runnable(next, T_RUNNABLE_P1);
+    Q_INSERT_TAIL(&scheduler.runnable_p1, next, runnable_threads);
 }
 
 /** @brief Initializes the scheduler
@@ -67,7 +114,8 @@ void remove_runnable(tcb_t* tcb, thread_state_t state)
  */
 void init_scheduler(tcb_t* idle, tcb_t* first)
 {
-    Q_INIT_HEAD(&scheduler.runnable);
+    Q_INIT_HEAD(&scheduler.runnable_p0);
+    Q_INIT_HEAD(&scheduler.runnable_p1);
     scheduler.idle = idle;
     add_runnable(first);
     init_sleep();
@@ -82,11 +130,10 @@ void init_scheduler(tcb_t* idle, tcb_t* first)
 void switch_to_next(tcb_t* current, int schedule)
 {
 
-    if (!Q_IS_EMPTY(&scheduler.runnable)) {
-        tcb_t* next = Q_GET_FRONT(&scheduler.runnable);
+    tcb_t* next = get_next_runnable();
+    if (next != NULL) {
         if (schedule) {
-            Q_REMOVE(&scheduler.runnable, next, runnable_threads);
-            Q_INSERT_TAIL(&scheduler.runnable, next, runnable_threads);
+            rotate_runnable();
         }
 
         if (current->id != next->id) {
@@ -258,11 +305,12 @@ int yield(int yield_tid)
     mutex_lock(&kernel_state.threads_mutex);
     tcb_t* yield_tcb = get_tcb_by_id(yield_tid);
     // Thou shalt not yield to threads which don't exist, or are not runnable
-    if (yield_tcb == NULL || yield_tcb->state != T_RUNNABLE) {
+    disable_interrupts();
+    if (yield_tcb == NULL || !is_runnable(yield_tcb)) {
+        enable_interrupts();
         mutex_unlock(&kernel_state.threads_mutex);
         return -1;
     }
-    disable_interrupts();
     scheduler_mutex_unlock(&kernel_state.threads_mutex);
     context_switch(tcb, yield_tcb);
     return 0;

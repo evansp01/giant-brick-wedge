@@ -22,7 +22,8 @@ typedef enum {
 /** @brief Thread states */
 typedef enum {
     T_NOT_YET,
-    T_RUNNABLE,
+    T_RUNNABLE_P0,
+    T_RUNNABLE_P1,
     T_SUSPENDED,
     T_KERN_SUSPENDED,
     T_SLEEPING,

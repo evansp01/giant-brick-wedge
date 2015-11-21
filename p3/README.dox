@@ -60,7 +60,22 @@ Readline
 
 Sleep
 
-    Sorted lists of threads, schedule O(1) interrupts disabled O(1)
+Our sleep function is implemented by adding threads to a sorted linked list. In
+order to read from the list, threads must hold a mutex, and in order to modify
+the list, interrupts must be disabled.
+
+This allows the sleep syscall to grab sleeper list lock, and search for the
+position where the current thread should be added to that list. It can then
+disable interrupts and add the thread to the list. Finally when the the thread
+is awoken, it removes itsself from the sleeper list after grabbing the lock and
+disabling interrupts.
+
+This ensures that even though the sleep syscall takes O(n) time in the number
+of sleeping threads, interrupts are only disabled for O(1) time.
+
+The scheduler needs only to check if the first item in the list is still
+sleeping and is ready to wake up. This takes O(1) time and does not require
+the list lock.
 
 Exec / Fork
     

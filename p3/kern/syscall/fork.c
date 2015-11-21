@@ -46,16 +46,13 @@ void thread_fork_syscall(ureg_t state)
 {
     tcb_t* parent = get_tcb();
     pcb_t* process = parent->process;
-    mutex_lock(&process->children_mutex);
     tcb_t* child = create_tcb_entry(get_next_id());
     if (child == NULL) {
-        mutex_unlock(&process->children_mutex);
         state.eax = -1;
         return;
     }
-    state.eax = copy_thread(child, parent, &state);
     pcb_add_thread(process, child);
-    mutex_unlock(&process->children_mutex);
+    state.eax = copy_thread(child, parent, &state);
 }
 
 /** @brief Copies the kernel stack from a parent to child process
