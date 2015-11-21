@@ -6,10 +6,7 @@ Testing:
         ...
    
 Non-code:
-    cleanup control_block.h
     change lprintf to also printf to console (define print macro)
-    doxygen
-    design docs
     
 Optimizations:
     switch to hash tables for global thread/process lists
