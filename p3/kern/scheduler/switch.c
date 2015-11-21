@@ -33,7 +33,7 @@ typedef struct context_stack {
 
 /** @brief Stores the saved_esp into the tcb
  *
- *  @param addr Stack address of
+ *  @param saved_esp Stack address of
  *  @param tcb Pointer to tcb
  *  @return void
  **/
@@ -55,16 +55,6 @@ void context_switch(tcb_t* from, tcb_t* to)
     enable_interrupts();
 }
 
-/** @brief The entry point for a thread the first time it is context switched
- *         to
- *  @param iret_ptr The pointer of the context required for mode switch
- *  @return Does not return
- **/
-void first_context_switch(void* iret_ptr)
-{
-    go_to_user_mode(iret_ptr);
-}
-
 /** @brief Sets up a given thread stack for entry via context switch
  *
  *  @param tcb Thread whose stack is to be set up for context switch entry
@@ -74,7 +64,7 @@ void setup_for_switch(tcb_t* tcb)
 {
     void* saved_esp = tcb->saved_esp;
     context_stack_t context_stack = {
-        .func_addr = first_context_switch,
+        .func_addr = go_to_user_mode,
         .saved_esp = saved_esp,
     };
     PUSH_STACK(tcb->saved_esp, context_stack, context_stack_t);

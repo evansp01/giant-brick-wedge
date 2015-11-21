@@ -15,7 +15,8 @@
 #include <interrupt.h>
 
 
-#define USER_FLAGS (EFL_RF|EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
+/** @brief Bits in the eflags register which can be set in user mode */
+#define USER_FLAGS (EFL_OF|EFL_DF|EFL_SF|EFL_ZF|EFL_AF|EFL_PF|EFL_CF)
 
 /** @brief Registers a software exception handler
  *  @return void
@@ -55,6 +56,9 @@ void swexn_handler(ureg_t* state, tcb_t* tcb)
     swexn_stack.arg = swexn.arg;
     swexn_stack.ureg = (void *)((uint32_t)swexn.stack - sizeof(ureg_t));
     swexn_stack.state = *state;
+    // clear the resume flag we give back to the user so it will match
+    // the bit we see in the swexn system call
+    swexn_stack.state.eflags = swexn_stack.state.eflags & ~(EFL_RF);
     void *start = (void *)((uint32_t)swexn.stack - sizeof(swexn_stack_t));
     vm_write_locked(tcb->process->directory, &swexn_stack, (uint32_t)start,
                     sizeof(swexn_stack_t));
@@ -70,11 +74,25 @@ void swexn_handler(ureg_t* state, tcb_t* tcb)
     panic("We are lost in the depths of swexn");
 }
 
+/** brief Are the user supplied eflags valid
+ *
+ *  @param user_eflags The user supplied eflags
+ *  @param current_eflags The current user mode eflags
+ *  @return A boolean integer
+ **/
+int eflags_valid(uint32_t user_eflags, uint32_t current_eflags) 
+{
+    uint32_t protected_flags = user_eflags & (~USER_FLAGS);
+    uint32_t current_protected = current_eflags & (~USER_FLAGS);
+    return protected_flags == current_protected;
+}
+
 /** @brief Checks the user provided arguments for swexn
  *  @param tcb TCB of current thread
  *  @param eip Address of first instruction of user exception handler
  *  @param esp User exception stack
  *  @param regs User provided return register state
+ *  @param eflags The user provided eflags values
  *  @return 0 on success, a negative integer on failure
  */
 int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
@@ -111,7 +129,7 @@ int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
             return -5;
         }
         // Check eflags
-        if ((eflags&(~USER_FLAGS)&(~EFL_RF)) != (regs->eflags&(~USER_FLAGS))) {
+        if(!eflags_valid(eflags, regs->eflags)){
             return -6;
         }
         // Check that esp is in user write memory

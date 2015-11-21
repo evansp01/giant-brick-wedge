@@ -385,7 +385,7 @@ int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent)
 }
 
 /** @brief Allocates all page tables from start address to start+size
- *  @param cr3 The address of the page table
+ *  @param ppd The page directory
  *  @param start The virtual address to begin allocation at
  *  @param size The amount of virtual memory to allocate pages for
  *  @return zero on success less than zero on failure

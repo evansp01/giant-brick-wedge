@@ -13,15 +13,19 @@
 #include <ureg.h>
 #include <stdint.h>
 
+/** @brief Shuts down the system with a HLT instruction
+ *  @return Does not return
+ **/
+void halt_asm();
+
 void init_print();
 void init_readline();
-void halt_asm();
 void register_swexn(tcb_t *tcb,swexn_handler_t handler,void *arg,void *stack);
 void deregister_swexn(tcb_t *tcb);
 void swexn_handler(ureg_t* state, tcb_t* tcb);
 
 void init_timer();
-int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd);
+int readline(int len, char *buf, tcb_t *tcb);
 
 int getbytes( const char *filename, int offset, int size, char *buf );
 void *create_context(uint32_t stack, uint32_t user_esp, uint32_t user_eip);

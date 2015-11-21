@@ -16,7 +16,7 @@
 #include <vm.h>
 
 /** @brief Structure for the frame allocator */
-static struct frame_alloc {
+static struct {
     int total_frames;
     int free_frames;
     int next_physical_frame;
@@ -50,11 +50,17 @@ static void* next_physical_frame()
     return (void*)frame;
 }
 
+/** @brief Gets the zfod zero page
+ *  @return The zfod zero page
+ **/
 void* get_zero_page()
 {
     return frames.zero_page;
 }
 
+/** @brief Gets the total number of frames available to the user
+ *  @return The number of frames
+ **/
 int user_frame_total()
 {
     return frames.total_frames;
@@ -153,7 +159,8 @@ int kernel_alloc_frame(entry_t* table, entry_t model)
 
 /** @brief Frees an allocated frame allowing it to be reused
  *
- *  @param frame The frame to free
+ *  @param virtual The virtual address of the frame to free
+ *  @param physical The physical address of the frame to free
  *  @return void
  **/
 void free_frame(void* virtual, void* physical)

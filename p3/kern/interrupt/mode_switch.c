@@ -15,7 +15,6 @@
 
 /** @brief Sets esp0 and cr3 before transitioning to user mode
  *
- *  @param addr Any address on the current kernel stack
  *  @return void
  */
 void set_regs()

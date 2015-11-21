@@ -71,8 +71,9 @@ void copy_kernel_stack(tcb_t* tcb_parent, tcb_t* tcb_child)
 
 /** @brief Calculates the saved esp for the new thread stack
  *
- *  @param tcb_parent Pointer to parent tcb
- *  @param tcb_child Pointer to child tcb
+ *  @param parent Pointer to parent tcb
+ *  @param child Pointer to child tcb
+ *  @param state The state of the parent process in user mode
  *  @return void
  **/
 void copy_saved_esp(tcb_t* parent, tcb_t* child, void* state)
@@ -83,9 +84,9 @@ void copy_saved_esp(tcb_t* parent, tcb_t* child, void* state)
 
 /** @brief Creates a copy of the given process
  *
- *  @param tcb_parent The tcb of the parent thread
- *  @param tcb_child The tcb of the child thread
- *  @param state The state of userspace on the call to fork
+ *  @param parent The tcb of the parent thread
+ *  @param child The tcb of the child thread
+ *  @param state The state of the parent process in user mode
  *
  *  @return Id of the child thread
  **/

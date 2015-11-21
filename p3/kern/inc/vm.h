@@ -15,8 +15,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/** @brief A transparent struct declaration for the ppd */
 typedef struct page_directory page_directory_t;
 
+/** @brief A struct for a list of allocations */
 Q_NEW_HEAD(alloc_list_t, alloc);
 
 /** @brief Struct for allocated frames */

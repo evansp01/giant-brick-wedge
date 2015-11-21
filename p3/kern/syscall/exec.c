@@ -64,7 +64,7 @@ int get_argv_length(ppd_t* ppd, int argc, char** argv)
 
 /** @brief A hander for the exec system call
  *
- *  @param State the state of userspace when exec was called
+ *  @param state the state of userspace when exec was called
  *  @return void
  **/
 void exec_syscall(ureg_t state)
@@ -451,7 +451,7 @@ void replace_pcb_dir(pcb_t *pcb, ppd_t* dir)
  *  @param tcb The tcb of the process to replace programs in
  *  @param k_space The kernel space buffer with arguments to the new program
  *  @param argc The number of strings in argv
- *  @param argv An array of strings passed to main of the new program
+ *  @param k_argv An array of strings passed to main of the new program
  *  @param arglen The number of characters in argv
  *  @return Zero on success, less than zero on failure
  **/

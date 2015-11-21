@@ -19,6 +19,13 @@ typedef struct {
     uint32_t junk : 27;    /* bit 5 - 31 */
 } page_fault_t;
 
+/** @brief Is this pagefault cause by the reserved bit being set or an invalid
+ *         instruction fetch
+ *
+ *  @param error The error code of the page fault
+ *  @param cr2 The address of the page fault
+ *  @return A boolean integer
+ **/
 int reserved_or_fetch(page_fault_t error, uint32_t cr2)
 {
     // instruction fetches can't be related to zfod
@@ -34,6 +41,14 @@ int reserved_or_fetch(page_fault_t error, uint32_t cr2)
     return 0;
 }
 
+/** @brief Is the address present, and can the user access it
+ *
+ *  @param error The error code of the page fault
+ *  @param table The page table entry of the memory address that faulted
+ *  @param dir The page directory entry of the memory address that faulted
+ *  @param cr2 The address of the page fault
+ *  @return A boolean integer
+ **/
 int perm_present(page_fault_t error, entry_t table, entry_t dir, uint32_t cr2)
 {
     // User trying to access a kernel page, no thanks
@@ -49,11 +64,23 @@ int perm_present(page_fault_t error, entry_t table, entry_t dir, uint32_t cr2)
     return 0;
 }
 
+/** @brief Align an address to a page boundary
+ *
+ *  @param address The address to align
+ *  @return The aligned address
+ **/
 uint32_t page_align(uint32_t address)
 {
     return address & (~(PAGE_SIZE - 1));
 }
 
+/** @brief Resolve a pagefault if possible
+ *
+ *  @param ppd The page directory of the process with the fault
+ *  @param cr2 The address of the fault
+ *  @param error_code The error code of the page fault
+ *  @return Zero on success, less than zero on error
+ **/
 int vm_resolve_pagefault(ppd_t* ppd, uint32_t cr2, int error_code)
 {
     page_fault_t error = AS_TYPE(error_code, page_fault_t);

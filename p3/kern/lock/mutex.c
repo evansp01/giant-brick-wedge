@@ -14,9 +14,14 @@
 
 #include <simics.h>
 
+/** @brief Indicates that the mutex is not held by any thread */
 #define UNSPECIFIED -1
+/** @brief Indicates that a mutex has been destroyed and should not be used */
 #define DESTROYED 2
 
+/** @brief Before mutexes are initialized they will be noops so that interrupts
+ *         will not be enabled before the scheduler has been set up
+ **/
 static int initialized = 0;
 
 /** @brief Simple lock to prevent threads from interleaving

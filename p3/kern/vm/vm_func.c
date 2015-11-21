@@ -49,10 +49,10 @@ typedef int (*vm_operator)(entry_t*, entry_t*, address_t);
 
 /** @brief Map a mapper function across a range of pages
  *
- *  @ppd The page directory to map across
- *  @start The starting address to map from
- *  @size The size to map
- *  @op The vm mapper to run
+ *  @param ppd The page directory to map across
+ *  @param start The starting address to map from
+ *  @param size The size to map
+ *  @param op The vm mapper to run
  *  @return Zero on success an integer less than zero on failure
  **/
 int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
@@ -93,9 +93,9 @@ int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
 }
 /** @brief Determine if a set of pages is allocatable
  *
- *  @ppd The page directory to map across
- *  @start The starting address to map from
- *  @size The size to map
+ *  @brief ppd The page directory to map across
+ *  @brief start The starting address to map from
+ *  @brief size The size to map
  *  @return an integer boolean
  **/
 int vm_user_can_alloc(ppd_t* ppd, void* start, uint32_t size)

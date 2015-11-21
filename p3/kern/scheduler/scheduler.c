@@ -20,7 +20,10 @@
 /** @brief Structure for a list of threads */
 Q_NEW_HEAD(runnable_queue_t, tcb);
 
-// Global scheduler list of runnable threads
+/** @brief The ratio of p0 threads to p1 threads run */
+#define P0_PRIORITY 2
+
+/** @brief State of the scheduler including queues and number of ticks */
 static struct {
     tcb_t* idle;
     runnable_queue_t runnable_p0;
@@ -50,6 +53,11 @@ void add_runnable(tcb_t* tcb)
     Q_INSERT_TAIL(&scheduler.runnable_p0, tcb, runnable_threads);
 }
 
+/** @brief Is this thread runnable
+ *
+ *  @param tcb The thread to check
+ *  @return A boolean integer
+ **/
 int is_runnable(tcb_t* tcb)
 {
     return tcb->state == T_RUNNABLE_P0 || tcb->state == T_RUNNABLE_P1;
@@ -72,8 +80,10 @@ void remove_runnable(tcb_t* tcb, thread_state_t state)
     tcb->state = state;
 }
 
-#define P0_PRIORITY 2
-
+/** @brief Get the next runnable thread
+ *
+ *  @return The next runnable thread or NULL if there is no runnable thread
+ **/
 tcb_t* get_next_runnable()
 {
     // if there is a low priority thread to run and we have run too many
@@ -97,6 +107,12 @@ tcb_t* get_next_runnable()
     return NULL;
 }
 
+/** @brief Rotate the runnable queue
+ *
+ *  Moves the thread at the front to the end of the p1 runnable queue
+ *
+ *  @return void
+ **/
 void rotate_runnable()
 {
     tcb_t* next = get_next_runnable();
@@ -154,6 +170,8 @@ void switch_to_next(tcb_t* current, int schedule)
  *  Interrupts need to be disabled since run_next() can be called in yield()
  *  and not just from within the scheduler.
  *
+ *  @param ticks The number of ticks since system boot
+ *
  *  @return void
  */
 void run_scheduler(uint32_t ticks)
@@ -167,7 +185,7 @@ void run_scheduler(uint32_t ticks)
 /** @brief Schedules the thread to be run
  *
  *  @param tcb Pointer to tcb of thread to schedule
- *  @param state The state the scheduling thread expects to find the tcb in
+ *  @param expected The state the scheduling thread expects to find the tcb in
  *  @return void
  */
 void schedule(tcb_t* tcb, thread_state_t expected)
@@ -180,7 +198,7 @@ void schedule(tcb_t* tcb, thread_state_t expected)
 /** @brief Schedules the thread to be run
  *
  *  @param tcb Pointer to tcb of thread to schedule
- *  @param state The state the scheduling thread expects to find the tcb in
+ *  @param expected The state the scheduling thread expects to find the tcb in
  *  @return void
  */
 void schedule_interrupts_disabled(tcb_t* tcb, thread_state_t expected)

@@ -73,7 +73,7 @@ void schedule_sleepers(uint32_t current)
 /** @brief After a sleeping thread has awoken it must remove itsself from the
  *         sleeping list with this call
  *
- *  @param The thread which woke up
+ *  @param sleeper The thread which woke up
  *  @return void
  **/
 void release_sleeper(tcb_t *sleeper)

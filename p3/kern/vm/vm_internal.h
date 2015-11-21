@@ -15,16 +15,29 @@
 #include <mutex.h>
 #include "debug_assert.h"
 
+/** @brief The number of page table entries per page table */
 #define PAGES_PER_TABLE 1024
+/** @brief The number of page directory entries per page directory */
 #define TABLES_PER_DIR 1024
-#define ENTRY_ADDRESS_SHIFT 12
+/** @brief The shift which gives the address bits of a table entry */
+#define ENTRY_ADDRESS_SHIFT PAGE_SHIFT
+/** @brief The ratio to overcommit virtual frames at 1 does not overcommit */
 #define OVERCOMMIT_RATIO 1
 
+/** @brief Divide x and y rounding the result up to the nearest integer */
 #define DIVIDE_ROUND_UP(x, y) (1 + ((x) - 1) / (y))
 
+/** @brief The number of page tables used by the kernel address space */
 #define KERNEL_TABLES \
     DIVIDE_ROUND_UP(USER_MEM_START, PAGE_SIZE* PAGES_PER_TABLE)
 
+/** @def AS_TYPE(address, type)
+ *
+ *  @brief Casts an address to a type with no type checking
+ *  @param address The address to cast
+ *  @param type The type to cast it to
+ *  @return The address as a type
+ **/
 #define AS_TYPE(address, type) (*(type*)&(address))
 
 /** @brief Struct for page directory/table entries */
@@ -80,31 +93,25 @@ extern const entry_t e_zfod_page;
 extern const entry_t e_unmapped;
 
 /** @brief Invalidates a page using the invl page instruction
- *  @param Page the page to invalidate
+ *  @param page the page to invalidate
  *  @return void
  **/
 void invalidate_page(void *page);
 
 int add_alloc(ppd_t* ppd, void* start, uint32_t size);
-int remove_alloc(ppd_t* ppd, void* start, uint32_t* size);
 
 void release_frames(void* start, uint32_t size);
 int reserve_frames(void* start, uint32_t size);
 
 entry_t create_entry(void* address, entry_t model);
 void* get_entry_address(entry_t entry);
-void set_entry_address(entry_t* entry, void* address);
-void print_entry(entry_t *entry);
 entry_t* get_dir_entry(void* address, page_directory_t* directory);
 entry_t* get_table_entry(void* address, page_table_t* table);
 void* get_address(void* address, void* page);
-void turn_on_vm();
 void zero_frame(void* frame);
 page_directory_t* alloc_page_directory();
 page_directory_t* alloc_kernel_directory();
 page_table_t* alloc_page_table();
-void free_page_directory(page_directory_t* dir);
-int allocate_pages(ppd_t *ppd, void* start, uint32_t size, entry_t model);
 int page_bytes_left(void* address);
 int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent);
 

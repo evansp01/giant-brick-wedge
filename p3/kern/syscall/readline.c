@@ -16,35 +16,30 @@
 #include <interrupt_defines.h>
 #include <video_defines.h>
 
+/** @brief The size of the buffer that readline uses to store characters */
 #define KEYBOARD_BUFFER_SIZE (READLINE_MAX_LEN * 2)
+/** @brief The maximum number of characters a call to readline can take */
 #define READLINE_MAX_LEN (CONSOLE_WIDTH*(CONSOLE_HEIGHT-1))
 
+/** @brief A temporary buffer used for copying characters to the user buffer */
 static char temp[READLINE_MAX_LEN];
+/** @brief The mutex which protects the readline system call */
 static mutex_t read_mutex;
 
 /** @brief A circlular buffer for storing and reading keystrokes */
-typedef struct {
-    char buffer[KEYBOARD_BUFFER_SIZE];
+struct {
     int producer; /* where the producer will next produce to */
     int consumer; /* where the consumer will next consume from */
     int num_chars;
     int num_newlines;
     int user_buf_len;
     tcb_t *readline_thread;
-} keyboard_struct;
-
-/** The circular buffer for the keyboard */
-static keyboard_struct keyboard = {
-    .producer = 0,
-    .consumer = 0,
-    .num_chars = 0,
-    .num_newlines = 0,
-    .user_buf_len = 0,
-    .readline_thread = NULL
-};
+    char buffer[KEYBOARD_BUFFER_SIZE];
+} keyboard = {0};
 
 /** @brief The previous index in the circular keyboard buffer
  *
+ *  @param index The index to get the previous index of
  *  @return The previous index
  *  */
 static int prev_index(int index)
@@ -58,6 +53,7 @@ static int prev_index(int index)
 
 /** @brief The next index in the circular keyboard buffer
  *
+ *  @param index The index to get the index after
  *  @return The next index
  *  */
 static int next_index(int index)
@@ -65,6 +61,9 @@ static int next_index(int index)
     return (index + 1) % KEYBOARD_BUFFER_SIZE;
 }
 
+/** @brief Is there an outstanding call to readline
+ *  @return A boolean integer
+ **/
 static int is_readline()
 {
     return (keyboard.user_buf_len != 0);
@@ -91,6 +90,8 @@ static int readchar(uint8_t scancode)
  *  Reads the scancode from the keyboard and stores it in the keyboard buffer
  *  so it can later be read by readchar. This is the function which is called
  *  by the keyboard assembly wrapper
+ *
+ *  @param state The state of the process before the keyboard interrupt
  *
  *  @return void
  *  */
@@ -157,9 +158,10 @@ void keyboard_interrupt(ureg_t state)
  *
  *  @param len Length of user buffer
  *  @param buf User buffer to copy characters into
+ *  @param tcb The tcb of the thread calling readline
  *  @return number of characters copied into the user buffer
  *  */
-int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd)
+int readline(int len, char *buf, tcb_t *tcb)
 {
     if ((keyboard.num_chars < len)&&(keyboard.num_newlines == 0)) {
         keyboard.user_buf_len = len;
@@ -190,6 +192,7 @@ int readline(int len, char *buf, tcb_t *tcb, ppd_t *ppd)
     }
     
     // Copy to the user buffer
+    ppd_t *ppd = tcb->process->directory;
     if (vm_write_locked(ppd, temp, (uint32_t)buf, i*sizeof(char)) < 0) {
         return -1;
     }
@@ -239,7 +242,7 @@ void readline_syscall(ureg_t state)
     }
     
     mutex_lock(&read_mutex);
-    int num_bytes = readline(args.len, args.buf, tcb, ppd);
+    int num_bytes = readline(args.len, args.buf, tcb);
     mutex_unlock(&read_mutex);
 
     state.eax = num_bytes;

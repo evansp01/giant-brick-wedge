@@ -24,6 +24,13 @@
 
 void dump_registers(ureg_t* ureg);
 
+/** @brief Default fault handler, calls user fault handler if possible
+ *         otherwise kills the thread
+ *
+ *  @param state The state of the userspace program when the fault occured
+ *  @param tcb The current thread
+ *  @return Does not return
+ **/
 void default_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     if (tcb->swexn.handler != NULL) {
@@ -35,6 +42,13 @@ void default_fault_handler(ureg_t* state, tcb_t* tcb)
     vanish_thread(tcb, THREAD_EXIT_FAILED);
 }
 
+/** @brief Attempts to resolve a page fault if it was caused by zfod. Otherwise
+ *         calls the default fault handler
+ *
+ *  @param state The state of the userspace process when the fault occured
+ *  @param tcb The current thread
+ *  @return void, but may not return
+ **/
 void page_fault_handler(ureg_t* state, tcb_t* tcb)
 {
     int vm_status;
@@ -50,8 +64,6 @@ void page_fault_handler(ureg_t* state, tcb_t* tcb)
         default_fault_handler(state, tcb);
     }
 }
-
-
 
 /** @brief Generic fault handler
  *

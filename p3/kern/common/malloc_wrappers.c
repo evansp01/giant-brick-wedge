@@ -13,16 +13,26 @@
 #include <control_block.h>
 #include <assert.h>
 
+/** @brief The mutex for all malloc related calls */
 static mutex_t mutex;
+/** @brief A boolean integer describing whether malloc has been initialized */
 static int initialized = 0;
+/** @brief A pointer to a tcb which will be freed before the next malloc call */
 static tcb_t *free_later_tcb = NULL;
 
+/** @brief Initializes state required for the thread safe malloc wrappers
+ *         Before this is called the malloc functions can be called, but
+ *         they will not use mutexes
+ **/
 void init_malloc()
 {
     mutex_init(&mutex);
     initialized = 1;
 }
 
+/** @brief Acquires the lock to use malloc functions. Also, if needed frees
+ *         memory which an exiting thread was unable to free by itsself
+ **/
 void acquire_malloc()
 {
     mutex_lock(&mutex);
@@ -32,19 +42,35 @@ void acquire_malloc()
     }
 }
 
-
+/** @brief Instructs malloc to free the tcb and if present, the associated ppd
+ *         at a later time in another thread
+ *
+ *  This function is used in thread exit, and allows threads to free their
+ *  tcbs and the ppd of their parent process if it is exiting without
+ *  crashing, but before any other memory allocations are made
+ *
+ *  Must be called while the malloc mutex is held
+ *
+ *  @param tcb The tcb to free
+ *  @return void
+ **/
 void free_later(tcb_t *tcb)
 {
     assert(free_later_tcb == NULL);
     free_later_tcb = tcb;
 }
 
+/** @brief Release the malloc mutex
+ *  @return void
+ **/
 void release_malloc()
 {
     mutex_unlock(&mutex);
 }
 
-
+/** @brief Relese the malloc mutex with interrupts disabled
+ *  @return void
+ **/
 void scheduler_release_malloc()
 {
     scheduler_mutex_unlock(&mutex);

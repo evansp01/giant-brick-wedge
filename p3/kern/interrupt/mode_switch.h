@@ -14,38 +14,51 @@
 #include <idt.h>
 #include <control_block.h>
 
+/** @brief A helper macro which expands tokens given to it for NAME_ASM */
 #define _NAME_ASM(name) name##_asm
-/** @def NAME_ASM_H(NAME)
+
+/** @def NAME_ASM_H(name)
  *
  *  @brief Constructs the assembly wrapper function declaration
  *
- *  @param NAME Fault name
+ *  @param name Fault name
  *  @return void
  **/
 #define NAME_ASM_H(name) void _NAME_ASM(name)()
 
-/** @def NAME_ASM(NAME)
+/** @def NAME_ASM(name)
  *
- *  @brief Constructs the C handler function name
+ *  @brief Constructs the assembly handler name for a c function
  *
- *  @param NAME Fault name
+ *  @param name The name of the c function
  *  @return void
  **/
 #define NAME_ASM(name) _NAME_ASM(name)
 
+/** @brief A helper macro for INT_ASM */
 #define _INT_ASM(number) interrupt##number##_asm
+
+/** @def INT_ASM(number)
+ *  
+ *  @brief Constructs the assembly wrapper function name for a fault
+ *  @param number The index of the fault in the IDT
+ **/
 #define INT_ASM(number) _INT_ASM(number)
+
+/** @def INT_ASM_H(number)
+ *  
+ *  @brief Constructs a header for the assembly wrapper for a fault
+ *  @param number The index of the fault in the IDT
+ **/
 #define INT_ASM_H(number) void _INT_ASM(number)()
 
 /** @brief Switches to user mode
  *
  *  @param esp Stack pointer with values to be restored
- *  @return Void
+ *  @return void
  **/
 void go_to_user_mode(void *esp);
 
-
-// C headers
 void set_regs();
 
 

@@ -1,7 +1,7 @@
 /** @file vqtest.c
  *  @brief A very simple test suite for variable queues.
  *
- *  @author Ryan Pearl <rpearl>
+ *  @author Ryan Pearl (rpearl)
  *  Updated by Evan Palmer (esp)
  *
  */
@@ -12,15 +12,22 @@
 
 #include <variable_queue.h>
 
+/** @brief A structure for integer nodes in a linked queue */
 typedef struct node {
-    Q_NEW_LINK(node) link;
-    int data;
+    Q_NEW_LINK(node) link; /** @brief A link for the queue */
+    int data; /** @brief The data */
 } node_t;
 
+/** @brief A queue of intergers */
 Q_NEW_HEAD(list_t, node);
 
+/** @brief The length of the list */
 #define LIST_LEN 5
 
+
+/** @brief Test the init functionality of variable queue
+ *  @return void
+ **/
 void test_init()
 {
     list_t list;
@@ -31,6 +38,9 @@ void test_init()
     assert(!Q_GET_TAIL(&list));
 }
 
+/** @brief Test the insert functionality of variable queue
+ *  @return void
+ **/
 void test_insert()
 {
     list_t list;
@@ -51,6 +61,9 @@ void test_insert()
     assert(!Q_GET_PREV(&node, link));
 }
 
+/** @brief Test the remove functionality of variable queue
+ *  @return void
+ **/
 void test_remove()
 {
     list_t list;
@@ -74,6 +87,9 @@ void test_remove()
     assert(!Q_GET_TAIL(&list));
 }
 
+/** @brief Test the insert front functionality of variable queue
+ *  @return void
+ **/
 void test_insert_fronts()
 {
     list_t list;
@@ -107,6 +123,9 @@ void test_insert_fronts()
     assert(!cur);
 }
 
+/** @brief Test the insert tail functionality of variable queue
+ *  @return void
+ **/
 void test_insert_tails()
 {
     list_t list;
@@ -144,6 +163,9 @@ void test_insert_tails()
     assert(!cur);
 }
 
+/** @brief Test the remove functionality of variable queue
+ *  @return void
+ **/
 void test_removes()
 {
     list_t list;
@@ -170,6 +192,9 @@ void test_removes()
     }
 }
 
+/** @brief Test the insert after functionality of variable queue
+ *  @return void
+ **/
 void test_insert_after()
 {
     list_t list;
@@ -202,6 +227,9 @@ void test_insert_after()
     assert(!cur);
 }
 
+/** @brief Test the insert before functionality of variable queue
+ *  @return void
+ **/
 void test_insert_before()
 {
     list_t list;
@@ -234,6 +262,9 @@ void test_insert_before()
     assert(!cur);
 }
 
+/** @brief Test the iterate functionality of variable queue
+ *  @return void
+ **/
 void test_iterate()
 {
     list_t list;
@@ -265,6 +296,9 @@ void test_iterate()
     }
 }
 
+/** @brief Test the safe iterate functionality of variable queue
+ *  @return void
+ **/
 void test_iterate_safe()
 {
     list_t list;
@@ -295,7 +329,7 @@ void test_iterate_safe()
     }
 }
 
-
+/** @brief Run a test and report its finish */
 #define RUN_TEST(t)                    \
     do {                               \
         printf("Running " #t "()..."); \
@@ -303,6 +337,7 @@ void test_iterate_safe()
         printf(" OK.\n");              \
     } while (0)
 
+/** @brief Entry point for the test program */
 int main()
 {
     RUN_TEST(test_init);

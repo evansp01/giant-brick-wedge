@@ -53,7 +53,7 @@ uint32_t hash_int(uint32_t x);
 /** @def H_FREE_TABLE(table)
  *
  *  @brief Frees the memory associated witha a hash table
- *  @param Table the table to free
+ *  @param table the table to free
  *  @return void
  **/
 #define H_FREE_TABLE(table) \
@@ -62,7 +62,7 @@ uint32_t hash_int(uint32_t x);
 /** @def H_EMPTY(table)
  *
  *  @brief Is this hash table currently empty
- *  @param The hash table to check
+ *  @param table The hash table to check
  *  @return 1 if the hash table size is empty 0 otherwise
  **/
 #define H_EMPTY(table) \
@@ -202,16 +202,16 @@ uint32_t hash_int(uint32_t x);
     } while(0)
 
 
-/** @def H_DEBUG_BUCKETS(table, key_field, link, info)
+/** @def H_FOREACH_SAFE(i, current, swap, table, link)
  *
- *  @brief A debugging function that allows the user some access to the hash
- *         tables internals
+ *  @brief Iterates over all elements in the hash table, elements can
+ *         be removed. The user can operate on current
  *
- *  @param table The table to get information about
- *  @param key_field The field where the key is stored in the element
+ *  @param i An integer to use for iterating over the buckets
+ *  @param current The current element in the iteration, can be operated on
+ *  @param swap Pointer used for iteration should not be touched by user
+ *  @param table The hash table to iterate over
  *  @param link The name of the link used to organize the bucket lists
- *  @param info A funciton accepting two integers which will be called with the
- *         index and size of every bucket
  *  @return void
  **/
 #define H_FOREACH_SAFE(i, current, swap, table, link)               \
@@ -219,10 +219,21 @@ uint32_t hash_int(uint32_t x);
         Q_FOREACH_SAFE(current, swap, _H_BUCKET(table, i), link)
 
 
+/** @def H_FOREACH(i, current, table, link)
+ *
+ *  @brief Iterates over all elements in the hash table.
+ *         The user can operate on current
+ *
+ *  @param i An integer to use for iterating over the buckets
+ *  @param current The current element in the iteration, can be operated on
+ *  @param table The hash table to iterate over
+ *  @param link The name of the link used to organize the bucket lists
+ *  @return void
+ **/
 
-#define H_FOREACH(i, current, swap, table, link)                    \
+#define H_FOREACH(i, current, table, link)                          \
     for (i = 0; i < _H_CAP(table); i++)                             \
-        Q_FOREACH(current, swap, _H_BUCKET(table, i), link)
+        Q_FOREACH(current, _H_BUCKET(table, i), link)
 
 
 /****************************************************************
@@ -282,7 +293,6 @@ uint32_t hash_int(uint32_t x);
  *  @brief Insert an element into a bucket
  *
  *  @param bucket The bucket to add to
- *  @param key_field The field where the key is stored in the element
  *  @param link_name The name of the link used to organize the bucket lists
  *  @param elem The element to insert
  *  @return void
@@ -375,6 +385,7 @@ uint32_t hash_int(uint32_t x);
 /** @def _H_GROW(table, key_field, link)
  *
  *  @brief Grow the give table if neccessary
+ *  @param table The hash table to grow
  *  @param key_field The field where the key is stored in the element
  *  @param link The name of the link used to organize the bucket lists
  *  @return void
@@ -390,6 +401,7 @@ uint32_t hash_int(uint32_t x);
 /** @def _H_SHRINK(table, key_field, link)
  *
  *  @brief Shrink the give table if neccessary
+ *  @param table The hash table to grow
  *  @param key_field The field where the key is stored in the element
  *  @param link The name of the link used to organize the bucket lists
  *  @return void

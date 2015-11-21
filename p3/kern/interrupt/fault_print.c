@@ -13,13 +13,17 @@
 #include <eflags.h>
 #include <vm.h>
 
+/** @brief Gets a specified bit from a word */
 #define GET_BIT(bit, value) (((value) >> (bit)) & 1)
+/** @brief Prints the contents of two segmentation registers */
 #define DUMP_SEGS(name1, value1, name2, value2) \
     lprintf("%s = 0x%04x, %s = 0x%04x", name1,  \
             (uint16_t)value1, name2, (uint16_t)value2)
+/** @brief Prints the contents of the 32 and 16 bit components of a register */
 #define DUMP_REG(name, short, value)           \
     lprintf("%s = 0x%08lx, %s = 0x%04x", name, \
             (uint32_t)value, short, (uint16_t)value)
+/** @brief Prints the contents a segment and a register */
 #define DUMP_SEGR(name1, value1, name2, value2) \
     lprintf("%s = 0x%04x, %s = 0x%08lx", name1, \
             (uint16_t)value1, name2, (uint32_t)value2)

@@ -12,8 +12,7 @@
 
 /** @brief Initialize a process page directory
  *
- *  @param ppd A pointer to the directory to initialize
- *  @return Zero on success, less than zero on failure
+ *  @return The new ppd or NULL on failure
  **/
 ppd_t* init_ppd()
 {
@@ -31,7 +30,12 @@ ppd_t* init_ppd()
     return ppd;
 }
 
-void free_alloc(alloc_t *alloc)
+/** @brief Free the memory associated with an alloc_t struct
+ *
+ *  @param alloc The pointer to free
+ *  @return void
+ **/
+void free_alloc(alloc_t* alloc)
 {
     sfree(alloc, sizeof(alloc_t));
 }
@@ -45,7 +49,7 @@ void free_alloc(alloc_t *alloc)
  **/
 int add_alloc(ppd_t* ppd, void* start, uint32_t size)
 {
-    alloc_t* new_alloc = (alloc_t*) smalloc(sizeof(alloc_t));
+    alloc_t* new_alloc = (alloc_t*)smalloc(sizeof(alloc_t));
     if (new_alloc == NULL) {
         return -1;
     }
@@ -157,12 +161,12 @@ void switch_dir_ppd(ppd_t* current, page_directory_t* new)
 void free_ppd(ppd_t* to_free, ppd_t* current)
 {
     page_directory_t* tmp = current->dir;
-    
+
     // switch page directory to free user memory
     switch_dir_ppd(current, to_free->dir);
     free_ppd_user_mem(to_free);
     switch_dir_ppd(current, tmp);
-    
+
     free_ppd_kernel_mem(to_free);
 }
 
@@ -188,38 +192,43 @@ void copy_alloc(alloc_t* to, alloc_t* from)
     to->size = from->size;
 }
 
-
-int copy_alloc_list(ppd_t *to, ppd_t *from)
+/** @brief Copies the list of allocations from one process to another
+ *
+ *  @param to The ppd to copy the list to
+ *  @param from The ppd to copy the list from
+ *  @returns Zero on success, less than 0 on failure
+ **/
+int copy_alloc_list(ppd_t* to, ppd_t* from)
 {
-   alloc_t* alloc;
-   alloc_t *tmp;
+    alloc_t* alloc;
+    alloc_t* tmp;
+    int success = 1;
     Q_FOREACH(alloc, &from->allocations, list)
     {
         alloc_t* copy = malloc(sizeof(alloc_t));
         Q_INIT_ELEM(copy, list);
         if (copy == NULL) {
-            goto free_list_and_return;
+            success = 0;
+            break;
         }
         copy_alloc(copy, alloc);
         Q_INSERT_TAIL(&to->allocations, copy, list);
     }
-    return 0;
-free_list_and_return:
+    if (success) {
+        return 0;
+    }
     Q_FOREACH_SAFE(alloc, tmp, &to->allocations, list)
     {
         Q_REMOVE(&to->allocations, alloc, list);
         free_alloc(alloc);
-
     }
     return -1;
-
 }
 
 /** @brief Initialize a ppd by copying all contents of another ppd
  *
- *  @param ppd The ppd to initialize
  *  @param from The ppd to copy during initialization
- *  @return Zero on success, less than zero on failure
+ *  @return The new ppd or NULL on failure
  **/
 ppd_t* init_ppd_from(ppd_t* from)
 {
@@ -230,18 +239,18 @@ ppd_t* init_ppd_from(ppd_t* from)
         return NULL;
     }
     //copy over list of allocations
-    if(copy_alloc_list(ppd, from) < 0){
+    if (copy_alloc_list(ppd, from) < 0) {
         free_ppd_kernel_mem(ppd);
         return NULL;
     }
     // swap to kernel ppd for copying
     page_directory_t* from_dir = from->dir;
-    
+
     //temporarily use identity mapping
     switch_dir_ppd(from, virtual_memory.identity);
     int status = copy_page_dir(ppd->dir, from_dir);
     switch_dir_ppd(from, from_dir);
-    
+
     if (status < 0) {
         free_ppd(ppd, from);
         return NULL;
