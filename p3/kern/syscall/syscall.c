@@ -38,7 +38,7 @@ void set_status_syscall(ureg_t state)
  */
 void task_vanish_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called task_vanish. Not needed for p3\n", get_tcb()->id);
+    KPRINTF("Thread %d called task_vanish. Not needed for p3", get_tcb()->id);
     while(1) {
         continue;
     }
@@ -141,7 +141,7 @@ void new_pages_syscall(ureg_t state)
         goto return_fail;
     }
     if(!vm_user_can_alloc(ppd, (void *)args.start, args.size)){
-        DPRINTF("Space not allocable\n");
+        DPRINTF("Space not allocable");
         goto return_fail;
     }
     if(vm_alloc_readwrite(ppd, (void *)args.start, args.size) < 0){
@@ -235,5 +235,5 @@ return_fail:
  */
 void misbehave_syscall(ureg_t state)
 {
-    DPRINTF("Our kernel is probably already misbehaving.\n");
+    DPRINTF("Our kernel is probably already misbehaving.");
 }

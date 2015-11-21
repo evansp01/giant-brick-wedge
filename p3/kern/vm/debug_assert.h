@@ -36,7 +36,7 @@
     do {                                                                  \
         unsigned int aligned = ((unsigned int)(frame)) >> PAGE_SHIFT;     \
         if (aligned << PAGE_SHIFT != (unsigned int)(frame)) {             \
-            DPRINTF("WARN: physical frame misaligned at %d\n", __LINE__); \
+            DPRINTF("WARN: physical frame misaligned at %d", __LINE__); \
         }                                                                 \
     } while (0)
 

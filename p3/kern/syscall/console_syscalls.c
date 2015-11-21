@@ -37,7 +37,7 @@ void init_print()
  */
 void getchar_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called getchar. Not needed for p3.\n", get_tcb()->id);
+    KPRINTF("Thread %d called getchar. Not needed for p3.", get_tcb()->id);
     while(1) {
         continue;
     }

@@ -3,14 +3,25 @@ Testing:
         readline multithreaded
         print multithreaded
         user code tries to schedule descheduled/sleeping kernel threads
-        ...
+            sleep - make_runnable
+            fork - make_runnable(tid), make_runnable(tid+1)
+        spawn many threads and do make_runnable, FOR: compare LL and hash table
+        new pages
+        hash table tests
    
 Non-code:
     error return to user
     
-Optimizations:
-    switch to hash tables for global thread/process lists
-    console pre-shell printout
-    
 End game:
+    re-run ALL test
+        + cho_variant at slow
+        + chow at slow for a short amount of time
     re-read code
+    re-read design docs
+    review config.mk
+
+Submissions:
+    copy to p3
+    make -> run a bunch of tests
+    make veryclean
+    fill out hurdle paper form

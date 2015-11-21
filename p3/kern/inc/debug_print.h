@@ -18,6 +18,7 @@
 #define KPRINTF(...) do { \
     lprintf (__VA_ARGS__); \
     printf (__VA_ARGS__); \
+    putchar ('\n'); \
 } while (0)
     
 #ifdef DEBUG_PRINT
@@ -26,6 +27,7 @@
 #define DPRINTF(...) do { \
     lprintf (__VA_ARGS__); \
     printf (__VA_ARGS__); \
+    putchar ('\n'); \
 } while (0)
 
 #else

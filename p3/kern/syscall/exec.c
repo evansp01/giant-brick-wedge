@@ -227,15 +227,15 @@ int create_proc_pagedir(simple_elf_t* elf, ppd_t* dir)
     }
     //back the sections we will write to, leave the rest for zfod if possible
     if (vm_back(dir, elf->e_txtstart, elf->e_txtlen) < 0) {
-        DPRINTF("text backing failed\n");
+        DPRINTF("text backing failed");
         return -1;
     }
     if (vm_back(dir, elf->e_datstart, elf->e_datlen) < 0) {
-        DPRINTF("dat backing failed\n");
+        DPRINTF("dat backing failed");
         return -1;
     }
     if (vm_back(dir, elf->e_rodatstart, elf->e_rodatlen) < 0) {
-        DPRINTF("rodat backing failed\n");
+        DPRINTF("rodat backing failed");
         return -1;
     }
     getbytes(elf->e_fname, elf->e_txtoff,

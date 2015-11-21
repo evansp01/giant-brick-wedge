@@ -323,7 +323,7 @@ int copy_frame(entry_t* child_entry, entry_t* parent_entry)
     }
     // Create copy of page
     if (kernel_alloc_frame(child_entry, *parent_entry) < 0) {
-        DPRINTF("Ran out of frames to allocate\n");
+        DPRINTF("Ran out of frames to allocate");
         return -1;
     }
     // Copy frame data
@@ -377,7 +377,7 @@ int copy_page_dir(page_directory_t* dir_child, page_directory_t* dir_parent)
         entry_t* dir_entry_child = &dir_child->tables[i_dir];
         void* table = alloc_page_table();
         if (table == NULL) {
-            DPRINTF("Ran out of kernel memory for page tables\n");
+            DPRINTF("Ran out of kernel memory for page tables");
             return -1;
         }
         *dir_entry_child = create_entry(table, *dir_entry_parent);
@@ -417,7 +417,7 @@ int allocate_tables(ppd_t* ppd, void* start, uint32_t size)
         }
         void* frame = alloc_page_table();
         if (frame == NULL) {
-            DPRINTF("Ran out of kernel memory for page tables\n");
+            DPRINTF("Ran out of kernel memory for page tables");
             return -1;
         }
         *dir_entry = create_entry(frame, e_user_dir);

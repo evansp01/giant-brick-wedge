@@ -77,7 +77,7 @@ int vm_map_pages(ppd_t* ppd, void* start, uint32_t size, vm_operator op)
     for (i = vm_start.page_dir_index; i <= vm_end.page_dir_index; i++) {
         entry_t* dir_entry = &dir->tables[i];
         if (!dir_entry->present) {
-            DPRINTF("Page dir entry not present\n");
+            DPRINTF("Page dir entry not present");
             return -1;
         }
         int start_index = 0;
@@ -329,7 +329,7 @@ int vm_set_readonly_h(entry_t* table, entry_t* dir, address_t addr)
 int vm_alloc_readwrite_h(entry_t* table, entry_t* dir, address_t addr)
 {
     if (table->present) {
-        DPRINTF("Error already allocated\n");
+        DPRINTF("Error already allocated");
         return -1;
     }
     *table = create_entry(get_zero_page(), e_zfod_page);

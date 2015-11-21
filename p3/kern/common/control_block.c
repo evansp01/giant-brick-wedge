@@ -193,7 +193,7 @@ int get_thread_count(pcb_t* pcb)
 tcb_t* create_tcb_entry(int id)
 {
     if(id < 0){
-        DPRINTF("Thread id has wrapped, cannot create more threads\n");
+        DPRINTF("Thread id has wrapped, cannot create more threads");
         return NULL;
     }
     tcb_t* entry = (tcb_t*)smalloc(sizeof(tcb_t));
