@@ -49,21 +49,47 @@ Nodes for the linked lists of waiting threads are allocated on the stack.
 Virtual Memory
 ==============
 
-    frame allocation (implicit list)
+Although we do not allow for page faults in kernel mode, we enabled write
+protection, so that we would get an error if the kernel attempted to write
+to read only user memory.
 
-    vm_map
+The page directory and page tables for each process are allocated in kernel
+memory so that during a page fault, processes can examine their page table
+structure to determine the cause of the fault. Frames are allocated
+from the USER_MEM section of memory.
 
-    zfod
+Unused frames are tracked in an implicit stack with a pointer to the next
+unused frame stored in the first word of unused frames. Since pages cannot be
+written to or read from without being mapped, in order to allocate or free a
+frame, the frame is first mapped to kernel mode where the implicit pointer can
+be safely read or written without the risk of an unwanted write from the user.
+Then the list is updated, and the frame is either freed or allocated.
 
-    recording allocations
+Zfod is implemented by defining the firt user mem page to be the zero page.
+All zfod page table entries are mapped to this page. If a zfod entry is
+writeable, then the zfod bit (the first user available bit) in the page
+table is set. When a page fault occurs, the kernel checks if the page to see
+if it is mapped to the zfod page, and the zfod bit is set. If the check passes
+then a real frame is allocated. Since multipe faults on the same page can
+happen concurrently, it is also necessary for the fault handler to check if
+the fault wouldn't have happend in the current state (that is, has already
+been resolved) and ignore the fault in these cases.
 
+New pages and remove pages are implemented by keeping track of all allocations
+made by the user. In a request to new pages, we check all pages associated with
+the allocation in the page directory, and if all are unallocated, the
+allocation is made. Remove pages simply looks through all allocations made in
+the current process, and deletes the requested one. Freeing allocated user
+memory when cleaning up a process is as simple as freeing every allocation
+made through new pages.
+
+In general, since our kernel allows for multiple threads per process, any
+system call which reads or writes to user memory must hold the lock for the
+current processes page directory. Since we do not allow page faults in kernel
+mode, before writing to kernel memory in addition to checking that it is valid
+the kernel must map all zfod pages which will be touched during the write. This
+is done using the vm_back function.
     
-Exceptions
-==========
-    
-    No kernel mode faults are allowed  (vm_back)
-
-
 Preemption
 ==========
 
