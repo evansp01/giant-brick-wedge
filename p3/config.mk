@@ -116,7 +116,7 @@ KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o syscall/swexn.o \
                syscall/halt.o syscall/console_syscalls.o syscall/wait_vanish.o \
                syscall/readline.o 
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o common/console.o \
-              common/control_block.o 
+              common/control_block.o common/get_esp.o
 KERN_LOCK = lock/mutex.o lock/cond.o
 KERN_INTERRUPT = interrupt/fault_print.o interrupt/fault.o \
 				 interrupt/mode_switch.o interrupt/mode_switch_asm.o \

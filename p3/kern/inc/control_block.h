@@ -129,4 +129,9 @@ void kernel_add_thread(tcb_t* tcb);
 int get_next_id();
 void finalize_exit(tcb_t *tcb);
 
+/** @brief Get the current value of esp
+ *  @return The value of esp
+ **/
+uint32_t get_esp();
+
 #endif // KERN_INC_CONTROL_BLOCK_H
