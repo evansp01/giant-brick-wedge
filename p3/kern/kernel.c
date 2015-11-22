@@ -25,11 +25,7 @@
 #include <switch.h>
 #include <vm.h>
 #include <malloc.h>
-#include <elf_410.h>
-#include <string.h>
-#include <eflags.h>
 #include <scheduler.h>
-#include <switch.h>
 #include <syscall_kern.h>
 #include <interrupt.h>
 #include <console.h>
