@@ -150,7 +150,6 @@ void free_ppd_user_mem(ppd_t* to_free)
     alloc_t* swap;
     H_FOREACH_SAFE(i, alloc, swap, &to_free->alloc_table, list)
     {
-        //Q_REMOVE(&to_free->allocations, alloc, list);
         vm_free_alloc(to_free, alloc->start, alloc->size);
         free_alloc(alloc);
     }
