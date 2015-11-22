@@ -75,6 +75,9 @@ void schedule_sleepers(uint32_t current)
 {
     // if we only examine the list, we don't need the lock
     tcb_t *head = Q_GET_FRONT(&sleep_list);
+    if(head == NULL){
+        return;
+    }
     if(head->wake_tick <= current && head->state == T_SLEEPING){
         schedule_interrupts_disabled(head, T_SLEEPING);
     }
