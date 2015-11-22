@@ -119,12 +119,13 @@ processes. A thread/process is unable to free its own TCB and kernel page
 directory, as that would prevent it from context switching to other threads.
 
 We ensure that the memory for its TCB and kernel page directory is freed
-quickly, by doing so whenever a thread acquires the malloc mutex. This ensures
-that at any point in time, there is at most one TCB/page directory which is
-left unfreed. This also ensures that whenever a call to malloc is made, we are
-assured that there is no unfreed memory from zombie threads, since the thread
-must acquire the malloc pointer before calling malloc, and the zombie thread
-memory is freed before the acquire malloc call returns.
+quickly, by doing so whenever a thread acquires the malloc mutex. Since the
+malloc mutex is acquired in thread_exit, This ensures that at any point in
+time, there is at most one TCB/page directory which is left unfreed. This also
+ensures that whenever a call to malloc is made, we are assured that there is
+no unfreed memory from zombie threads, since the thread must acquire the malloc
+mutex before calling malloc, and the zombie thread memory is freed before
+the acquire malloc call returns.
 
     
 Readline
@@ -158,6 +159,12 @@ characters which are scrolled offscreen are no longer kept in console memory.
 The 'minus one line' accounts for the cursor being at any possible column
 position on the current row. This maximum buffer size would prevent scrolling
 even if the cursor was at the last column of the row.
+
+When a call to readline starts, if there are already characters waiting in the
+buffer, these characters are echoed before readline returns and before any
+other characters are accepted. This ensures that if the user is typing, they
+see what will go to readline, and if the characters were already available, it
+looks as if they were typed while readline was running.
 
 
 Sleep
@@ -223,6 +230,15 @@ are set to T_KERN_SUSPENDED, while threads which requested to be descheduled by
 hthe user are set to T_SUSPENDED. This separation of states ensures that the
 user cannot call make_runnable() to reschedule threads which have been
 descheduled or put to sleep by the kernel.
+
+Hash Table
+==========
+
+In some places we use a hash table. In general we don't want system calls to
+fail because the hash table can't resize. Since our hash table is
+implemented with separate chaining, if we are supposed to resize, but malloc
+fails, we just don't resize. This means that when we run out of memory our
+hash table will degenerate to linked list behavior, but it will not fail.
 
 
 */
