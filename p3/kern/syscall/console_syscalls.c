@@ -90,7 +90,9 @@ void print_syscall(ureg_t state)
 void set_term_color_syscall(ureg_t state)
 {
     int color = (int)state.esi;
+    mutex_lock(&print_mutex);
     state.eax = set_term_color(color);
+    mutex_unlock(&print_mutex);
 }
 
 /** @brief The set_cursor_pos syscall
@@ -108,7 +110,9 @@ void set_cursor_pos_syscall(ureg_t state)
         state.eax = -1;
         return;
     }
+    mutex_lock(&print_mutex);
     state.eax = set_cursor(args.row, args.col);
+    mutex_unlock(&print_mutex);
 }
 
 /** @brief The get_cursor_pos syscall
@@ -129,7 +133,9 @@ void get_cursor_pos_syscall(ureg_t state)
     }
     // get the row and column
     int row, col;
+    mutex_lock(&print_mutex);
     get_cursor(&row, &col);
+    mutex_unlock(&print_mutex);
     if(vm_write_locked(ppd, &row, args.row, sizeof(int)) < 0 ||
        vm_write_locked(ppd, &col, args.col, sizeof(int)) < 0) {
         state.eax = -1;

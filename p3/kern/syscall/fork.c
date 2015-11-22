@@ -19,7 +19,7 @@
 #include <stack_info.h>
 
 static int copy_process(tcb_t* tcb_parent, ureg_t* state);
-static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state);
+static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state, int fork);
 
 /** @brief Handler function for the fork syscall
  *
@@ -52,7 +52,7 @@ void thread_fork_syscall(ureg_t state)
         return;
     }
     pcb_add_thread(process, child);
-    state.eax = copy_thread(child, parent, &state);
+    state.eax = copy_thread(child, parent, &state, 0);
 }
 
 /** @brief Copies the kernel stack from a parent to child process
@@ -90,10 +90,12 @@ void copy_saved_esp(tcb_t* parent, tcb_t* child, void* state)
  *
  *  @return Id of the child thread
  **/
-static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state)
+static int copy_thread(tcb_t* child, tcb_t* parent, ureg_t* state, int fork)
 {
     copy_saved_esp(parent, child, state);
-    child->swexn = parent->swexn;
+    if (fork) {
+        child->swexn = parent->swexn;
+    }
     // Copy kernel stack with return value of 0 for child
     state->eax = 0;
     copy_kernel_stack(parent, child);
@@ -122,7 +124,7 @@ static int copy_process(tcb_t* tcb_parent, ureg_t* state)
     if (tcb_child == NULL) {
         return -1;
     }
-    pcb_t *child = tcb_child->process;
+    pcb_t* child = tcb_child->process;
 
     // Copy memory regions
     child->directory = init_ppd_from(pcb_parent->directory);
@@ -136,6 +138,6 @@ static int copy_process(tcb_t* tcb_parent, ureg_t* state)
     pcb_add_child(pcb_parent, tcb_child->process);
     // Register child process for simics user space debugging
     sim_reg_child(child->directory->dir, pcb_parent->directory->dir);
-    copy_thread(tcb_child, tcb_parent, state);
+    copy_thread(tcb_child, tcb_parent, state, 1);
     return tcb_child->process->id;
 }
