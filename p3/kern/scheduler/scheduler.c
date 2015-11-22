@@ -95,7 +95,9 @@ tcb_t* get_next_runnable()
     }
     // if there is a high priority thread to run
     if (!Q_IS_EMPTY(&scheduler.runnable_p0)) {
-        scheduler.p0_run_count++;
+        if(scheduler.p0_run_count < P0_PRIORITY){
+            scheduler.p0_run_count++;
+        }
         return Q_GET_FRONT(&scheduler.runnable_p0);
     }
     // if there is a low priority thread to run
@@ -176,7 +178,6 @@ void switch_to_next(tcb_t* current, schedule_mode_t schedule)
  */
 void run_scheduler(uint32_t ticks)
 {
-    disable_interrupts();
     scheduler.ticks = ticks;
     schedule_sleepers(ticks);
     switch_to_next(get_tcb(), SCHEDULE_MODE);
@@ -288,16 +289,18 @@ int user_deschedule(tcb_t* tcb, uint32_t esi)
     disable_interrupts();
     int reject;
     if (vm_read(ppd, &reject, (void*)esi, sizeof(esi)) < 0) {
+        enable_interrupts();
         mutex_unlock(&ppd->lock);
         return -1;
     }
     if (reject != 0) {
+        enable_interrupts();
         mutex_unlock(&ppd->lock);
         return 0;
     }
     scheduler_mutex_unlock(&ppd->lock);
     remove_runnable(tcb, T_SUSPENDED);
-    switch_to_next(tcb, SCHEDULE_MODE);
+    switch_to_next(tcb, YIELD_MODE);
     return 0;
 }
 
