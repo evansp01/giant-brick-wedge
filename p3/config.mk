@@ -124,7 +124,7 @@ KERN_INTERRUPT = interrupt/fault_print.o interrupt/fault.o \
 				 interrupt/setup_idt.o
 KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
 				 scheduler/switch.o scheduler/sleep.o scheduler/timer.o
-KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o vm/ppd.o \
+KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_user.o vm/ppd.o \
 		  vm/page_fault.o
 
 KERNEL_OBJS = kernel.o
