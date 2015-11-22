@@ -117,6 +117,7 @@ void keyboard_interrupt(ureg_t state)
         outb(INT_CTL_PORT, INT_ACK_CURRENT);
         return;
     }
+    // Echo characters which were placed in buffer before readline call
     if (keyboard.new_readline) {
         print_buffer();
         keyboard.new_readline = 0;
@@ -219,6 +220,7 @@ int readline(int len, char *buf, tcb_t *tcb)
     if (vm_write_locked(ppd, temp, (uint32_t)buf, i*sizeof(char)) < 0) {
         return -1;
     }
+    // Echo bytes if the keyboard handler hasn't already done so
     if (echo) {
         putbytes(temp, i);
     }
