@@ -108,7 +108,7 @@ int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
         }
         // Check that esp3 is in user write memory
         if (!vm_user_can_write(ppd, esp, sizeof(void*))) {
-            return -2;
+            return -1;
         }
     }
 
@@ -116,25 +116,25 @@ int check_swexn(tcb_t *tcb, swexn_handler_t eip, void *esp, ureg_t *regs,
     if (regs != NULL) {
         // Check that newureg is in user memory
         if (!vm_user_can_read(ppd, regs, sizeof(void*))) {
-            return -3;
+            return -1;
         }
         // Check ds/es/fs/gs/ss/cs
         if ((regs->ds != SEGSEL_USER_DS)||(regs->es != SEGSEL_USER_DS)||
             (regs->fs != SEGSEL_USER_DS)||(regs->gs != SEGSEL_USER_DS)||
             (regs->ss != SEGSEL_USER_DS)||(regs->cs != SEGSEL_USER_CS)) {
-            return -4;
+            return -1;
         }
         // Check that eip is in user read memory
         if (!vm_user_can_read(ppd, (void *)regs->eip, sizeof(void*))) {
-            return -5;
+            return -1;
         }
         // Check eflags
         if(!eflags_valid(eflags, regs->eflags)){
-            return -6;
+            return -1;
         }
         // Check that esp is in user write memory
         if (!vm_user_can_write(ppd, (void *)regs->esp, sizeof(void*))) {
-            return -7;
+            return -1;
         }
     }
     return 0;
@@ -165,7 +165,7 @@ void swexn_syscall(ureg_t state)
     mutex_unlock(&ppd->lock);
     // If either request cannot be carried out, syscall must fail
     if (ret < 0) {
-        state.eax = -1;
+        state.eax = ret;
         return;
     }
 
@@ -180,10 +180,11 @@ void swexn_syscall(ureg_t state)
         register_swexn(tcb, args.eip, args.arg, (void *)stack);
     }
 
-    // Adopt specific register values
+    // Not returning from system call, but going to user specified place
     if (args.newureg != NULL) {
         state = *(args.newureg);
     }
+    // returning from the system call
     else {
         state.eax = 0;
     }
