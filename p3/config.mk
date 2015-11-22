@@ -69,7 +69,7 @@ STUDENTTESTS = readline_threaded print_threaded beauty_sleep does_it_leak \
 # A list of the data files you want built in from the user/files
 # directory.
 #
-STUDENTFILES = textfile.txt
+STUDENTFILES =
 
 ###########################################################################
 # Object files for your thread library
@@ -124,7 +124,7 @@ KERN_INTERRUPT = interrupt/fault_print.o interrupt/fault.o \
 				 interrupt/setup_idt.o
 KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
 				 scheduler/switch.o scheduler/sleep.o scheduler/timer.o
-KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_user.o vm/ppd.o \
+KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_func.o vm/ppd.o \
 		  vm/page_fault.o
 
 KERNEL_OBJS = kernel.o

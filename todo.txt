@@ -6,9 +6,6 @@ End game:
     set freq to every 10ms (val = 100)
     re-run ALL tests
 
-    re-read design docs
-    review config.mk
-
 Submissions:
     copy to p3
     make -> run a bunch of tests

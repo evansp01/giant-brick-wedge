@@ -1,6 +1,0 @@
-A Text File
-
-This is a text file that contains useless information.
-We use it to test reading from files and printing stuff.
-
-End
