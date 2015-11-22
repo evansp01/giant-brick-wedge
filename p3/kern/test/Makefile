@@ -12,7 +12,7 @@ all: $(VQTEST) $(VHTEST) $(AQTEST)
 $(VQTEST): $(VQTEST).c ../inc/variable_queue.h
 	$(CC) $(CFLAGS) $< -o $@
 
-$(VHTEST): $(VHTEST).c int_hash.c ../inc/variable_queue.h ../inc/variable_htable.h
+$(VHTEST): $(VHTEST).c ../common/int_hash.c ../inc/variable_queue.h ../inc/variable_htable.h
 	$(CC) $(CFLAGS) $^ -o $@
 .PHONY: clean
 
