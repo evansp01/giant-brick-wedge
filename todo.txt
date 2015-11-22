@@ -1,9 +1,13 @@
 End game:
+    
+    re-read code
+    
+    + cho_variant at slow
+    + chow at slow for a short amount of time
+    
     set freq to every 10ms (val = 100)
     re-run ALL tests
-        + cho_variant at slow
-        + chow at slow for a short amount of time
-    re-read code
+
     re-read design docs
     review config.mk
 

@@ -22,7 +22,7 @@
 /** @brief Before mutexes are initialized they will be noops so that interrupts
  *         will not be enabled before the scheduler has been set up
  **/
-static int initialized = 0;
+static int enabled = 0;
 
 /** @brief Simple lock to prevent threads from interleaving
  *  In the current single processor kernel implementation, this only involves
@@ -51,9 +51,9 @@ void unlock()
  *  
  *  @return void
  **/
-void init_mutexes()
+void enable_mutexes()
 {
-    initialized = 1;
+    enabled = 1;
 }
 
 /** @brief Initialize mutex
@@ -94,7 +94,7 @@ void mutex_destroy(mutex_t* mp)
  **/
 void mutex_lock(mutex_t* mp)
 {
-    if (initialized) {
+    if (enabled) {
         if (mp->count >= DESTROYED) {
             panic("cannot lock kernel mutex which is destroyed");
         }
@@ -119,7 +119,7 @@ void mutex_lock(mutex_t* mp)
  **/
 void scheduler_mutex_unlock(mutex_t* mp)
 {
-    if (!initialized) {
+    if (!enabled) {
         return;
     }
     tcb_t *tcb = get_tcb();
@@ -146,7 +146,7 @@ void scheduler_mutex_unlock(mutex_t* mp)
  **/
 void mutex_unlock(mutex_t* mp)
 {
-    if(!initialized){
+    if(!enabled){
         return;
     }
     lock();

@@ -33,6 +33,7 @@ struct {
     int num_chars;
     int num_newlines;
     int user_buf_len;
+    int new_readline;
     tcb_t *readline_thread;
     char buffer[KEYBOARD_BUFFER_SIZE];
 } keyboard = {0};
@@ -85,6 +86,19 @@ static int readchar(uint8_t scancode)
     return KH_GETCHAR(key);
 }
 
+/** @brief Prints the current readline buffer
+ *  @return void
+ *  */
+static void print_buffer()
+{
+    int current_index = keyboard.consumer;
+    
+    while (current_index != keyboard.producer) {
+        putbyte(keyboard.buffer[current_index]);
+        current_index = next_index(current_index);
+    }
+}
+
 /** @brief Handle a ketboard interrupt, read the scancode and store in buffer
  *
  *  Reads the scancode from the keyboard and stores it in the keyboard buffer
@@ -102,6 +116,10 @@ void keyboard_interrupt(ureg_t state)
     if ((c = readchar(scancode)) == -1) {
         outb(INT_CTL_PORT, INT_ACK_CURRENT);
         return;
+    }
+    if (keyboard.new_readline) {
+        print_buffer();
+        keyboard.new_readline = 0;
     }
     // Backspace character
     if (c == '\b') {
@@ -163,11 +181,16 @@ void keyboard_interrupt(ureg_t state)
  *  */
 int readline(int len, char *buf, tcb_t *tcb)
 {
+    int echo = 0;
     if ((keyboard.num_chars < len)&&(keyboard.num_newlines == 0)) {
+        disable_interrupts();
         keyboard.user_buf_len = len;
         keyboard.readline_thread = tcb;
+        keyboard.new_readline = 1;
         // deschedule until a new line is available
         deschedule(tcb, T_KERN_SUSPENDED);
+    } else {
+        echo = 1;
     }
 
     // Copy characters from keyboard buffer to user buffer
@@ -195,6 +218,9 @@ int readline(int len, char *buf, tcb_t *tcb)
     ppd_t *ppd = tcb->process->directory;
     if (vm_write_locked(ppd, temp, (uint32_t)buf, i*sizeof(char)) < 0) {
         return -1;
+    }
+    if (echo) {
+        putbytes(temp, i);
     }
     return i;
 }
