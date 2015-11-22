@@ -1,12 +1,5 @@
-Testing:
-    write tests
-        new pages
-        alloc large amounts of user mem, then fork a number of times
-   
-Non-code:
-    error return to user
-    
 End game:
+    set freq to every 10ms (val = 100)
     re-run ALL tests
         + cho_variant at slow
         + chow at slow for a short amount of time

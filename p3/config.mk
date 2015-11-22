@@ -52,7 +52,8 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the user/progs
 # directory.
 #
-STUDENTTESTS = readline_threaded print_threaded beauty_sleep
+STUDENTTESTS = readline_threaded print_threaded beauty_sleep does_it_leak \
+               does_it_leak_too
 
 ###########################################################################
 # Data files provided by course staff to build into the RAM disk
