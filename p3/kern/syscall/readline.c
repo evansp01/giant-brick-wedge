@@ -45,11 +45,7 @@ struct {
  *  */
 static int prev_index(int index)
 {
-    if (index == 0) {
-        return KEYBOARD_BUFFER_SIZE - 1;
-    } else {
-        return index - 1;
-    }
+    return (index + KEYBOARD_BUFFER_SIZE - 1) % KEYBOARD_BUFFER_SIZE;
 }
 
 /** @brief The next index in the circular keyboard buffer
@@ -264,10 +260,13 @@ void readline_syscall(ureg_t state)
         return;
     }
     // Error: buf is not a valid memory address
+    mutex_lock(&ppd->lock);
     if (!vm_user_can_write(ppd, (void *)args.buf, args.len)) {
-        state.eax = -2;
+        mutex_unlock(&ppd->lock);
+        state.eax = -1;
         return;
     }
+    mutex_unlock(&ppd->lock);
     
     mutex_lock(&read_mutex);
     int num_bytes = readline(args.len, args.buf, tcb);

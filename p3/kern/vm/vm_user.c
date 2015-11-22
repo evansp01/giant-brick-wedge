@@ -1,4 +1,4 @@
-/** @file vm_func.c
+/** @file vm_user.c
  *
  *  @brief Helper functions for kernel virtual memory
  *
