@@ -28,7 +28,7 @@ kernel_state_t kernel_state;
  **/
 void init_kernel_state()
 {
-    if(H_INIT_TABLE(&kernel_state.thread_table) < 0){
+    if (H_INIT_TABLE(&kernel_state.thread_table) < 0) {
         panic("Cannot allocate global thread hash");
     }
     kernel_state.next_id = 1;
@@ -70,7 +70,8 @@ void kernel_add_thread(tcb_t* tcb)
 void kernel_remove_thread(tcb_t* tcb)
 {
     mutex_lock(&kernel_state.threads_mutex);
-    H_REMOVE(&kernel_state.thread_table, tcb->id, id, all_threads);
+    assert(
+        H_REMOVE(&kernel_state.thread_table, tcb->id, id, all_threads) != NULL);
     mutex_unlock(&kernel_state.threads_mutex);
 }
 
@@ -80,7 +81,7 @@ void kernel_remove_thread(tcb_t* tcb)
  **/
 tcb_t* get_tcb_by_id(int tid)
 {
-    return  H_GET(&kernel_state.thread_table, tid, id, all_threads);
+    return H_GET(&kernel_state.thread_table, tid, id, all_threads);
 }
 
 /** @brief Add a thread to a process's thread list
@@ -143,7 +144,7 @@ void pcb_add_child(pcb_t* parent, pcb_t* child)
 tcb_t* create_pcb_entry()
 {
     pcb_t* entry = (pcb_t*)smalloc(sizeof(pcb_t));
-    if(entry == NULL){
+    if (entry == NULL) {
         return NULL;
     }
     Q_INIT_ELEM(entry, siblings);
@@ -192,7 +193,7 @@ int get_thread_count(pcb_t* pcb)
  **/
 tcb_t* create_tcb_entry(int id)
 {
-    if(id < 0){
+    if (id < 0) {
         DPRINTF("Thread id has wrapped, cannot create more threads");
         return NULL;
     }
@@ -223,7 +224,6 @@ tcb_t* create_tcb_entry(int id)
     return entry;
 }
 
-
 /** @brief Free memory associated with a tcb_t structure without locks
  *
  *  @param tcb The tcb to free
@@ -234,7 +234,6 @@ void _free_tcb(tcb_t* tcb)
     _sfree((void*)K_STACK_BASE(tcb->kernel_stack), K_STACK_SIZE);
     _sfree(tcb, sizeof(tcb_t));
 }
-
 
 /** @brief Free memory associated with a tcb_t structure
  *
@@ -283,5 +282,3 @@ tcb_t* get_tcb()
     assert((uint32_t)(tcb->process->directory->dir) == get_cr3());
     return tcb;
 }
-
-
