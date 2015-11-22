@@ -1,7 +1,5 @@
 End game:
-    
-    re-read code
-    
+
     + cho_variant at slow
     + chow at slow for a short amount of time
     

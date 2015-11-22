@@ -65,7 +65,7 @@ frame, the frame is first mapped to kernel mode where the implicit pointer can
 be safely read or written without the risk of an unwanted write from the user.
 Then the list is updated, and the frame is either freed or allocated.
 
-Zfod is implemented by defining the firt user mem page to be the zero page.
+Zfod is implemented by defining the first user mem page to be the zero page.
 All zfod page table entries are mapped to this page. If a zfod entry is
 writeable, then the zfod bit (the first user available bit) in the page
 table is set. When a page fault occurs, the kernel checks if the page to see
@@ -85,7 +85,7 @@ made through new pages.
 
 In general, since our kernel allows for multiple threads per process, any
 system call which reads or writes to user memory must hold the lock for the
-current processes page directory. Since we do not allow page faults in kernel
+current process's page directory. Since we do not allow page faults in kernel
 mode, before writing to kernel memory in addition to checking that it is valid
 the kernel must map all zfod pages which will be touched during the write. This
 is done using the vm_back function.
@@ -95,7 +95,7 @@ Preemption
 
 Our kernel disables interrupts during the scheduler, and for short periods of
 time in readline, sleep, page directory switching, and in our locking
-primitives. Other than these few cases our kernel can recevie interrupts at
+primitives. Other than these few cases our kernel can receive interrupts at
 all times.
 
 Wait / Vanish
