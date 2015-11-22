@@ -20,7 +20,7 @@
     printf (__VA_ARGS__); \
     putchar ('\n'); \
 } while (0)
-    
+
 #ifdef DEBUG_PRINT
 
 /** @brief Prints debug messages to the console and simics **/
@@ -32,9 +32,9 @@
 
 #else
 
-/** @brief Macro placeholder for debug printing **/    
+/** @brief Macro placeholder for debug printing **/
 #define DPRINTF(...)
-    
+
 #endif
 
 #endif // KERN_INC_DEBUG_PRINT_H

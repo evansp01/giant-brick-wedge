@@ -27,7 +27,7 @@ static int enabled = 0;
 /** @brief Simple lock to prevent threads from interleaving
  *  In the current single processor kernel implementation, this only involves
  *  disabling interrupts.
- *  
+ *
  *  @return void
  **/
 void lock()
@@ -38,7 +38,7 @@ void lock()
 /** @brief Simple unlock to allow threads to resume execution
  *  In the current single processor kernel implementation, this only involves
  *  re-enabling interrupts.
- *  
+ *
  *  @return void
  **/
 void unlock()
@@ -48,7 +48,7 @@ void unlock()
 
 /** @brief Initializes all mutexes for multithreaded usage
  *  This function enables mutexes once the kernel has been fully initialized.
- *  
+ *
  *  @return void
  **/
 void enable_mutexes()

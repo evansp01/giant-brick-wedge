@@ -130,7 +130,7 @@ void scroll()
 
 /** @brief Prints character ch at the current location
  *         of the cursor.
- *  
+ *
  *  If the character is a newline, the cursor is
  *  be moved to the beginning of the next line (scrolling if necessary).
  *  If the character is a carriage return, the cursor

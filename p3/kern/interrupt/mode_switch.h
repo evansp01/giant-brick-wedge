@@ -39,14 +39,14 @@
 #define _INT_ASM(number) interrupt##number##_asm
 
 /** @def INT_ASM(number)
- *  
+ *
  *  @brief Constructs the assembly wrapper function name for a fault
  *  @param number The index of the fault in the IDT
  **/
 #define INT_ASM(number) _INT_ASM(number)
 
 /** @def INT_ASM_H(number)
- *  
+ *
  *  @brief Constructs a header for the assembly wrapper for a fault
  *  @param number The index of the fault in the IDT
  **/

@@ -4,7 +4,7 @@
  *  @author Jonathan Ong (jonathao) and Evan Palmer (esp)
  *  @bug No known bugs
  **/
- 
+
 #ifndef KERN_INC_INTERRUPT_H
 #define KERN_INC_INTERRUPT_H
 

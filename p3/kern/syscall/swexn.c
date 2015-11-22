@@ -80,7 +80,7 @@ void swexn_handler(ureg_t* state, tcb_t* tcb)
  *  @param current_eflags The current user mode eflags
  *  @return A boolean integer
  **/
-int eflags_valid(uint32_t user_eflags, uint32_t current_eflags) 
+int eflags_valid(uint32_t user_eflags, uint32_t current_eflags)
 {
     uint32_t protected_flags = user_eflags & (~USER_FLAGS);
     uint32_t current_protected = current_eflags & (~USER_FLAGS);

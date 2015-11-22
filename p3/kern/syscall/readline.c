@@ -88,7 +88,7 @@ static int readchar(uint8_t scancode)
 static void print_buffer()
 {
     int current_index = keyboard.consumer;
-    
+
     while (current_index != keyboard.producer) {
         putbyte(keyboard.buffer[current_index]);
         current_index = next_index(current_index);
@@ -193,7 +193,7 @@ int readline(int len, char *buf, tcb_t *tcb)
     // Copy characters from keyboard buffer to user buffer
     int i;
     for (i = 0; i < len; i++) {
-        
+
         // Get the character from the keyboard buffer
         disable_interrupts();
         temp[i] = keyboard.buffer[keyboard.consumer];
@@ -203,14 +203,14 @@ int readline(int len, char *buf, tcb_t *tcb)
             keyboard.num_newlines--;
         }
         enable_interrupts();
-        
+
         // Done if we encounter a newline
         if (temp[i] == '\n') {
             i++;
             break;
         }
     }
-    
+
     // Copy to the user buffer
     ppd_t *ppd = tcb->process->directory;
     if (vm_write_locked(ppd, temp, (uint32_t)buf, i*sizeof(char)) < 0) {
@@ -243,12 +243,12 @@ void readline_syscall(ureg_t state)
         int len;
         char *buf;
     } args;
-    
+
     if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
         state.eax = -1;
         return;
     }
-    
+
     if(args.len == 0){
         state.eax = 0;
         return;
@@ -267,7 +267,7 @@ void readline_syscall(ureg_t state)
         return;
     }
     mutex_unlock(&ppd->lock);
-    
+
     mutex_lock(&read_mutex);
     int num_bytes = readline(args.len, args.buf, tcb);
     mutex_unlock(&read_mutex);

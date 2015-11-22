@@ -6,7 +6,7 @@
 
 #ifndef KERN_INC_VARIABLE_HTABLE_H
 #define KERN_INC_VARIABLE_HTABLE_H
- 
+
 #include <stdint.h>
 #include <stdlib.h>
 #include "variable_queue.h"
