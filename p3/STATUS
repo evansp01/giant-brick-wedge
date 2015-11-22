@@ -12,18 +12,18 @@ set_cursor_pos()              done
 vanish()                      done                     
 wait()                        done                     
 [page fault handler]          done                     
-swexn()                       solid                    
+swexn()                       done                    
 sleep()                       done                     
 yield()                       done                     
-deschedule()/make_runnable()  solid                     
+deschedule()/make_runnable()  done                     
 thread_fork()                 done                     
-remove_pages()                solid
+remove_pages()                done
 get_ticks()                   done
 get_cursor_pos()              done
 ls()                          done
-test-suite bugs found         and fixed
-handout re-scanned            needs rescan    11/20        
-doxygen reviewed              started         11/20        
+test-suite bugs found         done
+handout re-scanned            done
+doxygen reviewed              done
 
 Please fill out the "Status", "Estimated", and "Actual" columns.
 If something's status is "done", dates are optional.  If something
