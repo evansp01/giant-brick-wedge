@@ -5,6 +5,26 @@
 @author Jonathan Ong (jonathao)
 @author Evan Palmer (esp)
 
+Preemption
+==========
+
+Our kernel disables interrupts during the scheduler, and for short periods of
+time in readline, sleep, page directory switching, and in our locking
+primitives. Other than these few cases our kernel can receive interrupts at
+all times.
+
+
+Thread States
+=============
+
+We define specific thread states to ensure that functions which handle
+scheduling/descheduling and sleeping only work on threads which are in the
+appropriate state for the function. For instance, kernel descheduled threads
+are set to T_KERN_SUSPENDED, while threads which requested to be descheduled by
+hthe user are set to T_SUSPENDED. This separation of states ensures that the
+user cannot call make_runnable() to reschedule threads which have been
+descheduled or put to sleep by the kernel.
+
 
 Scheduler
 =========
@@ -26,6 +46,27 @@ thread from the standard queue runs for every 2 threads that run from the
 priority queue. This ensures that there does exist a scenario where threads
 in the standard queue are starved by an continuous stream of newly scheduled
 threads in the priority queue.
+
+
+Sleep
+=====
+
+Our sleep function is implemented by adding threads to a sorted linked list. In
+order to read from the list, threads must hold a mutex, and in order to modify
+the list, interrupts must be disabled.
+
+This allows the sleep syscall to grab sleeper list lock, and search for the
+position where the current thread should be added to that list. It can then
+disable interrupts and add the thread to the list. Finally when the the thread
+is awoken, it removes itsself from the sleeper list after grabbing the lock and
+disabling interrupts.
+
+This ensures that even though the sleep syscall takes O(n) time in the number
+of sleeping threads, interrupts are only disabled for O(1) time.
+
+The scheduler needs only to check if the first item in the list is still
+sleeping and is ready to wake up. This takes O(1) time and does not require
+the list lock.
 
 
 Mutexes / Cvars
@@ -89,25 +130,39 @@ current process's page directory. Since we do not allow page faults in kernel
 mode, before writing to kernel memory in addition to checking that it is valid
 the kernel must map all zfod pages which will be touched during the write. This
 is done using the vm_back function.
-    
-Preemption
-==========
 
-Our kernel disables interrupts during the scheduler, and for short periods of
-time in readline, sleep, page directory switching, and in our locking
-primitives. Other than these few cases our kernel can receive interrupts at
-all times.
 
-Wait / Vanish
-=============
+Gettid
+======
 
-Processes have a lock for their parent pointer and their children list. To
-detach a child process from its parent, the parent mutex must be held to remove
-the parent pointer from the child, and the children mutex of the parent must be
-held to remove the child process from the parent's list of processes.
+We store the pointer to the kernel thread's control block at the top of its
+thread stack. This allows us to look up any TCB variables, including the thread
+id, rather quickly in normal circumstances. We access the TCB pointer using a
+macro to get the top of the current kernel stack.
 
-In all cases in wait/vanish, the parent lock is acquired before the child lock.
-This standardization ensures that we avoid deadlock. 
+
+Exec / Fork
+===========
+
+In order to simplify our exec and fork implementations we chose not to allow
+processes with multiple threads to fork or exec. This means that when a
+thread is in fork or exec, it is the only thread in its process which allows
+it to hold very few locks througout the call to fork or exec.
+
+
+Exec
+====
+
+Our exec implementation makes an effort to protect conventionally read only
+sections of the executable in memory, and to allocate the user stack and bss
+section as zfod. If either the text section or rodata section does not share
+a page with a writeable section, the page will be allocated as read only.
+Similarly, if the bss section is on its own page, it will be zfod allocated.
+
+If the user stack is larger than one page, all pages after the first page will
+be zfod allocated. The first page is allocated since we expect that every
+process will touch its stack almost immediately upon entering user mode since
+they all run the autostack handler.
 
 
 Thread/Process Exit
@@ -127,7 +182,19 @@ no unfreed memory from zombie threads, since the thread must acquire the malloc
 mutex before calling malloc, and the zombie thread memory is freed before
 the acquire malloc call returns.
 
-    
+
+Wait / Vanish
+=============
+
+Processes have a lock for their parent pointer and their children list. To
+detach a child process from its parent, the parent mutex must be held to remove
+the parent pointer from the child, and the children mutex of the parent must be
+held to remove the child process from the parent's list of processes.
+
+In all cases in wait/vanish, the parent lock is acquired before the child lock.
+This standardization ensures that we avoid deadlock. 
+
+
 Readline
 ========
 
@@ -142,7 +209,7 @@ characters or a newline available.
 Interrupts are only disabled in the readline function each time a character is
 removed from the keyboard buffer, to prevent interleavings of adding and
 removing from the buffer. We keep the period of disabled interrupts small to
-ensure that readline is largely pre-emptible.
+ensure that readline is largely preemptible.
 
 We keep track of the number of processed characters in the keyboard buffer, as
 well as the number of newline characters. Each time a readline syscall is made,
@@ -166,70 +233,6 @@ other characters are accepted. This ensures that if the user is typing, they
 see what will go to readline, and if the characters were already available, it
 looks as if they were typed while readline was running.
 
-
-Sleep
-=====
-
-Our sleep function is implemented by adding threads to a sorted linked list. In
-order to read from the list, threads must hold a mutex, and in order to modify
-the list, interrupts must be disabled.
-
-This allows the sleep syscall to grab sleeper list lock, and search for the
-position where the current thread should be added to that list. It can then
-disable interrupts and add the thread to the list. Finally when the the thread
-is awoken, it removes itsself from the sleeper list after grabbing the lock and
-disabling interrupts.
-
-This ensures that even though the sleep syscall takes O(n) time in the number
-of sleeping threads, interrupts are only disabled for O(1) time.
-
-The scheduler needs only to check if the first item in the list is still
-sleeping and is ready to wake up. This takes O(1) time and does not require
-the list lock.
-
-
-Exec / Fork
-===========
-
-In order to simplify our exec and fork implementations we chose not to allow
-processes with multiple threads to fork or exec. This means that when a
-thread is in fork or exec, it is the only thread in its process which allows
-it to hold very few locks througout the call to fork or exec.
-    
-Exec
-====
-
-Our exec implementation makes an effort to protect conventionally read only
-sections of the executable in memory, and to allocate the user stack and bss
-section as zfod. If either the text section or rodata section does not share
-a page with a writeable section, the page will be allocated as read only.
-Similarly, if the bss section is on its own page, it will be zfod allocated.
-
-If the user stack is larger than one page, all pages after the first page will
-be zfod allocated. The first page is allocated since we expect that every
-process will touch its stack almost immediately upon entering user mode since
-they all run the autostack handler.
-
-    
-Gettid
-======
-
-We store the pointer to the kernel thread's control block at the top of its
-thread stack. This allows us to look up any TCB variables, including the thread
-id, rather quickly in normal circumstances. We access the TCB pointer using a
-macro to get the top of the current kernel stack.
-
-
-Thread States
-=============
-
-We define specific thread states to ensure that functions which handle
-scheduling/descheduling and sleeping only work on threads which are in the
-appropriate state for the function. For instance, kernel descheduled threads
-are set to T_KERN_SUSPENDED, while threads which requested to be descheduled by
-hthe user are set to T_SUSPENDED. This separation of states ensures that the
-user cannot call make_runnable() to reschedule threads which have been
-descheduled or put to sleep by the kernel.
 
 Hash Table
 ==========
