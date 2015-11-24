@@ -1,0 +1,55 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# python junk
+*.pyc
+
+# Debug files
+*.dSYM/
+tags
+
+
+# Project specific ignores
+*.dep
+410user/exec2obj
+410user/progs/*
+!410user/progs/*.c
+user/progs/*
+!user/progs/*.c
+bootfd.img
+kernel
+kernel.strip
+temp/*
+.md5s
+kernel.log
+*.swp
+doc/*
+doxygen.warn
+kernel.ps
