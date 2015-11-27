@@ -6,8 +6,8 @@
 
 #include <syscall_int.h>
 
-.global readline
-readline:
+.global sys_readline
+sys_readline:
     pushl %esi
     leal 8(%esp), %esi
     int $READLINE_INT

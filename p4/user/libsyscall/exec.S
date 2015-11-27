@@ -6,8 +6,8 @@
 
 #include <syscall_int.h>
 
-.global exec
-exec:
+.global sys_exec
+sys_exec:
     pushl %esi                # Save old %esi value
     leal 8(%esp), %esi        # Get the first argument
     int $EXEC_INT             # Call the exec syscall

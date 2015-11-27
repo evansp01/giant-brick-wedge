@@ -6,8 +6,8 @@
 
 #include <syscall_int.h>
 
-.global print
-print:
+.global sys_print
+sys_print:
     pushl %esi                # Save old %esi value
     leal 8(%esp), %esi        # Get the first argument
     int $PRINT_INT            # Call the print syscall

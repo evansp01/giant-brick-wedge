@@ -93,7 +93,9 @@ SYSCALL_OBJS = set_status.o vanish.o fork.o exec.o wait.o \
 			   task_vanish.o new_pages.o remove_pages.o readfile.o halt.o \
 			   misbehave.o gettid.o yield.o deschedule.o make_runnable.o \
 			   get_ticks.o sleep.o swexn.o getchar.o readline.o  print.o \
-			   set_term_color.o set_cursor_pos.o get_cursor_pos.o
+			   set_term_color.o set_cursor_pos.o get_cursor_pos.o \
+               udriv_register.o udriv_deregister.o udriv_send.o udriv_wait.o \
+               udriv_inb.o udriv_outb.o udriv_mmap.o
 
 
 
