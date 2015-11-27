@@ -111,6 +111,14 @@ INTERRUPT_ASM_WRAPPER readfile_syscall
 INTERRUPT_ASM_WRAPPER misbehave_syscall
 INTERRUPT_ASM_WRAPPER swexn_syscall
 
+INTERRUPT_ASM_WRAPPER udriv_register_syscall
+INTERRUPT_ASM_WRAPPER udriv_deregister_syscall
+INTERRUPT_ASM_WRAPPER udriv_send_syscall
+INTERRUPT_ASM_WRAPPER udriv_wait_syscall
+INTERRUPT_ASM_WRAPPER udriv_inb_syscall
+INTERRUPT_ASM_WRAPPER udriv_outb_syscall
+INTERRUPT_ASM_WRAPPER udriv_mmap_syscall
+
 /* Assembly wrappers for various system interrutps */
 EXCEPTION_ASM_WRAPPER IDT_DE
 EXCEPTION_ASM_WRAPPER IDT_DB

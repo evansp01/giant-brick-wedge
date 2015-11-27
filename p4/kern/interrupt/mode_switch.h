@@ -302,4 +302,39 @@ NAME_ASM_H(misbehave_syscall);
  */
 NAME_ASM_H(swexn_syscall);
 
+/** @brief Wrapper for udriv_register syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_register_syscall);
+
+/** @brief Wrapper for udriv_deregister syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_deregister_syscall);
+
+/** @brief Wrapper for udriv_send syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_send_syscall);
+
+/** @brief Wrapper for udriv_wait syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_wait_syscall);
+
+/** @brief Wrapper for udriv_inb syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_inb_syscall);
+
+/** @brief Wrapper for udriv_outb syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_outb_syscall);
+
+/** @brief Wrapper for udriv_mmap syscall handler
+ *  @return void
+ */
+NAME_ASM_H(udriv_mmap_syscall);
+
 #endif /* _MODE_SWITCH_H */

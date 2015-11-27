@@ -94,6 +94,14 @@ void install_syscalls()
     set_idt_syscall(NAME_ASM(readfile_syscall), READFILE_INT);
     set_idt_syscall(NAME_ASM(misbehave_syscall), MISBEHAVE_INT);
     set_idt_syscall(NAME_ASM(swexn_syscall), SWEXN_INT);
+    
+    set_idt_syscall(NAME_ASM(udriv_register_syscall), UDRIV_REGISTER_INT);
+    set_idt_syscall(NAME_ASM(udriv_deregister_syscall), UDRIV_DEREGISTER_INT);
+    set_idt_syscall(NAME_ASM(udriv_send_syscall), UDRIV_SEND_INT);
+    set_idt_syscall(NAME_ASM(udriv_wait_syscall), UDRIV_WAIT_INT);
+    set_idt_syscall(NAME_ASM(udriv_inb_syscall), UDRIV_INB_INT);
+    set_idt_syscall(NAME_ASM(udriv_outb_syscall), UDRIV_OUTB_INT);
+    set_idt_syscall(NAME_ASM(udriv_mmap_syscall), UDRIV_MMAP_INT);
 }
 
 /** @brief Installs the device driver handlers
