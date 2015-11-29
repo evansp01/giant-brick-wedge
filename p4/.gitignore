@@ -41,8 +41,14 @@ tags
 410user/exec2obj
 410user/progs/*
 !410user/progs/*.c
+!410user/progs/*.S
+!410user/progs/*.h
+!410user/progs/*.mk
 user/progs/*
 !user/progs/*.c
+!user/progs/*.S
+!user/progs/*.h
+!user/progs/*.mk
 bootfd.img
 kernel
 kernel.strip
