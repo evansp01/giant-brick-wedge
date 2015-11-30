@@ -111,10 +111,6 @@ int sleep_d_init()
     {
         return -2;
     }
-    if (thr_init(4096) < 0)
-    {
-        return -3;
-    }
 
     if (thr_create(wakeup_thread_func, NULL) < 0)
     {
@@ -137,6 +133,11 @@ int main()
             return 0;
         }
     }    
+
+    if (thr_init(4096) < 0)
+    {
+        return -1;
+    }
 
     ipc_state_t *state;
     if (ipc_server_init(&state, UDR_SLEEP_SERVER) < 0) {

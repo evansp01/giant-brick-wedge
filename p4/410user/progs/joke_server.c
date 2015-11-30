@@ -5,6 +5,7 @@
 #include <syscall.h>
 #include <rand.h>
 #include <ipc_server.h>
+#include <thread.h>
 
 #define BUF_LEN 1024
 
@@ -86,6 +87,9 @@ int main() {
             return 0;
         }
     }    
+
+    // So that we can use malloc
+    thr_init(4096);
 
     ipc_state_t* server_st;
     if (ipc_server_init(&server_st, UDR_JOKE_SERVER) < 0) {
