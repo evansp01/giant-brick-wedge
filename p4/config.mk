@@ -127,6 +127,7 @@ KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
 				 scheduler/switch.o scheduler/sleep.o scheduler/timer.o
 KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_user.o vm/ppd.o \
 		  vm/page_fault.o
+KERN_UDRIV = udriv/udriv.o
 
 KERNEL_OBJS = kernel.o
 KERNEL_OBJS +=${KERN_SYSCALL}
@@ -135,6 +136,7 @@ KERNEL_OBJS +=${KERN_LOCK}
 KERNEL_OBJS +=${KERN_INTERRUPT}
 KERNEL_OBJS +=${KERN_SCHEDULER}
 KERNEL_OBJS +=${KERN_VM}
+KERNEL_OBJS +=${KERN_UDRIV}
 
 ###########################################################################
 # WARNING: Do not put **test** programs into the REQPROGS variables.  Your

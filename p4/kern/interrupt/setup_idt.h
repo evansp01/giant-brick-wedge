@@ -20,7 +20,7 @@
 
 void set_idt_exception(void* handler, int type, int index);
 void set_idt_syscall(void* handler, int index);
-void set_idt_device(void* handler, int type, int index);
+void set_idt_device(void* handler, int index);
 void set_idt(void* handler, int segment, int type, int privilege, int index);
 
 #endif // IDT_H_
