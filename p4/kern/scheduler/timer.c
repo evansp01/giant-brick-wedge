@@ -46,6 +46,7 @@ void init_timer()
 void timer_interrupt()
 {
     ticks_so_far++;
+    disable_interrupts();
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
     run_scheduler(ticks_so_far);
 }
