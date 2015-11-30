@@ -1,6 +1,7 @@
 #include <ureg.h>
 #include <timer_defines.h>
 #include <keyhelp.h>
+#include <simics.h>
 
 void timer_interrupt();
 void keyboard_interrupt();

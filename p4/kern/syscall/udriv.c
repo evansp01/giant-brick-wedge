@@ -17,9 +17,7 @@
 void udriv_register_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_register. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
 
 /** @brief The udriv_deregister syscall
@@ -29,9 +27,7 @@ void udriv_register_syscall(ureg_t state)
 void udriv_deregister_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_deregister. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
 
 /** @brief The udriv_send syscall
@@ -41,9 +37,7 @@ void udriv_deregister_syscall(ureg_t state)
 void udriv_send_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_send. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
 
 /** @brief The udriv_wait syscall
@@ -53,9 +47,7 @@ void udriv_send_syscall(ureg_t state)
 void udriv_wait_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_wait. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
 
 /** @brief The udriv_inb syscall
@@ -65,9 +57,7 @@ void udriv_wait_syscall(ureg_t state)
 void udriv_inb_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_inb. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
 
 /** @brief The udriv_outb syscall
@@ -77,9 +67,7 @@ void udriv_inb_syscall(ureg_t state)
 void udriv_outb_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_outb. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
 
 /** @brief The udriv_mmap syscall
@@ -89,7 +77,5 @@ void udriv_outb_syscall(ureg_t state)
 void udriv_mmap_syscall(ureg_t state)
 {
     KPRINTF("Thread %d called udriv_mmap. Not yet implemented.", get_tcb()->id);
-    while(1) {
-        continue;
-    }
+    state.eax = -1;
 }
