@@ -101,11 +101,9 @@ static void print_buffer()
  *  so it can later be read by readchar. This is the function which is called
  *  by the keyboard assembly wrapper
  *
- *  @param state The state of the process before the keyboard interrupt
- *
  *  @return void
  *  */
-void keyboard_interrupt(ureg_t state)
+void keyboard_interrupt()
 {
     char c;
     uint8_t scancode = inb(KEYBOARD_PORT);
