@@ -59,7 +59,7 @@ int daemon_init() {
     // system cannot proceed without these core resources
     assert(daemon_create("readline_server", NULL, UDR_READLINE_SERVER) >= 0);
     assert(daemon_create("serial_server", "COM1", UDR_COM1_READLINE_SERVER) >= 0);
-    assert(daemon_create("serial_server", "COM2", UDR_COM1_READLINE_SERVER) >= 0);
+    assert(daemon_create("serial_server", "COM2", UDR_COM2_READLINE_SERVER) >= 0);
 
     return 0;
 }

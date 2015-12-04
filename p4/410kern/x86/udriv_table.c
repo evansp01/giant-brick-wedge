@@ -21,7 +21,7 @@ const dev_spec_t device_table[] = {
         .id = UDR_KEYBOARD,
         .idt_slot =  33, // KEYBOARD_IDT 
         .port_regions = { { 0x60, 12 } }, 
-        .port_regions_cnt = 2,
+        .port_regions_cnt = 1,
         .mem_regions = { },
         .mem_regions_cnt = 0
     },
@@ -41,8 +41,8 @@ const dev_spec_t device_table[] = {
         .idt_slot = UDR_NO_IDT,
         .port_regions = { },
         .port_regions_cnt = 0,
-        .mem_regions = { { 0xb8000, 0xFFF } },
-        .mem_regions_cnt = 0
+        .mem_regions = { { 0xb8000, 0x1000 } },
+        .mem_regions_cnt = 1
     },
     
     { 

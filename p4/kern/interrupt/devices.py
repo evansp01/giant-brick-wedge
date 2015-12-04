@@ -23,5 +23,9 @@ print()
 print()
 print()
 
+print("switch (INTERRUPT_TO_INSTALL) {")
 for i in things:
-    print("set_idt_device(INT_ASM({}), {});".format(i, i))
+    print("case {}:".format(i))
+    print("    set_idt_device(INT_ASM({}), {});".format(i, i))
+    print("    break;")
+print("}")

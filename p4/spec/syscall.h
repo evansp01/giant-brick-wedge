@@ -49,9 +49,9 @@ typedef unsigned long long message_t;
 int udriv_register(driv_id_t driv_idi, unsigned int port, unsigned int in_bytes);
 void udriv_deregister(driv_id_t driv_id);
 int udriv_send(driv_id_t driv_send, message_t msg_send, unsigned int msg_size);
-int udriv_wait(driv_id_t *inter_num, message_t *msg_recv, unsigned int *msg_size);
-uint8_t udriv_inb(unsigned int port);
-void udriv_outb(unsigned int port, char message);
+int udriv_wait(driv_id_t *driv_recv, message_t *msg_recv, unsigned int *msg_size);
+int udriv_inb(unsigned int port, unsigned char *message);
+int udriv_outb(unsigned int port, unsigned char message);
 int udriv_mmap(void * addr_phys, void *addr_virt, int len);
 
 /* Color values for set_term_color() */
