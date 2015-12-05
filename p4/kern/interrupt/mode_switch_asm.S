@@ -89,7 +89,6 @@ go_to_user_mode:
 
 /* Assembly wrappers for device interrupts */
 INTERRUPT_ASM_WRAPPER timer_interrupt
-INTERRUPT_ASM_WRAPPER keyboard_interrupt
 
 /* Assembly wrappers for system call interrupts */
 INTERRUPT_ASM_WRAPPER fork_syscall
@@ -152,7 +151,6 @@ EXCEPTION_ASM_WRAPPER IDT_MC
 EXCEPTION_ASM_WRAPPER IDT_XF
 
 /* Assembly wrappers for every user defined interrupt */
-EXCEPTION_ASM_WRAPPER_DEVICE 32
 EXCEPTION_ASM_WRAPPER_DEVICE 33
 EXCEPTION_ASM_WRAPPER_DEVICE 34
 EXCEPTION_ASM_WRAPPER_DEVICE 35

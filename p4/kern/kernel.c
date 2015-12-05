@@ -30,6 +30,7 @@
 #include <interrupt.h>
 #include <console.h>
 #include <malloc_wrappers.h>
+#include <user_drivers.h>
 
 /** @brief Kernel entrypoint.
  *
@@ -40,12 +41,11 @@
 int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
 {
     clear_console();
-    install_exceptions();
+    install_idt();
+    init_user_drivers();
     init_timer();
-    install_devices();
     init_print();
     init_readline();
-    install_syscalls();
     init_virtual_memory();
     init_kernel_state();
     // Create idle process

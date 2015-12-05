@@ -168,11 +168,6 @@ INT_ASM_H(IDT_XF);
  */
 NAME_ASM_H(timer_interrupt);
 
-/** @brief Wrapper for the keyboard interrupt handler
- *  @return void
- */
-NAME_ASM_H(keyboard_interrupt);
-
 /*****************************************************************************
  ********* SYSCALL INTERRUPT HANDLERS*****************************************
  *****************************************************************************/
@@ -338,13 +333,8 @@ NAME_ASM_H(udriv_outb_syscall);
 NAME_ASM_H(udriv_mmap_syscall);
 
 /*****************************************************************************
- ********* DEVICE INTERRUPT HANDLERS *****************************************
+ ********* USER DEVICE INTERRUPT HANDLERS ************************************
  *****************************************************************************/
-
-/** @brief Wrapper for user interrupt 32
- *  @return void
- **/
-INT_ASM_H(32);
 
 /** @brief Wrapper for user interrupt 33
  *  @return void

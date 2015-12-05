@@ -8,9 +8,9 @@
 #ifndef KERN_INC_INTERRUPT_H
 #define KERN_INC_INTERRUPT_H
 
-void install_exceptions();
-void install_syscalls();
-void install_devices();
+void install_idt();
+int install_user_device(int interrupt);
+
 /** @brief Switches to user mode
  *
  *  @param esp Stack pointer with values to be restored
