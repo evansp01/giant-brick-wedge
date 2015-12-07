@@ -12,10 +12,10 @@
 typedef unsigned long long message_t;
 
 /** @brief The struct for list of devices/services */
-Q_NEW_HEAD(device_list_t, device);
+Q_NEW_HEAD(devserv_list_t, device);
 
 /** @brief Structure for hash table of devices/services */
-H_NEW_TABLE(device_hash_t, device_list_t);
+H_NEW_TABLE(device_hash_t, devserv_list_t);
 
 /** @brief The struct for contents of a single interrupt */
 typedef struct interrupt {
@@ -36,18 +36,21 @@ typedef struct device {
     unsigned int bytes;
     struct tcb *owner;
     const dev_spec_t* device_table_entry;
-} device_t;
+} devserv_t;
 
 /** @brief The struct for hardware interrupts via IDT */
 typedef struct int_control {
     // list of devices/servers mapped to the IDT entry
-    device_list_t devices;
+    devserv_list_t devices;
     int num_devices;
 } int_control_t;
 
 extern int_control_t interrupt_table[]; 
 
-device_t *get_device(driv_id_t entry);
+driv_id_t assign_driver_id();
+void add_devserv_global(devserv_t *device);
+devserv_t *create_devserv_entry(driv_id_t id);
+devserv_t *get_devserv(driv_id_t entry);
 void init_user_drivers();
 
 #endif // USER_DRIVERS

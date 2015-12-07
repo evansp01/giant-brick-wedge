@@ -19,12 +19,12 @@
  *  @param in_bytes Number of bytes requested from port
  *  @return 0 on success, an integer less than 0 on failure
  */
-int valid_hw_drv(device_t *device, unsigned int in_port, unsigned int in_bytes)
+int valid_hw_drv(devserv_t *device, unsigned int in_port, unsigned int in_bytes)
 {   
     // device is already owned
     if (device->owner != NULL) {
         return -1;
-    }    
+    }
     // in_bytes must be 0 or 1 for a hardware device
     if (in_bytes > 1) {
         return -1;
@@ -53,7 +53,7 @@ int valid_hw_drv(device_t *device, unsigned int in_port, unsigned int in_bytes)
  *  @param in_bytes Number of bytes to read, if any
  *  @return void
  */
-void register_hw_drv(device_t *device, tcb_t* tcb, unsigned int in_port,
+void register_hw_drv(devserv_t *device, tcb_t* tcb, unsigned int in_port,
                      unsigned int in_bytes)
 {
     // set request for bytes from port
@@ -61,12 +61,55 @@ void register_hw_drv(device_t *device, tcb_t* tcb, unsigned int in_port,
         device->port = in_port;
         device->bytes = in_bytes;
     }
-    
     // add device to current thread's tcb
-    Q_INSERT_FRONT(&tcb->devices, device, tcb_link);
-    
+    Q_INSERT_FRONT(&tcb->devserv, device, tcb_link);
     // set device owner
     device->owner = tcb;
+}
+
+/** @brief Check if the arguments for registering a server are valid
+ *  @param driver_id ID of requested driver
+ *  @param in_bytes Number of bytes requested
+ *  @return 0 on success, an integer less than 0 on failure
+ */
+int valid_server(driv_id_t driver_id, unsigned int in_bytes)
+{   
+    // driver id must valid
+    if ((driver_id <= UDR_MAX_HW_DEV)||(driver_id >= UDR_MIN_ASSIGNMENT)) {
+        return -1;
+    }
+    // server must not already be owned
+    if (driver_id != UDR_ASSIGN_REQUEST) {
+        devserv_t *server = get_devserv(driver_id);
+        if (server != NULL) {        
+            if (server->owner != NULL) {
+                return -1;
+            }
+        }
+    }
+    // in_bytes must be between 0 and sizeof(message_t)
+    if (in_bytes > sizeof(message_t)) {
+        return -1;
+    }
+    return 0;
+}
+
+/** @brief Register the server
+ *  @param server Pointer to device entry
+ *  @param tcb TCB of current thread
+ *  @param in_bytes Number of bytes to read, if any
+ *  @return void
+ */
+void register_server(devserv_t *server, tcb_t* tcb, unsigned int in_bytes)
+{
+    // set request for bytes
+    if (in_bytes > 0) {
+        server->bytes = in_bytes;
+    }
+    // add server to current thread's tcb
+    Q_INSERT_FRONT(&tcb->devserv, server, tcb_link);
+    // set server owner
+    server->owner = tcb;
 }
 
 /** @brief The udriv_register syscall
@@ -90,7 +133,7 @@ void udriv_register_syscall(ureg_t state)
     
     // driver_id refers to a hardware device
     if (args.driver_id < UDR_MAX_HW_DEV) {
-        device_t *device = get_device(args.driver_id);
+        devserv_t *device = get_devserv(args.driver_id);
         // device not in the device table
         if (device == NULL) {
             state.eax = -1;
@@ -101,7 +144,7 @@ void udriv_register_syscall(ureg_t state)
             return;
         } else {
             register_hw_drv(device, tcb, args.in_port, args.in_bytes);
-            state.eax = args.driver_id;
+            state.eax = device->driver_id;
             return;
         }
     }
@@ -109,17 +152,32 @@ void udriv_register_syscall(ureg_t state)
     // driver_id refers to a user server
     // note: in_port is ignored for servers
     else {
-        
-        // in_bytes is invalid
-        
-        
-        // driver_id is invalid
-        
-        
+        // check argument validity
+        if (valid_server(args.driver_id, args.in_bytes) < 0) {
+            state.eax = -1;
+            return;
+        } else {
+            devserv_t *server;
+            // user has requested to be assigned a server id
+            if (args.driver_id == UDR_ASSIGN_REQUEST) {
+                driv_id_t assigned_id = assign_driver_id();
+                server = create_devserv_entry(assigned_id);
+                add_devserv_global(server);
+            }
+            // driver_id is in list of defined servers
+            else {
+                server = get_devserv(args.driver_id);
+                // server has not been created
+                if (server == NULL) {
+                    server = create_devserv_entry(args.driver_id);
+                    add_devserv_global(server);
+                }
+            }
+            register_server(server, tcb, args.in_bytes);
+            state.eax = server->driver_id;
+            return;
+        }
     }
-    
-    KPRINTF("Thread %d called udriv_register. Not yet implemented.", get_tcb()->id);
-    state.eax = -1;
 }
 
 /** @brief The udriv_deregister syscall

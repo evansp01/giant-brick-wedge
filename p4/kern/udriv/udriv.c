@@ -17,34 +17,55 @@
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
 
 // global hashtable of all devices and servers
-device_hash_t all_devices;
+device_hash_t all_devserv;
+
+// counter for kernel assigned driver ids
+driv_id_t assigned_driver_id;
+
+/** @brief Assigns a driver id
+ *  @return Driver ID
+ */
+driv_id_t assign_driver_id()
+{
+    assigned_driver_id++;
+    return assigned_driver_id;
+}
 
 /** @brief Gets the device/server entry from global hashtable
  *  @param entry Driver ID to find
  *  @return Pointer to device entry in hashtable
  */
-device_t *get_device(driv_id_t entry)
+devserv_t *get_devserv(driv_id_t entry)
 {
-    return H_GET(&all_devices, entry, driver_id, global);
+    return H_GET(&all_devserv, entry, driver_id, global);
 }
 
-/** @brief Creates a device entry for a device/server
+/** @brief Adds a device/server entry to the global hashtable
+ *  @param device Pointer to device/server entry
+ *  @return void
+ */
+void add_devserv_global(devserv_t *device)
+{
+    assert(H_INSERT(&all_devserv, device, driver_id, global) == NULL);
+}
+
+/** @brief Creates an entry for a device/server
  *  @param id Device/server ID
  *  @return 0 on success, an integer less than 0 on failure
  */
-device_t *create_device_entry(driv_id_t id)
+devserv_t *create_devserv_entry(driv_id_t id)
 {
     // create device entry
-    device_t *device = (device_t*)smalloc(sizeof(device_t));
-    if (device == NULL) {
+    devserv_t *devserv = (devserv_t*)smalloc(sizeof(devserv_t));
+    if (devserv == NULL) {
         return NULL;
     }
-    memset(device, 0, sizeof(device_t));
-    device->driver_id = id;
-    Q_INIT_ELEM(device, global);
-    Q_INIT_ELEM(device, interrupts);
-    Q_INIT_ELEM(device, tcb_link);
-    return device;
+    memset(devserv, 0, sizeof(devserv_t));
+    devserv->driver_id = id;
+    Q_INIT_ELEM(devserv, global);
+    Q_INIT_ELEM(devserv, interrupts);
+    Q_INIT_ELEM(devserv, tcb_link);
+    return devserv;
 }
 
 void keyboard_interrupt();
@@ -52,9 +73,11 @@ void keyboard_interrupt();
 void init_user_drivers()
 {   
     // init global device/server hashtable
-    if (H_INIT_TABLE(&all_devices) < 0) {
+    if (H_INIT_TABLE(&all_devserv) < 0) {
         panic("Cannot allocate global device hashtable");
     }
+    
+    assigned_driver_id = UDR_MIN_ASSIGNMENT;
 
     int i;
     for (i = 0; i < device_table_entries; i++) {
@@ -79,13 +102,13 @@ void init_user_drivers()
         }
         
         // create device entry
-        device_t *device = create_device_entry(driv->id);
+        devserv_t *device = create_devserv_entry(driv->id);
         if (device == NULL) {
             panic("Cannot malloc for device at %d", device_table[i].idt_slot);
         }
         
         // add to global hashtable of devices/servers
-        assert(H_INSERT(&all_devices, device, driver_id, global) == NULL);
+        add_devserv_global(device);
         
         // add device to list in interrupt table entry
         Q_INSERT_FRONT(&interrupt_table[driv->idt_slot].devices, device,
@@ -109,7 +132,7 @@ static int next_index(int index)
  *  @param interrupt The interrupt to be queued
  *  @return void
  **/
-void queue_interrupt(device_t* device, interrupt_t interrupt)
+void queue_interrupt(devserv_t* device, interrupt_t interrupt)
 {
     // If we aren't about to run into the consumer
     if (next_index(device->producer) != device->consumer) {
@@ -133,7 +156,7 @@ void device_handler(ureg_t state)
     }
     
     int_control_t* control = &interrupt_table[idt_index];
-    device_t* device;
+    devserv_t* device;
     // update all devices/servers registered to this IDT
     Q_FOREACH(device, &control->devices, interrupts)
     {

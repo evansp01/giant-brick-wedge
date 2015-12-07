@@ -102,7 +102,7 @@ typedef struct tcb {
     thread_state_t state;
     swexn_t swexn;
     unsigned int wake_tick;
-    device_list_t devices;
+    devserv_list_t devserv;
 } tcb_t;
 
 /** @brief Structure for the overall kernel state */
