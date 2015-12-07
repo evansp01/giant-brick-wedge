@@ -221,6 +221,7 @@ tcb_t* create_tcb_entry(int id)
     entry->swexn.handler = NULL;
     entry->process = NULL;
     entry->wake_tick = 0;
+    Q_INIT_HEAD(&entry->devices);
     return entry;
 }
 

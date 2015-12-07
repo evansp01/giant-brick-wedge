@@ -58,7 +58,7 @@ void install_idt()
     // install timer
     set_idt_device(NAME_ASM(timer_interrupt), TIMER_IDT_ENTRY);
     install_syscalls();
-   }
+}
 
 /** @brief Installs the handlers in the IDT
  *

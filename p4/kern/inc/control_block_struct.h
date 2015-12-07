@@ -14,6 +14,7 @@
 #include <mutex.h>
 #include <variable_queue.h>
 #include <variable_htable.h>
+#include <user_drivers.h>
 
 /** @brief Thread exit states */
 typedef enum {
@@ -101,6 +102,7 @@ typedef struct tcb {
     thread_state_t state;
     swexn_t swexn;
     unsigned int wake_tick;
+    device_list_t devices;
 } tcb_t;
 
 /** @brief Structure for the overall kernel state */
