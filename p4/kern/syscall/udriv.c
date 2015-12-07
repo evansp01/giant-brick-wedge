@@ -56,9 +56,6 @@ int valid_hw_drv(device_t *device, unsigned int in_port, unsigned int in_bytes)
 void register_hw_drv(device_t *device, tcb_t* tcb, unsigned int in_port,
                      unsigned int in_bytes)
 {
-    // set device owner
-    device->owner = tcb;
-    
     // set request for bytes from port
     if (in_bytes == 1) {
         device->port = in_port;
@@ -67,6 +64,9 @@ void register_hw_drv(device_t *device, tcb_t* tcb, unsigned int in_port,
     
     // add device to current thread's tcb
     Q_INSERT_FRONT(&tcb->devices, device, tcb_link);
+    
+    // set device owner
+    device->owner = tcb;
 }
 
 /** @brief The udriv_register syscall

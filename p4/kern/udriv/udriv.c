@@ -10,6 +10,8 @@
 #include <string.h>
 #include <idt.h>
 #include <assert.h>
+#include <asm.h>
+#include <interrupt_defines.h>
 
 // table of control entries for IDT entries
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
@@ -92,9 +94,33 @@ void init_user_drivers()
     }
 }
 
-void queue_interrupt(device_t* device)
+/** @brief Gets the next index in the circular interrupt buffer
+ *
+ *  @param index The current index
+ *  @return The next index
+ **/
+static int next_index(int index)
 {
-    // TODO: queue the interrupt for the current device
+    return (index + 1) % INTERRUPT_BUFFER_SIZE;
+}
+
+/** @brief Queue the interrupt for the given device
+ *  @param device The device to queue the interrupt for
+ *  @param interrupt The interrupt to be queued
+ *  @return void
+ **/
+void queue_interrupt(device_t* device, interrupt_t interrupt)
+{
+    // If we aren't about to run into the consumer
+    if (next_index(device->producer) != device->consumer) {
+        // Add character to buffer
+        device->buffer[device->producer] = interrupt;
+        device->producer = next_index(device->producer);
+    } else {
+        // ignore the interrupt, we don't have room
+        // the program is more than INTERRUPT_BUFFER_SIZE interrupts
+        // behind so it's probably okay
+    }
 }
 
 void device_handler(ureg_t state)
@@ -111,12 +137,25 @@ void device_handler(ureg_t state)
     // update all devices/servers registered to this IDT
     Q_FOREACH(device, &control->devices, interrupts)
     {
+        // only forward interrupts for devices with registered drivers
+        if (device->owner == NULL) {
+            continue;
+        }
+        
+        uint8_t read_byte;
+        interrupt_t interrupt;
         // read from port if device requires it
         if (device->port != 0) {
-            // TODO: need to read from port if there is one
+            // devices can only read 1 byte from ports
+            assert(device->bytes == 1);
+            read_byte = inb(device->port);
+            interrupt.msg = (message_t) read_byte;
+            interrupt.size = device->bytes;
         }
         
         // queue interrupt in the device/server buffer
-        queue_interrupt(device);
+        queue_interrupt(device, interrupt);
     }
+    // ack interrupt
+    outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
