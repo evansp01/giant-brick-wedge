@@ -103,6 +103,9 @@ typedef struct tcb {
     swexn_t swexn;
     unsigned int wake_tick;
     devserv_list_t devserv;
+    interrupt_t buffer[INTERRUPT_BUFFER_SIZE];
+    int producer;
+    int consumer;
 } tcb_t;
 
 /** @brief Structure for the overall kernel state */

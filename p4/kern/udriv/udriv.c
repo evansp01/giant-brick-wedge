@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <asm.h>
 #include <interrupt_defines.h>
+#include <control_block_struct.h>
 
 // table of control entries for IDT entries
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
@@ -128,17 +129,17 @@ static int next_index(int index)
 }
 
 /** @brief Queue the interrupt for the given device
- *  @param device The device to queue the interrupt for
+ *  @param tcb The thread which will receive the interrupt
  *  @param interrupt The interrupt to be queued
  *  @return void
  **/
-void queue_interrupt(devserv_t* device, interrupt_t interrupt)
+void queue_interrupt(tcb_t *tcb, interrupt_t interrupt)
 {
     // If we aren't about to run into the consumer
-    if (next_index(device->producer) != device->consumer) {
+    if (next_index(tcb->producer) != tcb->consumer) {
         // Add character to buffer
-        device->buffer[device->producer] = interrupt;
-        device->producer = next_index(device->producer);
+        tcb->buffer[tcb->producer] = interrupt;
+        tcb->producer = next_index(tcb->producer);
     } else {
         // ignore the interrupt, we don't have room
         // the program is more than INTERRUPT_BUFFER_SIZE interrupts
@@ -167,6 +168,7 @@ void device_handler(ureg_t state)
         
         uint8_t read_byte;
         interrupt_t interrupt;
+        interrupt.driver_id = device->driver_id;
         // read from port if device requires it
         if (device->port != 0) {
             // devices can only read 1 byte from ports
@@ -174,10 +176,13 @@ void device_handler(ureg_t state)
             read_byte = inb(device->port);
             interrupt.msg = (message_t) read_byte;
             interrupt.size = device->bytes;
+        } else {
+            interrupt.msg = 0;
+            interrupt.size = 0;
         }
         
         // queue interrupt in the device/server buffer
-        queue_interrupt(device, interrupt);
+        queue_interrupt(device->owner, interrupt);
     }
     // ack interrupt
     outb(INT_CTL_PORT, INT_ACK_CURRENT);

@@ -186,6 +186,8 @@ void udriv_register_syscall(ureg_t state)
  */
 void udriv_deregister_syscall(ureg_t state)
 {
+    //driv_id_t driver_id = state.esi;
+    
     KPRINTF("Thread %d called udriv_deregister. Not yet implemented.", get_tcb()->id);
     state.eax = -1;
 }

@@ -222,6 +222,8 @@ tcb_t* create_tcb_entry(int id)
     entry->process = NULL;
     entry->wake_tick = 0;
     Q_INIT_HEAD(&entry->devserv);
+    entry->producer = 0;
+    entry->consumer = 0;
     return entry;
 }
 

@@ -19,6 +19,7 @@ H_NEW_TABLE(device_hash_t, devserv_list_t);
 
 /** @brief The struct for contents of a single interrupt */
 typedef struct interrupt {
+    driv_id_t driver_id;
     message_t msg;
     unsigned int size;
 } interrupt_t;
@@ -29,9 +30,6 @@ typedef struct device {
     Q_NEW_LINK(device) interrupts;
     Q_NEW_LINK(device) tcb_link;
     driv_id_t driver_id;
-    interrupt_t buffer[INTERRUPT_BUFFER_SIZE];
-    int producer;
-    int consumer;
     unsigned int port;
     unsigned int bytes;
     struct tcb *owner;
