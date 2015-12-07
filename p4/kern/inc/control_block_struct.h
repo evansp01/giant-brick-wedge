@@ -103,6 +103,7 @@ typedef struct tcb {
     swexn_t swexn;
     unsigned int wake_tick;
     devserv_list_t devserv;
+    int waiting;
     interrupt_t buffer[INTERRUPT_BUFFER_SIZE];
     int producer;
     int consumer;

@@ -12,7 +12,7 @@
 typedef unsigned long long message_t;
 
 /** @brief The struct for list of devices/services */
-Q_NEW_HEAD(devserv_list_t, device);
+Q_NEW_HEAD(devserv_list_t, devserv);
 
 /** @brief Structure for hash table of devices/services */
 H_NEW_TABLE(device_hash_t, devserv_list_t);
@@ -25,15 +25,15 @@ typedef struct interrupt {
 } interrupt_t;
 
 /** @brief The struct for a device/server */
-typedef struct device {
-    Q_NEW_LINK(device) global;
-    Q_NEW_LINK(device) interrupts;
-    Q_NEW_LINK(device) tcb_link;
+typedef struct devserv {
+    Q_NEW_LINK(devserv) global;
+    Q_NEW_LINK(devserv) interrupts;
+    Q_NEW_LINK(devserv) tcb_link;
     driv_id_t driver_id;
     unsigned int port;
     unsigned int bytes;
     struct tcb *owner;
-    const dev_spec_t* device_table_entry;
+    const dev_spec_t *device_table_entry;
 } devserv_t;
 
 /** @brief The struct for hardware interrupts via IDT */
@@ -46,6 +46,7 @@ typedef struct int_control {
 extern int_control_t interrupt_table[]; 
 
 driv_id_t assign_driver_id();
+int next_index_int(int index);
 void add_devserv_global(devserv_t *device);
 devserv_t *create_devserv_entry(driv_id_t id);
 devserv_t *get_devserv(driv_id_t entry);

@@ -12,6 +12,8 @@
 #include <udriv_registry.h>
 #include <udriv_kern.h>
 #include <user_drivers.h>
+#include <asm.h>
+#include <scheduler.h>
 
 /** @brief Check if the arguments for registering a hardware device are valid
  *  @param device Pointer to device entry
@@ -202,14 +204,113 @@ void udriv_send_syscall(ureg_t state)
     state.eax = -1;
 }
 
+/** @brief Wait for an interrupt for the current thread
+ *  @param driv_recv Pointer to store driver_id of interrupt
+ *  @param msg_recv Pointer to store message received
+ *  @param msg_size Pointer to store message size
+ *  @return 0 on success, an integer less than 0 on failure
+ */
+int udriv_wait(tcb_t *tcb, driv_id_t *driv_recv, message_t *msg_recv,
+                unsigned int *msg_size)
+{
+    disable_interrupts();
+    // wait for an interrupt if there are none queued
+    if (tcb->consumer == tcb->producer) {
+        tcb->waiting = 1;
+        deschedule(tcb, T_KERN_SUSPENDED);
+        disable_interrupts();
+    }
+    // process the next interrupt
+    interrupt_t interrupt = tcb->buffer[tcb->consumer];
+    tcb->consumer = next_index_int(tcb->consumer);
+    enable_interrupts();
+    // copy to user pointers
+    ppd_t *ppd = tcb->process->directory;
+    if (vm_write_locked(ppd, &interrupt.driver_id, (uint32_t)driv_recv,
+        sizeof(driv_id_t)) < 0) {
+        return -1;
+    }
+    if (vm_write_locked(ppd, &interrupt.msg, (uint32_t)msg_recv,
+        sizeof(message_t)) < 0) {
+        return -1;
+    }
+    if (vm_write_locked(ppd, &interrupt.size, (uint32_t)msg_size,
+        sizeof(unsigned int)) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+/** @brief Check if the thread is registered to devices with interrupts
+ *  @param tcb TCB of thread to check
+ *  @return 0 if there are interrupts, an integer less than 0 if none
+ */
+int has_interrupts(tcb_t *tcb)
+{
+    // no interrupts if the list of devices/servers registered is empty
+    if (Q_IS_EMPTY(&tcb->devserv)) {
+        return -1;
+    }
+    // check if registered devices have interrupts
+    else {
+        devserv_t* devserv;
+        Q_FOREACH(devserv, &tcb->devserv, tcb_link)
+        {
+            if (devserv->device_table_entry != NULL) {
+                if (devserv->device_table_entry->idt_slot != UDR_NO_IDT) {
+                    return 0;
+                }
+            }
+        }
+        return -1;
+    }
+}
+
 /** @brief The udriv_wait syscall
  *  @param state The current state in user mode
  *  @return void
  */
 void udriv_wait_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called udriv_wait. Not yet implemented.", get_tcb()->id);
+    struct {
+        driv_id_t *driv_recv;
+        message_t *msg_recv;
+        unsigned int *msg_size;
+    } args;
+    
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = tcb->process->directory;
+    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+        goto return_fail;
+    }
+    // make sure the pointers are writable
+    mutex_lock(&ppd->lock);
+    if(!vm_user_can_write(ppd, args.driv_recv, sizeof(driv_id_t))){
+        goto return_fail_unlock;
+    }
+    if(!vm_user_can_write(ppd, args.msg_recv, sizeof(message_t))){
+        goto return_fail_unlock;
+    }
+    if(!vm_user_can_write(ppd, args.msg_size, sizeof(unsigned int))){
+        goto return_fail_unlock;
+    }
+    mutex_unlock(&ppd->lock);
+    // check if thread is registered to any devices/servers with interrupts
+    if (has_interrupts(tcb) < 0) {
+        goto return_fail;
+    }
+    // get an interrupt for the current thread
+    if (udriv_wait(tcb, args.driv_recv, args.msg_recv, args.msg_size) < 0) {
+        goto return_fail;
+    }
+    state.eax = 0;
+    return;
+    
+return_fail_unlock:
+    mutex_unlock(&ppd->lock);
+return_fail:
     state.eax = -1;
+    return;
 }
 
 /** @brief The udriv_inb syscall
