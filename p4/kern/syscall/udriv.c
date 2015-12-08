@@ -247,7 +247,7 @@ void udriv_deregister_syscall(ureg_t state)
  */
 void udriv_send_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called udriv_send. Not yet implemented.", get_tcb()->id);
+    lprintf("Thread %d called udriv_send. Not yet implemented.", get_tcb()->id);
     state.eax = -1;
 }
 
@@ -366,7 +366,7 @@ return_fail:
  */
 void udriv_inb_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called udriv_inb. Not yet implemented.", get_tcb()->id);
+    lprintf("Thread %d called udriv_inb. Not yet implemented.", get_tcb()->id);
     state.eax = -1;
 }
 
@@ -376,7 +376,7 @@ void udriv_inb_syscall(ureg_t state)
  */
 void udriv_outb_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called udriv_outb. Not yet implemented.", get_tcb()->id);
+    lprintf("Thread %d called udriv_outb. Not yet implemented.", get_tcb()->id);
     state.eax = -1;
 }
 
@@ -386,6 +386,6 @@ void udriv_outb_syscall(ureg_t state)
  */
 void udriv_mmap_syscall(ureg_t state)
 {
-    KPRINTF("Thread %d called udriv_mmap. Not yet implemented.", get_tcb()->id);
+    lprintf("Thread %d called udriv_mmap. Not yet implemented.", get_tcb()->id);
     state.eax = -1;
 }
