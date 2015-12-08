@@ -196,6 +196,7 @@ void udriv_register_syscall(ureg_t state)
             if (args.driver_id == UDR_ASSIGN_REQUEST) {
                 driv_id_t assigned_id = assign_driver_id();
                 server = create_devserv_entry(assigned_id);
+                server->owner = tcb;
                 add_devserv(server);
             }
             // driver_id is in list of defined servers
@@ -247,8 +248,41 @@ void udriv_deregister_syscall(ureg_t state)
  */
 void udriv_send_syscall(ureg_t state)
 {
-    lprintf("Thread %d called udriv_send. Not yet implemented.", get_tcb()->id);
-    state.eax = -1;
+    struct {
+        driv_id_t driv_send;
+        message_t msg_send;
+        unsigned int msg_size;
+    } args;
+    
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = tcb->process->directory;
+    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+        goto return_fail;
+    }
+    
+    // check if driver_id is valid
+    devserv_t *server = get_devserv(args.driv_send);
+    if ((server == NULL)||(server->driver_id <= UDR_MAX_HW_DEV)) {
+        goto return_fail;
+    }
+    if (args.msg_size > server->bytes) {
+        goto return_fail;
+    }
+    
+    interrupt_t interrupt;
+    interrupt.driver_id = server->driver_id;
+    interrupt.msg = args.msg_send;
+    interrupt.size = args.msg_size;
+    
+    // queue interrupt in the device/server buffer
+    queue_interrupt(server->owner, interrupt);
+    
+    state.eax = 0;
+    return;
+    
+return_fail:
+    state.eax = 1;
+    return;
 }
 
 /** @brief Wait for an interrupt for the current thread
@@ -273,17 +307,23 @@ int udriv_wait(tcb_t *tcb, driv_id_t *driv_recv, message_t *msg_recv,
     enable_interrupts();
     // copy to user pointers
     ppd_t *ppd = tcb->process->directory;
-    if (vm_write_locked(ppd, &interrupt.driver_id, (uint32_t)driv_recv,
-        sizeof(driv_id_t)) < 0) {
-        return -1;
+    if (driv_recv != NULL) {
+        if (vm_write_locked(ppd, &interrupt.driver_id, (uint32_t)driv_recv,
+            sizeof(driv_id_t)) < 0) {
+            return -1;
+        }
     }
-    if (vm_write_locked(ppd, &interrupt.msg, (uint32_t)msg_recv,
-        sizeof(message_t)) < 0) {
-        return -1;
+    if (msg_recv != NULL) {
+        if (vm_write_locked(ppd, &interrupt.msg, (uint32_t)msg_recv,
+            sizeof(message_t)) < 0) {
+            return -1;
+        }
     }
-    if (vm_write_locked(ppd, &interrupt.size, (uint32_t)msg_size,
-        sizeof(unsigned int)) < 0) {
-        return -1;
+    if (msg_size != NULL) {
+        if (vm_write_locked(ppd, &interrupt.size, (uint32_t)msg_size,
+            sizeof(unsigned int)) < 0) {
+            return -1;
+        }
     }
     return 0;
 }
@@ -303,10 +343,16 @@ int has_interrupts(tcb_t *tcb)
         devserv_t* devserv;
         Q_FOREACH(devserv, &tcb->devserv, tcb_link)
         {
-            if (devserv->device_table_entry != NULL) {
+            // not all hardware drivers can receive interrupts
+            if (devserv->driver_id < UDR_MAX_HW_DEV) {
+                assert(devserv->device_table_entry != NULL);
                 if (devserv->device_table_entry->idt_slot != UDR_NO_IDT) {
                     return 0;
                 }
+            }
+            // servers can all receive interrupts
+            else {
+                return 0;
             }
         }
         return -1;
@@ -332,14 +378,20 @@ void udriv_wait_syscall(ureg_t state)
     }
     // make sure the pointers are writable
     mutex_lock(&ppd->lock);
-    if(!vm_user_can_write(ppd, args.driv_recv, sizeof(driv_id_t))){
-        goto return_fail_unlock;
+    if (args.driv_recv != NULL) {
+        if(!vm_user_can_write(ppd, args.driv_recv, sizeof(driv_id_t))){
+            goto return_fail_unlock;
+        }
     }
-    if(!vm_user_can_write(ppd, args.msg_recv, sizeof(message_t))){
-        goto return_fail_unlock;
+    if (args.msg_recv != NULL) {
+        if(!vm_user_can_write(ppd, args.msg_recv, sizeof(message_t))){
+            goto return_fail_unlock;
+        }
     }
-    if(!vm_user_can_write(ppd, args.msg_size, sizeof(unsigned int))){
-        goto return_fail_unlock;
+    if (args.msg_size != NULL) {
+        if(!vm_user_can_write(ppd, args.msg_size, sizeof(unsigned int))){
+            goto return_fail_unlock;
+        }
     }
     mutex_unlock(&ppd->lock);
     // check if thread is registered to any devices/servers with interrupts

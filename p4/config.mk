@@ -44,7 +44,7 @@ UPDATE_METHOD = afs
            slaughter sleep_test1 stack_test1 swexn_basic_test \
            swexn_cookie_monster swexn_dispatch swexn_regs \
            swexn_stands_for_swextensible swexn_uninstall_test wait_getpid \
-		   wild_test1 work yield_desc_mkrun
+		   wild_test1 work yield_desc_mkrun joke_client joke_server
 
 ###########################################################################
 # Test programs you have written which you wish to run

@@ -56,5 +56,6 @@ void remove_devserv(devserv_t *entry);
 devserv_t *create_devserv_entry(driv_id_t id);
 void free_devserv_entry(devserv_t *entry);
 void init_user_drivers();
+void queue_interrupt(struct tcb *tcb, interrupt_t interrupt);
 
 #endif // USER_DRIVERS
