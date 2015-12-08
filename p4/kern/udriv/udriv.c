@@ -18,8 +18,14 @@
 // table of control entries for IDT entries
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
 
-// global hashtable of all devices and servers
-device_hash_t all_devserv;
+/** @brief Struct for global device/server hashtable and lock */
+typedef struct g_devserv {
+    mutex_t mutex;
+    device_hash_t all_devserv;
+} g_devserv_t;
+
+// global hashtable and lock
+g_devserv_t all_ds;
 
 // counter for kernel assigned driver ids
 driv_id_t assigned_driver_id;
@@ -29,6 +35,7 @@ driv_id_t assigned_driver_id;
  */
 driv_id_t assign_driver_id()
 {
+    // TODO: fix race condition with atomic functions
     assigned_driver_id++;
     return assigned_driver_id;
 }
@@ -39,16 +46,50 @@ driv_id_t assign_driver_id()
  */
 devserv_t *get_devserv(driv_id_t entry)
 {
-    return H_GET(&all_devserv, entry, driver_id, global);
+    mutex_lock(&all_ds.mutex);
+    devserv_t *devserv = H_GET(&all_ds.all_devserv, entry, driver_id, global);
+    mutex_unlock(&all_ds.mutex);
+    return devserv;
 }
 
 /** @brief Adds a device/server entry to the global hashtable
- *  @param device Pointer to device/server entry
+ *  @param entry Pointer to device/server entry
  *  @return void
  */
-void add_devserv_global(devserv_t *device)
+void add_devserv(devserv_t *entry)
 {
-    assert(H_INSERT(&all_devserv, device, driver_id, global) == NULL);
+    mutex_lock(&all_ds.mutex);
+    assert(H_INSERT(&all_ds.all_devserv, entry, driver_id, global) == NULL);
+    mutex_unlock(&all_ds.mutex);
+}
+
+/** @brief Adds a device/server entry to the global hashtable if currently null
+ *  @param entry Pointer to device/server entry
+ *  @return 0 if entry was added, an integer less than 0 if conflict occurred
+ */
+int check_add_devserv(devserv_t *entry)
+{
+    mutex_lock(&all_ds.mutex);
+    if (H_GET(&all_ds.all_devserv, entry->driver_id, driver_id, global)==NULL) {
+        assert(H_INSERT(&all_ds.all_devserv, entry, driver_id, global)==NULL);
+        mutex_unlock(&all_ds.mutex);
+        return 0;
+    } else {
+        mutex_unlock(&all_ds.mutex);
+        return -1;
+    }
+}
+
+/** @brief Removes a device/server entry from the global hashtable
+ *  @param entry Pointer to device/server entry
+ *  @return void
+ */
+void remove_devserv(devserv_t *entry)
+{
+    mutex_lock(&all_ds.mutex);
+    assert(H_REMOVE(&all_ds.all_devserv, entry->driver_id, driver_id, global)
+           != NULL);
+    mutex_unlock(&all_ds.mutex);
 }
 
 /** @brief Creates an entry for a device/server
@@ -67,7 +108,18 @@ devserv_t *create_devserv_entry(driv_id_t id)
     Q_INIT_ELEM(devserv, global);
     Q_INIT_ELEM(devserv, interrupts);
     Q_INIT_ELEM(devserv, tcb_link);
+    mutex_init(&devserv->mutex);
     return devserv;
+}
+
+/** @brief Free an entry for a device/server
+ *  @param entry Device/server entry to free
+ *  @return void
+ */
+void free_devserv_entry(devserv_t *entry)
+{
+    mutex_destroy(&entry->mutex);
+    sfree(entry, sizeof(devserv_t));
 }
 
 void keyboard_interrupt();
@@ -75,7 +127,8 @@ void keyboard_interrupt();
 void init_user_drivers()
 {   
     // init global device/server hashtable
-    if (H_INIT_TABLE(&all_devserv) < 0) {
+    mutex_init(&all_ds.mutex);
+    if (H_INIT_TABLE(&all_ds.all_devserv) < 0) {
         panic("Cannot allocate global device hashtable");
     }
     
@@ -111,7 +164,7 @@ void init_user_drivers()
             interrupt_table[driv->idt_slot].num_devices++;
         }
         // add to global hashtable of devices/servers
-        add_devserv_global(device);
+        add_devserv(device);
     }
 }
 
