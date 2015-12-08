@@ -14,6 +14,7 @@
 #include <interrupt_defines.h>
 #include <control_block_struct.h>
 #include <scheduler.h>
+#include <atomic.h>
 
 // table of control entries for IDT entries
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
@@ -28,16 +29,15 @@ typedef struct g_devserv {
 g_devserv_t all_ds;
 
 // counter for kernel assigned driver ids
-driv_id_t assigned_driver_id;
+int assigned_driver_id;
 
 /** @brief Assigns a driver id
  *  @return Driver ID
  */
-driv_id_t assign_driver_id()
+int assign_driver_id()
 {
-    // TODO: fix race condition with atomic functions
-    assigned_driver_id++;
-    return assigned_driver_id;
+    // Atomically get current value and increment
+    return atomic_xadd(&assigned_driver_id, 1);
 }
 
 /** @brief Gets the device/server entry from global hashtable
@@ -132,7 +132,7 @@ void init_user_drivers()
         panic("Cannot allocate global device hashtable");
     }
     
-    assigned_driver_id = UDR_MIN_ASSIGNMENT;
+    assigned_driver_id = UDR_MIN_ASSIGNMENT + 1;
 
     int i;
     for (i = 0; i < device_table_entries; i++) {

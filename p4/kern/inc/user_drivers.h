@@ -47,7 +47,7 @@ typedef struct int_control {
 
 extern int_control_t interrupt_table[]; 
 
-driv_id_t assign_driver_id();
+int assign_driver_id();
 int next_index_int(int index);
 devserv_t *get_devserv(driv_id_t entry);
 void add_devserv(devserv_t *device);
