@@ -22,7 +22,7 @@
  *  @param in_bytes Number of bytes requested from port
  *  @return 0 on success, an integer less than 0 on failure
  */
-int valid_hw_drv(tcb_t *tcb, devserv_t *device, unsigned int in_port,
+int valid_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
                  unsigned int in_bytes)
 {
     // in_bytes must be 0 or 1 for a hardware device
@@ -65,7 +65,7 @@ check_owner:
  *  @param in_bytes Number of bytes to read, if any
  *  @return void
  */
-void register_hw_drv(devserv_t *device, tcb_t* tcb, unsigned int in_port,
+void register_hw_drv(devserv_t* device, tcb_t* tcb, unsigned int in_port,
                      unsigned int in_bytes)
 {
     // set request for bytes from port
@@ -77,6 +77,17 @@ void register_hw_drv(devserv_t *device, tcb_t* tcb, unsigned int in_port,
     Q_INSERT_FRONT(&tcb->devserv, device, tcb_link);
 }
 
+devserv_t* create_and_register_devserv(int driver_id, tcb_t* owner)
+{
+    devserv_t* server = create_devserv_entry(driver_id);
+    server->owner = tcb;
+    if (check_add_devserv(server) < 0) {
+        free_devserv_entry(server);
+        return NULL;
+    }
+    return server;
+}
+
 /** @brief Check if the arguments for registering a server are valid
  *  Creates the server entry if server does not yet exist
  *  Take ownership of the server entry before returning
@@ -86,10 +97,10 @@ void register_hw_drv(devserv_t *device, tcb_t* tcb, unsigned int in_port,
  *  @param in_bytes Number of bytes requested
  *  @return 0 on success, an integer less than 0 on failure
  */
-int valid_server(tcb_t *tcb, driv_id_t driver_id, unsigned int in_bytes)
-{   
+int valid_server(tcb_t* tcb, driv_id_t driver_id, unsigned int in_bytes)
+{
     // driver id must valid
-    if ((driver_id <= UDR_MAX_HW_DEV)||(driver_id >= UDR_MIN_ASSIGNMENT)) {
+    if ((driver_id <= UDR_MAX_HW_DEV) || (driver_id >= UDR_MIN_ASSIGNMENT)) {
         return -1;
     }
     // in_bytes must be between 0 and sizeof(message_t)
@@ -98,19 +109,12 @@ int valid_server(tcb_t *tcb, driv_id_t driver_id, unsigned int in_bytes)
     }
     // server must not already be owned
     if (driver_id != UDR_ASSIGN_REQUEST) {
-        devserv_t *server = get_devserv(driver_id);
+        devserv_t* server = get_devserv(driver_id);
         // server has not been created
         if (server == NULL) {
-            // creation needs malloc, so dont hold locks across it
-            server = create_devserv_entry(driver_id);
-            server->owner = tcb;
-            // check that entry still does not exist and add it
-            if (check_add_devserv(server) < 0) {
-                // if entry already exists, then get rid of created entry
-                // i.e. some other thread has beat us to creation & ownership
-                free_devserv_entry(server);
+            server = create_and_register_devserv(driver_id, tcb);
+            if (server == NULL)
                 return -1;
-            }
         }
         // server already exists
         else {
@@ -136,7 +140,7 @@ int valid_server(tcb_t *tcb, driv_id_t driver_id, unsigned int in_bytes)
  *  @param in_bytes Number of bytes to read, if any
  *  @return void
  */
-void register_server(devserv_t *server, tcb_t* tcb, unsigned int in_bytes)
+void register_server(devserv_t* server, tcb_t* tcb, unsigned int in_bytes)
 {
     // set request for bytes
     if (in_bytes > 0) {
@@ -157,57 +161,47 @@ void udriv_register_syscall(ureg_t state)
         unsigned int in_port;
         unsigned int in_bytes;
     } args;
-    
+
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+    ppd_t* ppd = tcb->process->directory;
+    if (vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0) {
         state.eax = -1;
         return;
     }
-    
+
     // driver_id refers to a hardware device
     if (args.driver_id < UDR_MAX_HW_DEV) {
-        devserv_t *device = get_devserv(args.driver_id);
+        devserv_t* device = get_devserv(args.driver_id);
         // device not in the device table
         if (device == NULL) {
             state.eax = -1;
-            return;
-        }
-        if (valid_hw_drv(tcb, device, args.in_port, args.in_bytes) < 0) {
+        } else if (valid_hw_drv(tcb, device, args.in_port, args.in_bytes) < 0) {
             state.eax = -1;
-            return;
         } else {
             register_hw_drv(device, tcb, args.in_port, args.in_bytes);
             state.eax = device->driver_id;
-            return;
         }
+        return;
     }
-    
+
     // driver_id refers to a user server
     // note: in_port is ignored for servers
-    else {
-        // check argument validity
-        if (valid_server(tcb, args.driver_id, args.in_bytes) < 0) {
-            state.eax = -1;
-            return;
-        } else {
-            devserv_t *server;
-            // user has requested to be assigned a server id
-            if (args.driver_id == UDR_ASSIGN_REQUEST) {
-                driv_id_t assigned_id = assign_driver_id();
-                server = create_devserv_entry(assigned_id);
-                server->owner = tcb;
-                add_devserv(server);
-            }
-            // driver_id is in list of defined servers
-            else {
-                server = get_devserv(args.driver_id);
-            }
-            register_server(server, tcb, args.in_bytes);
-            state.eax = server->driver_id;
-            return;
-        }
+    // check argument validity
+    if (valid_server(tcb, args.driver_id, args.in_bytes) < 0) {
+        state.eax = -1;
+        return;
     }
+    devserv_t* server;
+    // user has requested to be assigned a server id
+    if (args.driver_id == UDR_ASSIGN_REQUEST) {
+        driv_id_t assigned_id = assign_driver_id();
+        server = create_and_register_devserv(assigned_id, tcb);
+    } else {
+        // driver_id is in list of defined servers
+        server = get_devserv(args.driver_id);
+    }
+    register_server(server, tcb, args.in_bytes);
+    state.eax = server->driver_id;
 }
 
 /** @brief The udriv_deregister syscall
@@ -219,7 +213,7 @@ void udriv_deregister_syscall(ureg_t state)
     driv_id_t driver_id = state.esi;
     tcb_t* tcb = get_tcb();
     // check if driver_id is valid
-    devserv_t *devserv = get_devserv(driver_id);
+    devserv_t* devserv = get_devserv(driver_id);
     if (devserv == NULL) {
         return;
     }
@@ -253,33 +247,33 @@ void udriv_send_syscall(ureg_t state)
         message_t msg_send;
         unsigned int msg_size;
     } args;
-    
+
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+    ppd_t* ppd = tcb->process->directory;
+    if (vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0) {
         goto return_fail;
     }
-    
+
     // check if driver_id is valid
-    devserv_t *server = get_devserv(args.driv_send);
-    if ((server == NULL)||(server->driver_id <= UDR_MAX_HW_DEV)) {
+    devserv_t* server = get_devserv(args.driv_send);
+    if ((server == NULL) || (server->driver_id <= UDR_MAX_HW_DEV)) {
         goto return_fail;
     }
     if (args.msg_size > server->bytes) {
         goto return_fail;
     }
-    
+
     interrupt_t interrupt;
     interrupt.driver_id = server->driver_id;
     interrupt.msg = args.msg_send;
     interrupt.size = args.msg_size;
-    
+
     // queue interrupt in the device/server buffer
     queue_interrupt(server->owner, interrupt);
-    
+
     state.eax = 0;
     return;
-    
+
 return_fail:
     state.eax = 1;
     return;
@@ -291,37 +285,36 @@ return_fail:
  *  @param msg_size Pointer to store message size
  *  @return 0 on success, an integer less than 0 on failure
  */
-int udriv_wait(tcb_t *tcb, driv_id_t *driv_recv, message_t *msg_recv,
-                unsigned int *msg_size)
+int udriv_wait(tcb_t* tcb, driv_id_t* driv_recv, message_t* msg_recv,
+               unsigned int* msg_size)
 {
     disable_interrupts();
     // wait for an interrupt if there are none queued
     if (tcb->consumer == tcb->producer) {
         tcb->waiting = 1;
         deschedule(tcb, T_KERN_SUSPENDED);
-        disable_interrupts();
     }
+    enable_interrupts();
     // process the next interrupt
     interrupt_t interrupt = tcb->buffer[tcb->consumer];
     tcb->consumer = next_index_int(tcb->consumer);
-    enable_interrupts();
     // copy to user pointers
-    ppd_t *ppd = tcb->process->directory;
+    ppd_t* ppd = tcb->process->directory;
     if (driv_recv != NULL) {
         if (vm_write_locked(ppd, &interrupt.driver_id, (uint32_t)driv_recv,
-            sizeof(driv_id_t)) < 0) {
+                            sizeof(driv_id_t)) < 0) {
             return -1;
         }
     }
     if (msg_recv != NULL) {
         if (vm_write_locked(ppd, &interrupt.msg, (uint32_t)msg_recv,
-            sizeof(message_t)) < 0) {
+                            sizeof(message_t)) < 0) {
             return -1;
         }
     }
     if (msg_size != NULL) {
         if (vm_write_locked(ppd, &interrupt.size, (uint32_t)msg_size,
-            sizeof(unsigned int)) < 0) {
+                            sizeof(unsigned int)) < 0) {
             return -1;
         }
     }
@@ -330,33 +323,28 @@ int udriv_wait(tcb_t *tcb, driv_id_t *driv_recv, message_t *msg_recv,
 
 /** @brief Check if the thread is registered to devices with interrupts
  *  @param tcb TCB of thread to check
- *  @return 0 if there are interrupts, an integer less than 0 if none
+ *  @return A boolean integer
  */
-int has_interrupts(tcb_t *tcb)
+int has_interrupts(tcb_t* tcb)
 {
     // no interrupts if the list of devices/servers registered is empty
     if (Q_IS_EMPTY(&tcb->devserv)) {
-        return -1;
+        return 0;
     }
     // check if registered devices have interrupts
-    else {
-        devserv_t* devserv;
-        Q_FOREACH(devserv, &tcb->devserv, tcb_link)
-        {
-            // not all hardware drivers can receive interrupts
-            if (devserv->driver_id < UDR_MAX_HW_DEV) {
-                assert(devserv->device_table_entry != NULL);
-                if (devserv->device_table_entry->idt_slot != UDR_NO_IDT) {
-                    return 0;
-                }
-            }
-            // servers can all receive interrupts
-            else {
-                return 0;
-            }
+    Q_FOREACH(devserv, &tcb->devserv, tcb_link)
+    {
+        // all servers can receive interrupts
+        if (devserv->driver_id >= UDR_MAX_HW_DEV) {
+            return 1;
         }
-        return -1;
+        // not all hardware drivers can receive interrupts
+        assert(devserv->device_table_entry != NULL);
+        if (devserv->device_table_entry->idt_slot != UDR_NO_IDT) {
+            return 1;
+        }
     }
+    return 0;
 }
 
 /** @brief The udriv_wait syscall
@@ -366,36 +354,36 @@ int has_interrupts(tcb_t *tcb)
 void udriv_wait_syscall(ureg_t state)
 {
     struct {
-        driv_id_t *driv_recv;
-        message_t *msg_recv;
-        unsigned int *msg_size;
+        driv_id_t* driv_recv;
+        message_t* msg_recv;
+        unsigned int* msg_size;
     } args;
-    
+
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+    ppd_t* ppd = tcb->process->directory;
+    if (vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0) {
         goto return_fail;
     }
     // make sure the pointers are writable
     mutex_lock(&ppd->lock);
     if (args.driv_recv != NULL) {
-        if(!vm_user_can_write(ppd, args.driv_recv, sizeof(driv_id_t))){
+        if (!vm_user_can_write(ppd, args.driv_recv, sizeof(driv_id_t))) {
             goto return_fail_unlock;
         }
     }
     if (args.msg_recv != NULL) {
-        if(!vm_user_can_write(ppd, args.msg_recv, sizeof(message_t))){
+        if (!vm_user_can_write(ppd, args.msg_recv, sizeof(message_t))) {
             goto return_fail_unlock;
         }
     }
     if (args.msg_size != NULL) {
-        if(!vm_user_can_write(ppd, args.msg_size, sizeof(unsigned int))){
+        if (!vm_user_can_write(ppd, args.msg_size, sizeof(unsigned int))) {
             goto return_fail_unlock;
         }
     }
     mutex_unlock(&ppd->lock);
     // check if thread is registered to any devices/servers with interrupts
-    if (has_interrupts(tcb) < 0) {
+    if (!has_interrupts(tcb)) {
         goto return_fail;
     }
     // get an interrupt for the current thread
@@ -404,7 +392,7 @@ void udriv_wait_syscall(ureg_t state)
     }
     state.eax = 0;
     return;
-    
+
 return_fail_unlock:
     mutex_unlock(&ppd->lock);
 return_fail:
