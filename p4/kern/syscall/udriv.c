@@ -412,14 +412,74 @@ return_fail:
     return;
 }
 
+/** @brief Checks if the thread has permissions to access the port
+ *  @param tcb TCB of the current thread
+ *  @param port Port that needs to be validated
+ *  @return 0 if the thread has permissions, an integer less than 0 if not
+ */
+int check_port_permissions(tcb_t *tcb, unsigned int port)
+{
+    devserv_t* devserv;
+    Q_FOREACH(devserv, &tcb->devserv, tcb_link)
+    {
+        // only hardware drivers can access ports
+        if (devserv->driver_id < UDR_MAX_HW_DEV) {
+            const dev_spec_t* dev = devserv->device_table_entry;
+            assert(dev != NULL); // all device tables entries should have this
+            int i;
+            for (i = 0; i < dev->port_regions_cnt; i++) {
+                const udrv_region_t* port_region = &dev->port_regions[i];
+                // in_port is valid for the device
+                if (port_region->base == port) {
+                    return 0;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
 /** @brief The udriv_inb syscall
  *  @param state The current state in user mode
  *  @return void
  */
 void udriv_inb_syscall(ureg_t state)
 {
-    lprintf("Thread %d called udriv_inb. Not yet implemented.", get_tcb()->id);
+    struct {
+        unsigned int port;
+        unsigned char *val;
+    } args;
+    
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = tcb->process->directory;
+    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+        goto return_fail;
+    }
+    mutex_lock(&ppd->lock);
+    if (args.val != NULL) {
+        if(!vm_user_can_write(ppd, args.val, sizeof(unsigned char))){
+            goto return_fail_unlock;
+        }
+    }
+    if (check_port_permissions(tcb, args.port) < 0) {
+        goto return_fail;
+    }
+    
+    uint8_t in = inb(args.port);
+    if (args.val != NULL) {
+        if (vm_write_locked(ppd, &in, (uint32_t)args.val,
+            sizeof(unsigned char)) < 0) {
+            goto return_fail;
+        }
+    }
+    state.eax = 0;
+    return;
+    
+return_fail_unlock:
+    mutex_unlock(&ppd->lock);
+return_fail:
     state.eax = -1;
+    return;
 }
 
 /** @brief The udriv_outb syscall
@@ -428,8 +488,28 @@ void udriv_inb_syscall(ureg_t state)
  */
 void udriv_outb_syscall(ureg_t state)
 {
-    lprintf("Thread %d called udriv_outb. Not yet implemented.", get_tcb()->id);
+    struct {
+        unsigned int port;
+        unsigned char val;
+    } args;
+    
+    tcb_t* tcb = get_tcb();
+    ppd_t *ppd = tcb->process->directory;
+    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+        goto return_fail;
+    }
+    if (check_port_permissions(tcb, args.port) < 0) {
+        goto return_fail;
+    }
+    
+    outb(args.port, args.val);
+    
+    state.eax = 0;
+    return;
+    
+return_fail:
     state.eax = -1;
+    return;
 }
 
 /** @brief The udriv_mmap syscall
