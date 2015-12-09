@@ -275,7 +275,7 @@ void udriv_send_syscall(ureg_t state)
     return;
 
 return_fail:
-    state.eax = 1;
+    state.eax = -1;
     return;
 }
 
