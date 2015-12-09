@@ -80,7 +80,7 @@ void register_hw_drv(devserv_t* device, tcb_t* tcb, unsigned int in_port,
 devserv_t* create_and_register_devserv(int driver_id, tcb_t* owner)
 {
     devserv_t* server = create_devserv_entry(driver_id);
-    server->owner = tcb;
+    server->owner = owner;
     if (check_add_devserv(server) < 0) {
         free_devserv_entry(server);
         return NULL;
@@ -328,6 +328,7 @@ int udriv_wait(tcb_t* tcb, driv_id_t* driv_recv, message_t* msg_recv,
 int has_interrupts(tcb_t* tcb)
 {
     // no interrupts if the list of devices/servers registered is empty
+    devserv_t *devserv;
     if (Q_IS_EMPTY(&tcb->devserv)) {
         return 0;
     }
