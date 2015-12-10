@@ -37,25 +37,39 @@ typedef union {
 } request_msg_t;
 
 struct {
+    int suggest_id;
     driv_id_t read_id;
     driv_id_t print_id;
     driv_id_t keyboard_id;
-    ipc_state_t* read_state;
-    ipc_state_t* print_state;
     port_t com_port;
     keyboard_t keyboard;
-    mutex_t print_mutex;
-    cond_t print_cvar;
-    char print_buf[MAX_PRINT_LENGTH];
     char read_buf[READLINE_MAX_LEN];
-    int print_len;
-    int print_index;
 } serial_driver;
+
+struct {
+    mutex_t mutex;
+    cond_t cvar;
+    char buf[MAX_PRINT_LENGTH];
+    int len;
+    int index;
+} printer;
+
+struct {
+    int producer;
+    int consumer;
+    char buf[READLINE_MAX_LEN * 2];
+} r_print = { .producer = 1, .consumer = 0 };
+
+int r_index(int i)
+{
+    return (i + READLINE_MAX_LEN * 2) % (READLINE_MAX_LEN * 2);
+}
 
 #define BAUD_RATE 115200
 
 #define LSB(val) (val & 0xFF)
 #define MSB(val) ((val >> 8) & 0xFF)
+extern void console_set_server(driv_id_t serv);
 
 void write_port(port_t port, reg_t reg, int value)
 {
@@ -84,11 +98,27 @@ char readchar(int scan)
 }
 
 char temp_buffer[READLINE_MAX_LEN + 1];
+
 int send_to_print(int len, char* buf)
 {
-    memcpy(temp_buffer, buf, len);
-    temp_buffer[len] = '\0';
-    lprintf("SERIAL %s", temp_buffer);
+    int i;
+    for (i = 0; i < len; i++) {
+        int next = r_index(r_print.producer + 1);
+        if (next != r_print.consumer) {
+            r_print.buf[r_print.producer] = buf[i];
+            r_print.producer = next;
+        }
+    }
+    return 0;
+}
+
+int poll_from_print(char* c)
+{
+    if (r_print.consumer != r_print.producer) {
+        *c = r_print.buf[r_print.consumer];
+        r_print.consumer = r_index(r_print.consumer + 1);
+        return 1;
+    }
     return 0;
 }
 
@@ -103,6 +133,11 @@ void* interrupt_loop(void* arg)
     if (udriv_register(serial_driver.keyboard_id,
                        serial_driver.com_port + REG_LINE_CNTL, 1) < 0) {
         printf("cannot register for com driver");
+        return (void*)-1;
+    }
+    serial_driver.suggest_id = udriv_register(UDR_ASSIGN_REQUEST, 0, 0);
+    if (serial_driver.suggest_id < 0) {
+        printf("cannot register for print suggestion server");
         return (void*)-1;
     }
 
@@ -122,18 +157,42 @@ void* interrupt_loop(void* arg)
             printf("user keyboard interrupt handler failed to get scancode");
             return (void*)-1;
         }
-        if (driv_recv != serial_driver.keyboard_id) {
+        if (driv_recv == serial_driver.keyboard_id) {
+            int cause;
+            cause = read_port(serial_driver.com_port, REG_INT_ID);
+            // we need causation for rx since we don't want to write
+            // characters more than once
+            if (cause & IIR_INT_TYPE_RX) {
+                char c = readchar(read_port(serial_driver.com_port, REG_DATA));
+                lprintf("scan %c", c);
+                handle_char(&serial_driver.keyboard, c, send_to_print);
+            }
+        } else if (driv_recv != serial_driver.suggest_id) {
             printf("received interrupt from unexpected source");
             return (void*)-1;
         }
-        int cause = read_port(serial_driver.com_port, REG_INT_ID);
-        if (cause & IIR_INT_TYPE_TX) {
-            // we should print
-        }
-        if (cause & IIR_INT_TYPE_RX) {
-            char c = readchar(read_port(serial_driver.com_port, REG_DATA));
-            lprintf("scan %c", c);
-            handle_char(&serial_driver.keyboard, c, send_to_print);
+        int state = read_port(serial_driver.com_port, REG_LINE_STAT);
+        // but for prints who chares. If there is space, print the thing
+        if (state & LSR_TX_EMPTY) {
+            mutex_lock(&printer.mutex);
+            // if we can print something from the print buffer
+            if (printer.index < printer.len) {
+                lprintf("want to print %d", printer.index);
+                int to_print = printer.buf[printer.index];
+                write_port(serial_driver.com_port, REG_DATA, to_print);
+                printer.index++;
+                if (printer.index == printer.len) {
+                    cond_signal(&printer.cvar);
+                }
+                // otherwise, lets try the interrupt print buffer
+            } else {
+                lprintf("want to poll");
+                char c;
+                if (poll_from_print(&c)) {
+                    write_port(serial_driver.com_port, REG_DATA, c);
+                }
+            }
+            mutex_unlock(&printer.mutex);
         }
     }
     return NULL;
@@ -168,6 +227,20 @@ int setup_serial_driver(char* com)
     return 0;
 }
 
+void print_message(int len)
+{
+    mutex_lock(&printer.mutex);
+    printer.len = len;
+    printer.index = 0;
+    lprintf("printing %d", len);
+    // we should suggest that the print driver prints
+    udriv_send(serial_driver.suggest_id, 0, 0);
+    lprintf("printing suggest %d", len);
+    cond_wait(&printer.cvar, &printer.mutex);
+    mutex_unlock(&printer.mutex);
+    lprintf("printing end %d", len);
+}
+
 void* print_server(void* arg)
 {
     ipc_state_t* state;
@@ -178,19 +251,20 @@ void* print_server(void* arg)
     while (1) {
         // receive a readline request
         driv_id_t sender;
-        int len = ipc_server_recv(state, &sender, serial_driver.print_buf,
+        int len = ipc_server_recv(state, &sender, printer.buf,
                                   MAX_PRINT_LENGTH, 1);
         if (len < 0) {
             printf("could not receive request, exiting...\n");
             ipc_server_cancel(state);
             return (void*)-1;
         }
+        lprintf("attempting to print");
+        print_message(len);
         // print the message
     }
     return (void*)-1;
     // Should never get here
 }
-
 
 void respond_failure(driv_id_t sender)
 {
@@ -199,14 +273,15 @@ void respond_failure(driv_id_t sender)
     udriv_send(sender, req.raw, sizeof(request_msg_t));
 }
 
-
-int readline_server() {
+int readline_server()
+{
 
     ipc_state_t* state;
     if (ipc_server_init(&state, serial_driver.read_id) < 0) {
         printf("could not register for readline server, exiting...\n");
         return -1;
     }
+
     while (1) {
         // receive a readline request
         driv_id_t sender;
@@ -233,7 +308,6 @@ int readline_server() {
     }
     // Should never get here
     return -1;
-
 }
 
 int main(int argc, char** argv)
@@ -245,6 +319,7 @@ int main(int argc, char** argv)
             printf("serial readline server could not be started\n");
             return -1;
         } else {
+            lprintf("readline on %d", pid);
             return 0;
         }
     }
@@ -253,14 +328,15 @@ int main(int argc, char** argv)
     }
 
     thr_init(4096);
-    mutex_init(&serial_driver.print_mutex);
+    mutex_init(&printer.mutex);
+    cond_init(&printer.cvar);
     init_keyboard(&serial_driver.keyboard);
 
     if (setup_serial_driver(argv[1]) < 0) {
         return -1;
     }
 
-    thr_create(interrupt_loop, NULL);
-    thr_create(print_server, NULL);
+    lprintf("loop on %d", thr_create(interrupt_loop, NULL));
+    lprintf("print on %d", thr_create(print_server, NULL));
     return readline_server();
 }
