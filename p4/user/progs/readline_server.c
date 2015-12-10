@@ -22,7 +22,7 @@
 /** @brief The size of the buffer that readline uses to store characters */
 #define KEYBOARD_BUFFER_SIZE (READLINE_MAX_LEN * 2)
 /** @brief The maximum number of characters a call to readline can take */
-#define READLINE_MAX_LEN (80*(24-1))
+#define READLINE_MAX_LEN (80 * (24 - 1))
 
 #define BUF_LEN 1024
 #define COMMAND_CANCEL 1
@@ -48,11 +48,15 @@ struct {
     char buffer[KEYBOARD_BUFFER_SIZE];
     mutex_t mutex;
     cond_t cvar;
-} keyboard = {0};
+} keyboard = { 0 };
 
-void send_to_print(char *buf, int len)
+void send_to_print(char* buf, int len)
 {
-    return; // TODO: write this
+    // TODO: less crappy
+    int i = 0;
+    for (i = 0; i < len; i++) {
+        printf("%c", buf[i]);
+    }
 }
 
 /** @brief The previous index in the circular keyboard buffer
@@ -83,6 +87,17 @@ static int is_readline()
     return (keyboard.user_buf_len != 0);
 }
 
+static int readline_ready()
+{
+    if (!is_readline())
+        return 0;
+    if (keyboard.num_newlines > 0)
+        return 1;
+    if (keyboard.num_chars >= keyboard.user_buf_len)
+        return 1;
+    return 0;
+}
+
 /** @brief Processes a single scancode into a character
  *
  *  @param scancode Scancode to be processed
@@ -92,7 +107,7 @@ static int readchar(uint8_t scancode)
 {
     kh_type key = process_scancode(scancode);
     // not a real keypress
-    if ((!KH_HASDATA(key))||(!KH_ISMAKE(key))) {
+    if ((!KH_HASDATA(key)) || (!KH_ISMAKE(key))) {
         return -1;
     }
     //it's a real character, return it!
@@ -111,7 +126,50 @@ static void print_buffer()
     }
 }
 
-void do_readline(char c)
+void backspace_char(char c)
+{
+    // If there are characters to delete
+    if (keyboard.num_chars == 0) {
+        return;
+    }
+    if (keyboard.buffer[prev_index(keyboard.producer)] == '\n') {
+        return;
+    }
+    atomic_dec(&keyboard.num_chars);
+    keyboard.producer = prev_index(keyboard.producer);
+    // Echo deletion to console
+    if (is_readline()) {
+        send_to_print(&c, 1);
+    }
+}
+
+void regular_char(char c)
+{
+    // ignore carriage return characters since they are hard to deal with
+    if (c == '\r') {
+        return;
+    }
+    // If we aren't about to run into the consumer
+    if (next_index(keyboard.producer) != keyboard.consumer) {
+        // Add character to buffer
+        keyboard.buffer[keyboard.producer] = c;
+        keyboard.producer = next_index(keyboard.producer);
+        atomic_inc(&keyboard.num_chars);
+        // Echo character to console
+        if (is_readline()) {
+            send_to_print(&c, 1);
+        }
+    } else {
+        //ignore the character, we don't have room
+        //the program is more than KEYBOARD_BUFFER_SIZE characters
+        //behind so it's probably okay.
+    }
+    if (c == '\n') {
+        atomic_inc(&keyboard.num_newlines);
+    }
+}
+
+void add_readline_char(char c)
 {
     // Echo characters which were placed in buffer before readline call
     if (keyboard.new_readline) {
@@ -120,86 +178,54 @@ void do_readline(char c)
     }
     // Backspace character
     if (c == '\b') {
-        // If there are characters to delete
-        if ((keyboard.num_chars != 0)&&
-            (keyboard.buffer[prev_index(keyboard.producer)] != '\n')) {
-            // Delete previous character from buffer
-            atomic_dec(&keyboard.num_chars);
-            keyboard.producer = prev_index(keyboard.producer);
-            // Echo deletion to console
-            if (is_readline()){
-                send_to_print(&c, 1);
-            }
-        }
-    }
-    // Standard character (ignore carriage return)
-    else if (c != '\r') {
-        // If we aren't about to run into the consumer
-        if (next_index(keyboard.producer) != keyboard.consumer) {
-            // Add character to buffer
-            keyboard.buffer[keyboard.producer] = c;
-            keyboard.producer = next_index(keyboard.producer);
-            atomic_inc(&keyboard.num_chars);
-            // Echo character to console
-            if (is_readline()){
-                send_to_print(&c, 1);
-            }
-        } else {
-            //ignore the character, we don't have room
-            //the program is more than KEYBOARD_BUFFER_SIZE characters
-            //behind so it's probably okay.
-        }
-        if (c == '\n') {
-            atomic_inc(&keyboard.num_newlines);
-        }
+        backspace_char(c);
+    } else {
+        regular_char(c);
     }
     // Signal waiting readline thread if sufficient chars or newline
     mutex_lock(&keyboard.mutex);
-    if (is_readline()) {
-        if ((keyboard.num_chars >= keyboard.user_buf_len)||
-            (keyboard.num_newlines > 0)) {
-            keyboard.user_buf_len = 0;
-            cond_signal(&keyboard.cvar);
-        }
+    if (readline_ready()) {
+        keyboard.user_buf_len = 0;
+        cond_signal(&keyboard.cvar);
     }
     mutex_unlock(&keyboard.mutex);
 }
 
-void *interrupt_loop(void *arg)
+void* interrupt_loop(void* arg)
 {
     driv_id_t driv_recv;
     message_t scancode;
     unsigned int size;
-    
+
     // register for keyboard driver
     if (udriv_register(UDR_KEYBOARD, KEYBOARD_PORT, 1) < 0) {
         lprintf("cannot register for keyboard driver");
-        return (void *)-1;
+        return (void*)-1;
     }
-    
+
     while (true) {
         // get scancode
         if (udriv_wait(&driv_recv, &scancode, &size) < 0) {
             lprintf("user keyboard interrupt handler failed to get scancode");
-            return (void *)-1;
+            return (void*)-1;
         }
         if (driv_recv != UDR_KEYBOARD) {
             lprintf("received interrupt from unexpected source");
-            return (void *)-1;
+            return (void*)-1;
         }
         int c = readchar((uint8_t)scancode);
         if (c != -1) {
-            do_readline((char)c);
+            add_readline_char((char)c);
         }
     }
     return NULL;
 }
 
-int handle_user_request(char *buf, int len)
+int handle_user_request(char* buf, int len)
 {
     int echo = 0;
     mutex_lock(&keyboard.mutex);
-    if ((keyboard.num_chars < len)&&(keyboard.num_newlines == 0)) {
+    if ((keyboard.num_chars < len) && (keyboard.num_newlines == 0)) {
         keyboard.user_buf_len = len;
         keyboard.new_readline = 1;
         // deschedule until a new line is available
@@ -234,8 +260,8 @@ int handle_user_request(char *buf, int len)
     return i;
 }
 
-
-int main() {
+int main()
+{
 
     int pid;
     if ((pid = fork()) != 0) {
@@ -247,12 +273,12 @@ int main() {
             return 0;
         }
     }
-    
+
     thr_init(4096);
-    
+
     mutex_init(&keyboard.mutex);
     cond_init(&keyboard.cvar);
-    
+
     // create readline user request thread
     thr_create(interrupt_loop, NULL);
 
@@ -262,7 +288,7 @@ int main() {
         return -1;
     }
 
-    while (true) {
+    while (1) {
         // receive a readline request
         driv_id_t sender;
         int len;
@@ -271,20 +297,17 @@ int main() {
             ipc_server_cancel(server_st);
             return -1;
         }
-        
         // request is too large
         if (len > READLINE_MAX_LEN) {
             request_msg_t req;
             req.cmd = COMMAND_CANCEL;
             ipc_server_send_i32(server_st, sender, req.raw);
+            continue;
         }
-        
         // process request
-        else {
-            char buf[READLINE_MAX_LEN];
-            int msg_len = handle_user_request((char*)&buf, len);
-            ipc_server_send_msg(server_st, sender, &buf, msg_len);
-        }
+        char buf[READLINE_MAX_LEN];
+        int msg_len = handle_user_request((char*)&buf, len);
+        ipc_server_send_msg(server_st, sender, &buf, msg_len);
     }
     // Should never get here
     return -1;
