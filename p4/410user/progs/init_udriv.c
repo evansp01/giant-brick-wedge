@@ -12,18 +12,14 @@
 #include <udriv_registry.h>
 #include <assert.h>
 
-#define NSHELLS 3
+#define NSHELLS 1
 driv_id_t shell_readlines[NSHELLS] = { 
-    UDR_READLINE_SERVER,
-    UDR_COM1_READLINE_SERVER,
-    UDR_COM2_READLINE_SERVER,
+    UDR_READLINE_SERVER
 };
 driv_id_t shell_prints[NSHELLS] = {
-    0, // indicates to the print wrapper to go through sys_print
-    UDR_COM1_PRINT_SERVER,
-    UDR_COM2_PRINT_SERVER,
+    0
 };
-int shell_tids[NSHELLS] = { 0, 0, 0 };
+int shell_tids[NSHELLS] = { 0 };
 
 extern void readline_set_server(driv_id_t serv);
 extern void console_set_server(driv_id_t serv);
@@ -58,8 +54,8 @@ int daemon_create(char *server_prog, char* arg, driv_id_t server_id)
 int daemon_init() {
     // system cannot proceed without these core resources
     assert(daemon_create("readline_server", NULL, UDR_READLINE_SERVER) >= 0);
-    assert(daemon_create("serial_server", "COM1", UDR_COM1_READLINE_SERVER) >= 0);
-    assert(daemon_create("serial_server", "COM2", UDR_COM2_READLINE_SERVER) >= 0);
+    //assert(daemon_create("serial_server", "COM1", UDR_COM1_READLINE_SERVER) >= 0);
+    //assert(daemon_create("serial_server", "COM2", UDR_COM2_READLINE_SERVER) >= 0);
 
     return 0;
 }

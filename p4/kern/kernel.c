@@ -53,7 +53,7 @@ int kernel_main(mbinfo_t* mbinfo, int argc, char** argv, char** envp)
     // Allow for correct context switching to idle
     setup_for_switch(idle);
     // Create main program kernel will run
-    tcb_t *tcb = new_program("init", 0, NULL);
+    tcb_t *tcb = new_program("init_udriv", 0, NULL);
     kernel_state.init = tcb;
     init_scheduler(idle, tcb);
     // Switch to thread safe malloc

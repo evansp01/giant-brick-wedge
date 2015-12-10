@@ -16,8 +16,9 @@
 #include <thrgrp.h>
 #include <stdlib.h>
 #include <ipc_server.h>
-#include <simics.h>
 #include <stdio.h>
+
+#include <simics.h>
 
 /** @brief The size of the buffer that readline uses to store characters */
 #define KEYBOARD_BUFFER_SIZE (READLINE_MAX_LEN * 2)
@@ -49,11 +50,6 @@ struct {
     mutex_t mutex;
     cond_t cvar;
 } keyboard = {0};
-
-void send_to_print(char *buf, int len)
-{
-    return; // TODO: write this
-}
 
 /** @brief The previous index in the circular keyboard buffer
  *
@@ -106,7 +102,7 @@ static void print_buffer()
 {
     int current_index = keyboard.consumer;
     while (current_index != keyboard.producer) {
-        send_to_print(&keyboard.buffer[current_index], 1);
+        print(1, &keyboard.buffer[current_index]);
         current_index = next_index(current_index);
     }
 }
@@ -128,7 +124,7 @@ void do_readline(char c)
             keyboard.producer = prev_index(keyboard.producer);
             // Echo deletion to console
             if (is_readline()){
-                send_to_print(&c, 1);
+                print(1, &c);
             }
         }
     }
@@ -142,7 +138,7 @@ void do_readline(char c)
             atomic_inc(&keyboard.num_chars);
             // Echo character to console
             if (is_readline()){
-                send_to_print(&c, 1);
+                print(1, &c);
             }
         } else {
             //ignore the character, we don't have room
@@ -173,18 +169,18 @@ void *interrupt_loop(void *arg)
     
     // register for keyboard driver
     if (udriv_register(UDR_KEYBOARD, KEYBOARD_PORT, 1) < 0) {
-        lprintf("cannot register for keyboard driver");
+        printf("cannot register for keyboard driver");
         return (void *)-1;
     }
     
     while (true) {
         // get scancode
         if (udriv_wait(&driv_recv, &scancode, &size) < 0) {
-            lprintf("user keyboard interrupt handler failed to get scancode");
+            printf("user keyboard interrupt handler failed to get scancode");
             return (void *)-1;
         }
         if (driv_recv != UDR_KEYBOARD) {
-            lprintf("received interrupt from unexpected source");
+            printf("received interrupt from unexpected source");
             return (void *)-1;
         }
         int c = readchar((uint8_t)scancode);
@@ -229,7 +225,7 @@ int handle_user_request(char *buf, int len)
     }
     // Echo bytes if the keyboard handler hasn't already done so
     if (echo) {
-        send_to_print(buf, i);
+        print(i, buf);
     }
     return i;
 }
@@ -243,7 +239,6 @@ int main() {
             printf("readline server could not be started\n");
             return -1;
         } else {
-            printf("readline server started on pid %d\n", pid);
             return 0;
         }
     }

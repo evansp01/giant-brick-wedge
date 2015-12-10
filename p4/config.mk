@@ -154,7 +154,7 @@ KERNEL_OBJS +=${KERN_UDRIV}
 # or init unless you are writing your own, and don't do that unless
 # you have a really good reason to do so.
 #
-410REQPROGS = idle init shell
+410REQPROGS = idle init_udriv shell
 
 ###########################################################################
 # Mandatory programs whose source is provided by you

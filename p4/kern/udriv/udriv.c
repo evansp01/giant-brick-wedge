@@ -142,6 +142,7 @@ void init_user_drivers()
         if (device == NULL) {
             panic("Cannot malloc for device at %d", device_table[i].idt_slot);
         }
+        device->device_table_entry = driv;
         // add to interrupt table if device has interrupts
         if (driv->idt_slot != UDR_NO_IDT) {
             // install the idt entry
