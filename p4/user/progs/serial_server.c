@@ -17,14 +17,16 @@
 #include <ns16550.h>
 #include <stdio.h>
 #include <simics.h>
+
 #include "readline_common.h"
+#define MAX_PRINT_LENGTH READLINE_MAX_LEN
+#include "serial_console.h"
 
 #define BUF_LEN 1024
 #define COMMAND_CANCEL 1
 #define MOD_CNTL_MASTER_INT 8
 #define INTERRUPTS \
     (IER_RX_FULL_INT_EN | IER_TX_EMPTY_INT_EN | IER_RECV_LINE_STAT_INT_EN)
-#define MAX_PRINT_LENGTH READLINE_MAX_LEN
 
 typedef union {
     message_t raw;
@@ -45,25 +47,6 @@ struct {
     keyboard_t keyboard;
     char read_buf[READLINE_MAX_LEN];
 } serial_driver;
-
-struct {
-    mutex_t mutex;
-    cond_t cvar;
-    char buf[MAX_PRINT_LENGTH];
-    int len;
-    int index;
-} printer;
-
-struct {
-    int producer;
-    int consumer;
-    char buf[READLINE_MAX_LEN * 2];
-} r_print = { .producer = 1, .consumer = 0 };
-
-int r_index(int i)
-{
-    return (i + READLINE_MAX_LEN * 2) % (READLINE_MAX_LEN * 2);
-}
 
 #define BAUD_RATE 115200
 
@@ -90,38 +73,13 @@ int read_port(port_t port, reg_t reg)
 char readchar(int scan)
 {
     lprintf("scan num %d", scan);
-    if(scan == 13){
+    if (scan == 13) {
         return '\n';
     }
-    if(scan == 8){
+    if (scan == 8) {
         return '\b';
     }
     return scan;
-}
-
-char temp_buffer[READLINE_MAX_LEN + 1];
-
-int send_to_print(int len, char* buf)
-{
-    int i;
-    for (i = 0; i < len; i++) {
-        int next = r_index(r_print.producer + 1);
-        if (next != r_print.consumer) {
-            r_print.buf[r_print.producer] = buf[i];
-            r_print.producer = next;
-        }
-    }
-    return 0;
-}
-
-int poll_from_print(char* c)
-{
-    if (r_print.consumer != r_print.producer) {
-        *c = r_print.buf[r_print.consumer];
-        r_print.consumer = r_index(r_print.consumer + 1);
-        return 1;
-    }
-    return 0;
 }
 
 void* interrupt_loop(void* arg)
@@ -176,25 +134,10 @@ void* interrupt_loop(void* arg)
         int state = read_port(serial_driver.com_port, REG_LINE_STAT);
         // but for prints who chares. If there is space, print the thing
         if (state & LSR_TX_EMPTY) {
-            mutex_lock(&printer.mutex);
-            // if we can print something from the print buffer
-            if (printer.index < printer.len) {
-                lprintf("want to print %d", printer.index);
-                int to_print = printer.buf[printer.index];
-                write_port(serial_driver.com_port, REG_DATA, to_print);
-                printer.index++;
-                if (printer.index == printer.len) {
-                    cond_signal(&printer.cvar);
-                }
-                // otherwise, lets try the interrupt print buffer
-            } else {
-                lprintf("want to poll");
-                char c;
-                if (poll_from_print(&c)) {
-                    write_port(serial_driver.com_port, REG_DATA, c);
-                }
+            char c;
+            if(get_next_char(&c)){
+                write_port(serial_driver.com_port, REG_DATA, c);
             }
-            mutex_unlock(&printer.mutex);
         }
     }
     return NULL;
@@ -229,20 +172,6 @@ int setup_serial_driver(char* com)
     return 0;
 }
 
-void print_message(int len)
-{
-    mutex_lock(&printer.mutex);
-    printer.len = len;
-    printer.index = 0;
-    lprintf("printing %d", len);
-    // we should suggest that the print driver prints
-    udriv_send(serial_driver.suggest_id, 0, 0);
-    lprintf("printing suggest %d", len);
-    cond_wait(&printer.cvar, &printer.mutex);
-    mutex_unlock(&printer.mutex);
-    lprintf("printing end %d", len);
-}
-
 void* print_server(void* arg)
 {
     ipc_state_t* state;
@@ -261,7 +190,7 @@ void* print_server(void* arg)
             return (void*)-1;
         }
         lprintf("attempting to print");
-        print_message(len);
+        print_message(len, serial_driver.suggest_id);
         // print the message
     }
     return (void*)-1;
@@ -330,8 +259,7 @@ int main(int argc, char** argv)
     }
 
     thr_init(4096);
-    mutex_init(&printer.mutex);
-    cond_init(&printer.cvar);
+    init_console();
     init_keyboard(&serial_driver.keyboard);
 
     if (setup_serial_driver(argv[1]) < 0) {
