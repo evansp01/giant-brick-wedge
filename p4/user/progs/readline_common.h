@@ -23,7 +23,7 @@ typedef struct keyboard {
 typedef int (*print_func_t)(int len, char* buf);
 
 void init_keyboard(keyboard_t *keyboard);
-void handle_scancode(keyboard_t* keyboard, uint8_t scancode, print_func_t pf);
+void handle_char(keyboard_t* keyboard, char c, print_func_t pf);
 int handle_request(keyboard_t* keyboard, char* buf, int len, print_func_t pf);
 
 /* This is terrible style, but the build system leaves us will few choices

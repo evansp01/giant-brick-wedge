@@ -32,6 +32,22 @@ typedef union {
 keyboard_t keyboard;
 
 
+/** @brief Processes a single scancode into a character
+ *
+ *  @param scancode Scancode to be processed
+ *  @return processed character on success, -1 on failure
+ *  */
+int readchar(uint8_t scancode)
+{
+    kh_type key = process_scancode(scancode);
+    // not a real keypress
+    if ((!KH_HASDATA(key)) || (!KH_ISMAKE(key))) {
+        return -1;
+    }
+    //it's a real character, return it!
+    return KH_GETCHAR(key);
+}
+
 void* interrupt_loop(void* arg)
 {
     driv_id_t driv_recv;
@@ -54,7 +70,10 @@ void* interrupt_loop(void* arg)
             printf("received interrupt from unexpected source");
             return (void*)-1;
         }
-        handle_scancode(&keyboard, (uint8_t)scancode, print);
+        int c = readchar((uint8_t)scancode);
+        if (c != -1) {
+            handle_char(&keyboard, c, print);
+        }
     }
     return NULL;
 }

@@ -60,36 +60,18 @@ static int readline_ready(keyboard_t* keyboard)
     return 0;
 }
 
-/** @brief Processes a single scancode into a character
- *
- *  @param scancode Scancode to be processed
- *  @return processed character on success, -1 on failure
- *  */
-static int readchar(uint8_t scancode)
-{
-    kh_type key = process_scancode(scancode);
-    // not a real keypress
-    if ((!KH_HASDATA(key)) || (!KH_ISMAKE(key))) {
-        return -1;
-    }
-    //it's a real character, return it!
-    return KH_GETCHAR(key);
-}
+
 
 /** @brief Prints the current readline buffer
  *  @return void
  *  */
 static void print_buffer(keyboard_t* keyboard, print_func_t pf)
 {
-    int index = 0;
-    char buffer[READLINE_MAX_LEN];
     int current_index = keyboard->consumer;
     while (current_index != keyboard->producer) {
-        buffer[index] = keyboard->buffer[current_index];
+        pf(1, &keyboard->buffer[current_index]);
         current_index = next_index(current_index);
-        index++;
     }
-    pf(index, buffer);
 }
 
 void backspace_char(keyboard_t* keyboard, char c, print_func_t pf)
@@ -135,12 +117,8 @@ void regular_char(keyboard_t* keyboard, char c, print_func_t pf)
     }
 }
 
-void handle_scancode(keyboard_t* keyboard, uint8_t scan, print_func_t pf)
+void handle_char(keyboard_t* keyboard, char c, print_func_t pf)
 {
-    int c = readchar((uint8_t)scan);
-    if(c == -1){
-        return;
-    }
     // Echo characters which were placed in buffer before readline call
     if (keyboard->new_readline) {
         print_buffer(keyboard, pf);

@@ -64,12 +64,21 @@ int read_port(port_t port, reg_t reg)
     return val;
 }
 
+char readchar(int scan) {
+    // in case it starts acting up again
+    //if(scan == '&')
+    //    return '\b';
+    //if(scan == '+')
+    //    return '\n';
+    return scan;
+}
+
+char temp_buffer[READLINE_MAX_LEN + 1];
 int send_to_print(int len, char* buf)
 {
-    char buf2[READLINE_MAX_LEN + 1];
-    memcpy(buf2, buf, len);
-    buf2[len] = '\0';
-    lprintf("SERIAL %s", buf2);
+    memcpy(temp_buffer, buf, len);
+    temp_buffer[len] = '\0';
+    lprintf("SERIAL %s", temp_buffer);
     return 0;
 }
 
@@ -97,18 +106,26 @@ void* interrupt_loop(void* arg)
     write_port(serial_driver.com_port, REG_INT_EN, INTERRUPTS);
     write_port(serial_driver.com_port, REG_MOD_CNTL, MOD_CNTL_MASTER_INT);
 
-    while (true) {
+    while (1) {
         // get scancode
         if (udriv_wait(&driv_recv, &scancode, &size) < 0) {
             printf("user keyboard interrupt handler failed to get scancode");
             return (void*)-1;
         }
-        lprintf("got an interrupt partayyyyyy");
         if (driv_recv != serial_driver.keyboard_id) {
             printf("received interrupt from unexpected source");
             return (void*)-1;
         }
-        handle_scancode(&serial_driver.keyboard, (uint8_t)scancode, send_to_print);
+        int cause = read_port(serial_driver.com_port, REG_INT_ID);
+        if(cause & IIR_INT_TYPE_TX){
+            // we should print
+        }
+        if(cause & IIR_INT_TYPE_RX) {
+            char c = readchar(read_port(serial_driver.com_port, REG_DATA));
+            lprintf("scan %c", c);
+            handle_char(&serial_driver.keyboard, c, send_to_print);
+        }
+
     }
     return NULL;
 }
