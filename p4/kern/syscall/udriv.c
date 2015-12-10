@@ -57,9 +57,13 @@ int claim_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
     }
     mutex_lock(&device->mutex);
     if (device->owner != NULL) {
-        // someone beat us to ownership
-        mutex_unlock(&device->mutex);
-        return -1;
+        if (device->owner != tcb) {
+            // someone beat us to ownership
+            mutex_unlock(&device->mutex);
+            return -1;
+        } else {
+            mutex_unlock(&device->mutex);
+        }
     } else {
         // lock in the current thread as the owner
         device->owner = tcb;

@@ -32,7 +32,6 @@ typedef union {
 static keyboard_t keyboard;
 static char readline_buf[READLINE_MAX_LEN];
 
-
 /** @brief Processes a single scancode into a character
  *
  *  @param scancode Scancode to be processed

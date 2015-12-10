@@ -1,6 +1,9 @@
-1. print server
-2. serial server
-3. restore udriv_init
+1. serial server
+2. restore udriv_init
+3. udriv_mmap + print server
 4. initialize print server
-5. udriv_mmap
-6. test servers
+5. write more test servers
+6. documentation + README
+
+need to maintain list of ports per device
+need to check list of ports when doing inb or outb
