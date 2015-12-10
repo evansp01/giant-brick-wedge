@@ -28,6 +28,11 @@
 
 #define BUF_LEN 1024
 #define COMMAND_CANCEL 1
+#define NUM_PORTS 8
+
+#define BAUD_RATE 115200
+#define LSB(val) GET_BYTE(val, 0)
+#define MSB(val) GET_BYTE(val, 1)
 
 typedef struct {
     driv_id_t device;
@@ -48,15 +53,10 @@ struct {
 } keyboard = { 0 };
 
 
-#define BAUD_RATE 115200
-
-#define LSB(val) GET_BYTE(val, 0)
-#define MSB(val) GET_BYTE(val, 1)
-
-
 void write_port(int port, reg_t reg, unsigned char value)
 {
-    udriv_outb(port + reg, value);
+    int res = udriv_outb(port + reg, value);
+    lprintf("udriv_outb res: %d", res);
 }
 
 int read_port(int port, reg_t reg)
@@ -107,10 +107,14 @@ void* interrupt_loop(void* args)
     }
     
     // register for serial driver
-    if (udriv_register(device, port, 1) < 0) {
-        printf("cannot register for serial driver");
-        return (void *)-1;
+    int offset;
+    for (offset = 0; offset < NUM_PORTS; offset++) {
+        if (udriv_register(device, port+offset, 1) < 0) {
+            printf("cannot register for serial driver");
+            return (void *)-1;
+        }
     }
+    
     // configure serial port
     setup_serial_driver(port, 0); // TODO: flags?
     

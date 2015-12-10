@@ -37,7 +37,8 @@ int valid_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
         for (i = 0; i < driv->port_regions_cnt; i++) {
             const udrv_region_t* port_region = &driv->port_regions[i];
             // in_port is valid for the device
-            if (port_region->base == in_port) {
+            if ((in_port >= port_region->base)&&
+                (in_port < (port_region->base + port_region->len))) {
                 goto check_owner;
             }
         }
@@ -47,9 +48,13 @@ int valid_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
 check_owner:
     mutex_lock(&device->mutex);
     if (device->owner != NULL) {
-        // someone beat us to ownership
-        mutex_unlock(&device->mutex);
-        return -1;
+        if (device->owner != tcb) {
+            // someone beat us to ownership
+            mutex_unlock(&device->mutex);
+            return -1;
+        } else {
+            mutex_unlock(&device->mutex);
+        }
     } else {
         // lock in the current thread as the owner
         device->owner = tcb;
