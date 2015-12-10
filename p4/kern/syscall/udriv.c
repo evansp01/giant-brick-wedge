@@ -16,13 +16,23 @@
 #include <scheduler.h>
 #include <assert.h>
 
+int can_access(const udrv_region_t* port_region, unsigned int port)
+{
+    unsigned int base = port_region->base;
+    unsigned int len = port_region->len;
+    if (base <= port && port <= base + len) {
+        return 1;
+    }
+    return 0;
+}
+
 /** @brief Check if the arguments for registering a hardware device are valid
  *  @param device Pointer to device entry
  *  @param in_port Port address if bytes are required
  *  @param in_bytes Number of bytes requested from port
  *  @return 0 on success, an integer less than 0 on failure
  */
-int valid_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
+int claim_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
                  unsigned int in_bytes)
 {
     // in_bytes must be 0 or 1 for a hardware device
@@ -37,14 +47,14 @@ int valid_hw_drv(tcb_t* tcb, devserv_t* device, unsigned int in_port,
         for (i = 0; i < driv->port_regions_cnt; i++) {
             const udrv_region_t* port_region = &driv->port_regions[i];
             // in_port is valid for the device
-            if (port_region->base == in_port) {
-                goto check_owner;
+            if (can_access(port_region, in_port)) {
+                break;
             }
         }
-        // in_port is invalid for the given driver
-        return -1;
+        if (i == driv->port_regions_cnt) {
+            return -1;
+        }
     }
-check_owner:
     mutex_lock(&device->mutex);
     if (device->owner != NULL) {
         // someone beat us to ownership
@@ -175,7 +185,7 @@ void udriv_register_syscall(ureg_t state)
         // device not in the device table
         if (device == NULL) {
             state.eax = -1;
-        } else if (valid_hw_drv(tcb, device, args.in_port, args.in_bytes) < 0) {
+        } else if (claim_hw_drv(tcb, device, args.in_port, args.in_bytes) < 0) {
             state.eax = -1;
         } else {
             register_hw_drv(device, tcb, args.in_port, args.in_bytes);
@@ -328,7 +338,7 @@ int udriv_wait(tcb_t* tcb, driv_id_t* driv_recv, message_t* msg_recv,
 int has_interrupts(tcb_t* tcb)
 {
     // no interrupts if the list of devices/servers registered is empty
-    devserv_t *devserv;
+    devserv_t* devserv;
     if (Q_IS_EMPTY(&tcb->devserv)) {
         return 0;
     }
@@ -406,22 +416,23 @@ return_fail:
  *  @param port Port that needs to be validated
  *  @return 0 if the thread has permissions, an integer less than 0 if not
  */
-int check_port_permissions(tcb_t *tcb, unsigned int port)
+int check_port_permissions(tcb_t* tcb, unsigned int port)
 {
     devserv_t* devserv;
     Q_FOREACH(devserv, &tcb->devserv, tcb_link)
     {
         // only hardware drivers can access ports
-        if (devserv->driver_id < UDR_MAX_HW_DEV) {
-            const dev_spec_t* dev = devserv->device_table_entry;
-            assert(dev != NULL); // all device tables entries should have this
-            int i;
-            for (i = 0; i < dev->port_regions_cnt; i++) {
-                const udrv_region_t* port_region = &dev->port_regions[i];
-                // in_port is valid for the device
-                if (port_region->base == port) {
-                    return 0;
-                }
+        if (devserv->driver_id >= UDR_MAX_HW_DEV) {
+            continue;
+        }
+        const dev_spec_t* dev = devserv->device_table_entry;
+        assert(dev != NULL); // all device tables entries should have this
+        int i;
+        for (i = 0; i < dev->port_regions_cnt; i++) {
+            const udrv_region_t* port_region = &dev->port_regions[i];
+            // in_port is valid for the device
+            if (can_access(port_region, port)) {
+                return 0;
             }
         }
     }
@@ -436,36 +447,36 @@ void udriv_inb_syscall(ureg_t state)
 {
     struct {
         unsigned int port;
-        unsigned char *val;
+        unsigned char* val;
     } args;
-    
+
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+    ppd_t* ppd = tcb->process->directory;
+    if (vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0) {
         goto return_fail;
     }
     mutex_lock(&ppd->lock);
     if (args.val != NULL) {
-        if(!vm_user_can_write(ppd, args.val, sizeof(unsigned char))){
-            goto return_fail_unlock;
+        if (!vm_user_can_write(ppd, args.val, sizeof(unsigned char))) {
+            mutex_unlock(&ppd->lock);
+            goto return_fail;
         }
     }
+    mutex_unlock(&ppd->lock);
     if (check_port_permissions(tcb, args.port) < 0) {
         goto return_fail;
     }
-    
+
     uint8_t in = inb(args.port);
     if (args.val != NULL) {
         if (vm_write_locked(ppd, &in, (uint32_t)args.val,
-            sizeof(unsigned char)) < 0) {
+                            sizeof(unsigned char)) < 0) {
             goto return_fail;
         }
     }
     state.eax = 0;
     return;
-    
-return_fail_unlock:
-    mutex_unlock(&ppd->lock);
+
 return_fail:
     state.eax = -1;
     return;
@@ -481,21 +492,21 @@ void udriv_outb_syscall(ureg_t state)
         unsigned int port;
         unsigned char val;
     } args;
-    
+
     tcb_t* tcb = get_tcb();
-    ppd_t *ppd = tcb->process->directory;
-    if(vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0){
+    ppd_t* ppd = tcb->process->directory;
+    if (vm_read_locked(ppd, &args, state.esi, sizeof(args)) < 0) {
         goto return_fail;
     }
     if (check_port_permissions(tcb, args.port) < 0) {
         goto return_fail;
     }
-    
+
     outb(args.port, args.val);
-    
+
     state.eax = 0;
     return;
-    
+
 return_fail:
     state.eax = -1;
     return;
