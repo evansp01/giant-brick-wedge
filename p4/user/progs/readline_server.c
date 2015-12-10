@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <ipc_server.h>
 #include <stdio.h>
-
 #include <simics.h>
 
 /** @brief The size of the buffer that readline uses to store characters */
