@@ -12,18 +12,14 @@
 #include <udriv_registry.h>
 #include <assert.h>
 
-#define NSHELLS 3
+#define NSHELLS 1
 driv_id_t shell_readlines[NSHELLS] = { 
-    UDR_READLINE_SERVER,
-    UDR_COM1_READLINE_SERVER,
-    UDR_COM2_READLINE_SERVER,
+    UDR_READLINE_SERVER
 };
 driv_id_t shell_prints[NSHELLS] = {
-    0, // indicates to the print wrapper to go through sys_print
-    UDR_COM1_PRINT_SERVER,
-    UDR_COM2_PRINT_SERVER,
+    0
 };
-int shell_tids[NSHELLS] = { 0, 0, 0 };
+int shell_tids[NSHELLS] = { 0 };
 
 extern void readline_set_server(driv_id_t serv);
 extern void console_set_server(driv_id_t serv);

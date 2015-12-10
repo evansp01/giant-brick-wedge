@@ -16,8 +16,9 @@
 #include <thrgrp.h>
 #include <stdlib.h>
 #include <ipc_server.h>
-#include <simics.h>
 #include <stdio.h>
+
+#include <simics.h>
 
 /** @brief The size of the buffer that readline uses to store characters */
 #define KEYBOARD_BUFFER_SIZE (READLINE_MAX_LEN * 2)
@@ -121,7 +122,7 @@ static void print_buffer()
 {
     int current_index = keyboard.consumer;
     while (current_index != keyboard.producer) {
-        send_to_print(&keyboard.buffer[current_index], 1);
+        print(1, &keyboard.buffer[current_index]);
         current_index = next_index(current_index);
     }
 }
@@ -182,7 +183,7 @@ void add_readline_char(char c)
     } else {
         regular_char(c);
     }
-    // Signal waiting readline thread if sufficient chars or newline
+   // Signal waiting readline thread if sufficient chars or newline
     mutex_lock(&keyboard.mutex);
     if (readline_ready()) {
         keyboard.user_buf_len = 0;
@@ -199,19 +200,19 @@ void* interrupt_loop(void* arg)
 
     // register for keyboard driver
     if (udriv_register(UDR_KEYBOARD, KEYBOARD_PORT, 1) < 0) {
-        lprintf("cannot register for keyboard driver");
-        return (void*)-1;
+        printf("cannot register for keyboard driver");
+        return (void *)-1;
     }
 
     while (true) {
         // get scancode
         if (udriv_wait(&driv_recv, &scancode, &size) < 0) {
-            lprintf("user keyboard interrupt handler failed to get scancode");
-            return (void*)-1;
+            printf("user keyboard interrupt handler failed to get scancode");
+            return (void *)-1;
         }
         if (driv_recv != UDR_KEYBOARD) {
-            lprintf("received interrupt from unexpected source");
-            return (void*)-1;
+            printf("received interrupt from unexpected source");
+            return (void *)-1;
         }
         int c = readchar((uint8_t)scancode);
         if (c != -1) {
@@ -255,7 +256,7 @@ int handle_user_request(char* buf, int len)
     }
     // Echo bytes if the keyboard handler hasn't already done so
     if (echo) {
-        send_to_print(buf, i);
+        print(i, buf);
     }
     return i;
 }
@@ -269,7 +270,6 @@ int main()
             printf("readline server could not be started\n");
             return -1;
         } else {
-            printf("readline server started on pid %d\n", pid);
             return 0;
         }
     }
@@ -301,7 +301,7 @@ int main()
         if (len > READLINE_MAX_LEN) {
             request_msg_t req;
             req.cmd = COMMAND_CANCEL;
-            ipc_server_send_i32(server_st, sender, req.raw);
+            udriv_send(sender, req.raw, sizeof(request_msg_t));
             continue;
         }
         // process request

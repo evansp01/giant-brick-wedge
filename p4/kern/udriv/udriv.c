@@ -122,8 +122,6 @@ void free_devserv_entry(devserv_t* entry)
     sfree(entry, sizeof(devserv_t));
 }
 
-void keyboard_interrupt();
-
 void add_interrupt_handler(devserv_t* device, const dev_spec_t* driv)
 {
     // install the idt entry
@@ -165,6 +163,7 @@ void init_user_drivers()
         if (device == NULL) {
             panic("Cannot malloc for device at %d", device_table[i].idt_slot);
         }
+        device->device_table_entry = driv;
         // add to interrupt table if device has interrupts
         if (driv->idt_slot != UDR_NO_IDT) {
             add_interrupt_handler(device, driv);
