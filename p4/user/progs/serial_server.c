@@ -85,13 +85,13 @@ char readchar(int scan)
 void* interrupt_loop(void* arg)
 {
     driv_id_t driv_recv;
-    message_t scancode;
+    message_t cause;
     unsigned int size;
 
     // register for keyboard driver
     lprintf("lets register for %d", serial_driver.keyboard_id);
     if (udriv_register(serial_driver.keyboard_id,
-                       serial_driver.com_port + REG_LINE_CNTL, 1) < 0) {
+                       serial_driver.com_port + REG_INT_ID, 1) < 0) {
         printf("cannot register for com driver");
         return (void*)-1;
     }
@@ -113,31 +113,45 @@ void* interrupt_loop(void* arg)
 
     while (1) {
         // get scancode
-        if (udriv_wait(&driv_recv, &scancode, &size) < 0) {
+        if (udriv_wait(&driv_recv, &cause, &size) < 0) {
             printf("user keyboard interrupt handler failed to get scancode");
             return (void*)-1;
         }
         if (driv_recv == serial_driver.keyboard_id) {
-            int cause;
-            cause = read_port(serial_driver.com_port, REG_INT_ID);
             // we need causation for rx since we don't want to write
             // characters more than once
             if (cause & IIR_INT_TYPE_RX) {
                 char c = readchar(read_port(serial_driver.com_port, REG_DATA));
                 lprintf("scan %c", c);
                 handle_char(&serial_driver.keyboard, c, send_to_print);
+                int state = read_port(serial_driver.com_port, REG_LINE_STAT);
+                // but for prints who chares. If there is space, print the thing
+                if (state & LSR_TX_EMPTY) {
+                    char c;
+                    if (get_next_char(&c)) {
+                        write_port(serial_driver.com_port, REG_DATA, c);
+                    }
+                }
             }
-        } else if (driv_recv != serial_driver.suggest_id) {
+            if (cause & IIR_INT_TYPE_TX) {
+                char c;
+                if (get_next_char(&c)) {
+                    write_port(serial_driver.com_port, REG_DATA, c);
+                }
+            }
+        } else if (driv_recv == serial_driver.suggest_id) {
+            lprintf("received suggestion");
+            int state = read_port(serial_driver.com_port, REG_LINE_STAT);
+            // but for prints who chares. If there is space, print the thing
+            if (state & LSR_TX_EMPTY) {
+                char c;
+                if (get_next_char(&c)) {
+                    write_port(serial_driver.com_port, REG_DATA, c);
+                }
+            }
+        } else {
             printf("received interrupt from unexpected source");
             return (void*)-1;
-        }
-        int state = read_port(serial_driver.com_port, REG_LINE_STAT);
-        // but for prints who chares. If there is space, print the thing
-        if (state & LSR_TX_EMPTY) {
-            char c;
-            if(get_next_char(&c)){
-                write_port(serial_driver.com_port, REG_DATA, c);
-            }
         }
     }
     return NULL;
