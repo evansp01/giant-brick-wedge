@@ -51,15 +51,6 @@ struct {
     cond_t cvar;
 } keyboard = { 0 };
 
-void send_to_print(char* buf, int len)
-{
-    // TODO: less crappy
-    int i = 0;
-    for (i = 0; i < len; i++) {
-        printf("%c", buf[i]);
-    }
-}
-
 /** @brief The previous index in the circular keyboard buffer
  *
  *  @param index The index to get the previous index of
@@ -140,7 +131,7 @@ void backspace_char(char c)
     keyboard.producer = prev_index(keyboard.producer);
     // Echo deletion to console
     if (is_readline()) {
-        send_to_print(&c, 1);
+        print(1, &c);
     }
 }
 
@@ -158,7 +149,7 @@ void regular_char(char c)
         atomic_inc(&keyboard.num_chars);
         // Echo character to console
         if (is_readline()) {
-            send_to_print(&c, 1);
+            print(1, &c);
         }
     } else {
         //ignore the character, we don't have room
