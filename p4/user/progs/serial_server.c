@@ -89,11 +89,13 @@ int read_port(port_t port, reg_t reg)
 
 char readchar(int scan)
 {
-    // in case it starts acting up again
-    //if(scan == '&')
-    //    return '\b';
-    //if(scan == '+')
-    //    return '\n';
+    lprintf("scan num %d", scan);
+    if(scan == 13){
+        return '\n';
+    }
+    if(scan == 8){
+        return '\b';
+    }
     return scan;
 }
 
