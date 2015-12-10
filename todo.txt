@@ -4,3 +4,6 @@
 4. initialize print server
 5. write more test servers
 6. documentation + README
+
+need to maintain list of ports per device
+need to check list of ports when doing inb or outb
