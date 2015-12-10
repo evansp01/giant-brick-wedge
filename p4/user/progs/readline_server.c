@@ -271,7 +271,7 @@ int main() {
         if (len > READLINE_MAX_LEN) {
             request_msg_t req;
             req.cmd = COMMAND_CANCEL;
-            ipc_server_send_i32(server_st, sender, req.raw);
+            udriv_send(sender, req.raw, sizeof(request_msg_t));
         }
         
         // process request
