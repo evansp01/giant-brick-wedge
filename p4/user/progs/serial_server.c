@@ -24,6 +24,7 @@
 #define MOD_CNTL_MASTER_INT 8
 #define INTERRUPTS \
     (IER_RX_FULL_INT_EN | IER_TX_EMPTY_INT_EN | IER_RECV_LINE_STAT_INT_EN)
+#define MAX_PRINT_LENGTH READLINE_MAX_LEN
 
 typedef union {
     message_t raw;
@@ -36,11 +37,19 @@ typedef union {
 } request_msg_t;
 
 struct {
-    driv_id_t driver_id;
+    driv_id_t read_id;
+    driv_id_t print_id;
     driv_id_t keyboard_id;
-    ipc_state_t* state;
+    ipc_state_t* read_state;
+    ipc_state_t* print_state;
     port_t com_port;
     keyboard_t keyboard;
+    mutex_t print_mutex;
+    cond_t print_cvar;
+    char print_buf[MAX_PRINT_LENGTH];
+    char read_buf[READLINE_MAX_LEN];
+    int print_len;
+    int print_index;
 } serial_driver;
 
 #define BAUD_RATE 115200
@@ -64,7 +73,8 @@ int read_port(port_t port, reg_t reg)
     return val;
 }
 
-char readchar(int scan) {
+char readchar(int scan)
+{
     // in case it starts acting up again
     //if(scan == '&')
     //    return '\b';
@@ -117,15 +127,14 @@ void* interrupt_loop(void* arg)
             return (void*)-1;
         }
         int cause = read_port(serial_driver.com_port, REG_INT_ID);
-        if(cause & IIR_INT_TYPE_TX){
+        if (cause & IIR_INT_TYPE_TX) {
             // we should print
         }
-        if(cause & IIR_INT_TYPE_RX) {
+        if (cause & IIR_INT_TYPE_RX) {
             char c = readchar(read_port(serial_driver.com_port, REG_DATA));
             lprintf("scan %c", c);
             handle_char(&serial_driver.keyboard, c, send_to_print);
         }
-
     }
     return NULL;
 }
@@ -133,22 +142,98 @@ void* interrupt_loop(void* arg)
 int setup_serial_driver(char* com)
 {
     if (strcmp(com, "COM1") == 0) {
-        serial_driver.driver_id = UDR_COM1_READLINE_SERVER;
+        serial_driver.read_id = UDR_COM1_READLINE_SERVER;
+        serial_driver.print_id = UDR_COM1_PRINT_SERVER;
         serial_driver.keyboard_id = UDR_DEV_COM1;
         serial_driver.com_port = COM1_IO_BASE;
     } else if (strcmp(com, "COM2") == 0) {
-        serial_driver.driver_id = UDR_COM2_READLINE_SERVER;
+        serial_driver.read_id = UDR_COM2_READLINE_SERVER;
+        serial_driver.print_id = UDR_COM2_PRINT_SERVER;
         serial_driver.keyboard_id = UDR_DEV_COM2;
         serial_driver.com_port = COM2_IO_BASE;
+    } else if (strcmp(com, "COM3") == 0) {
+        serial_driver.read_id = UDR_COM3_READLINE_SERVER;
+        serial_driver.print_id = UDR_COM3_PRINT_SERVER;
+        serial_driver.keyboard_id = UDR_DEV_COM3;
+        serial_driver.com_port = COM3_IO_BASE;
+    } else if (strcmp(com, "COM4") == 0) {
+        serial_driver.read_id = UDR_COM4_READLINE_SERVER;
+        serial_driver.print_id = UDR_COM4_PRINT_SERVER;
+        serial_driver.keyboard_id = UDR_DEV_COM4;
+        serial_driver.com_port = COM4_IO_BASE;
     } else {
         printf("Bad com port provided for serial readline server");
         return -1;
     }
-    if (ipc_server_init(&serial_driver.state, serial_driver.driver_id) < 0) {
+    return 0;
+}
+
+void* print_server(void* arg)
+{
+    ipc_state_t* state;
+    if (ipc_server_init(&state, serial_driver.print_id) < 0) {
+        printf("could not register for print server, exiting...\n");
+        return (void*)-1;
+    }
+    while (1) {
+        // receive a readline request
+        driv_id_t sender;
+        int len = ipc_server_recv(state, &sender, serial_driver.print_buf,
+                                  MAX_PRINT_LENGTH, 1);
+        if (len < 0) {
+            printf("could not receive request, exiting...\n");
+            ipc_server_cancel(state);
+            return (void*)-1;
+        }
+        // print the message
+    }
+    return (void*)-1;
+    // Should never get here
+}
+
+
+void respond_failure(driv_id_t sender)
+{
+    request_msg_t req;
+    req.cmd = COMMAND_CANCEL;
+    udriv_send(sender, req.raw, sizeof(request_msg_t));
+}
+
+
+int readline_server() {
+
+    ipc_state_t* state;
+    if (ipc_server_init(&state, serial_driver.read_id) < 0) {
         printf("could not register for readline server, exiting...\n");
         return -1;
     }
-    return 0;
+    while (1) {
+        // receive a readline request
+        driv_id_t sender;
+        int len;
+        int bytes = ipc_server_recv(state, &sender, &len, sizeof(int), 1);
+        if (bytes < 0) {
+            printf("could not receive request, exiting...\n");
+            ipc_server_cancel(state);
+            return -1;
+        }
+        // dude better send us four bytes
+        if (bytes != sizeof(int)) {
+            respond_failure(sender);
+            continue;
+        }
+        int msg_len = handle_request(&serial_driver.keyboard,
+                                     serial_driver.read_buf,
+                                     len, send_to_print);
+        if (msg_len < 0) {
+            respond_failure(sender);
+            continue;
+        }
+        ipc_server_send_msg(state, sender, &serial_driver.read_buf, msg_len);
+    }
+    // Should never get here
+    return -1;
+
 }
 
 int main(int argc, char** argv)
@@ -168,6 +253,7 @@ int main(int argc, char** argv)
     }
 
     thr_init(4096);
+    mutex_init(&serial_driver.print_mutex);
     init_keyboard(&serial_driver.keyboard);
 
     if (setup_serial_driver(argv[1]) < 0) {
@@ -175,26 +261,6 @@ int main(int argc, char** argv)
     }
 
     thr_create(interrupt_loop, NULL);
-
-    while (1) {
-        // receive a readline request
-        driv_id_t sender;
-        int len;
-        if (ipc_server_recv(serial_driver.state, &sender, &len, sizeof(int), true) < 0) {
-            printf("could not receive request, exiting...\n");
-            ipc_server_cancel(serial_driver.state);
-            return -1;
-        }
-        char buf[READLINE_MAX_LEN];
-        int msg_len = handle_request(&serial_driver.keyboard, (char*)&buf, len, send_to_print);
-        if (msg_len < 0) {
-            request_msg_t req;
-            req.cmd = COMMAND_CANCEL;
-            udriv_send(sender, req.raw, sizeof(request_msg_t));
-        } else {
-            ipc_server_send_msg(serial_driver.state, sender, &buf, msg_len);
-        }
-    }
-    // Should never get here
-    return -1;
+    thr_create(print_server, NULL);
+    return readline_server();
 }

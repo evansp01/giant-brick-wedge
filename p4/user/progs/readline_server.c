@@ -29,7 +29,8 @@ typedef union {
     };
 } request_msg_t;
 
-keyboard_t keyboard;
+static keyboard_t keyboard;
+static char readline_buf[READLINE_MAX_LEN];
 
 
 /** @brief Processes a single scancode into a character
@@ -78,6 +79,14 @@ void* interrupt_loop(void* arg)
     return NULL;
 }
 
+void respond_failure(driv_id_t sender)
+{
+    request_msg_t req;
+    req.cmd = COMMAND_CANCEL;
+    udriv_send(sender, req.raw, sizeof(request_msg_t));
+}
+
+
 int main()
 {
 
@@ -108,20 +117,23 @@ int main()
         // receive a readline request
         driv_id_t sender;
         int len;
-        if (ipc_server_recv(server_st, &sender, &len, sizeof(int), true) < 0) {
+        int bytes = ipc_server_recv(server_st, &sender, &len, sizeof(int), 1);
+        if (bytes < 0) {
             printf("could not receive request, exiting...\n");
             ipc_server_cancel(server_st);
             return -1;
         }
-        char buf[READLINE_MAX_LEN];
-        int msg_len = handle_request(&keyboard, (char*)&buf, len, print);
-        if (msg_len < 0) {
-            request_msg_t req;
-            req.cmd = COMMAND_CANCEL;
-            udriv_send(sender, req.raw, sizeof(request_msg_t));
-        } else {
-            ipc_server_send_msg(server_st, sender, &buf, msg_len);
+        // dude better send us four bytes
+        if (bytes != sizeof(int)) {
+            respond_failure(sender);
+            continue;
         }
+        int msg_len = handle_request(&keyboard, readline_buf, len, print);
+        if (msg_len < 0) {
+            respond_failure(sender);
+            continue;
+        }
+        ipc_server_send_msg(server_st, sender, readline_buf, msg_len);
     }
     // Should never get here
     return -1;
