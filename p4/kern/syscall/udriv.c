@@ -16,6 +16,11 @@
 #include <scheduler.h>
 #include <assert.h>
 
+/** @brief Can a device access a give port
+ *  @param port_region The permissions of the device
+ *  @param port The port
+ *  @return a boolean integer
+ **/
 int can_access(const udrv_region_t* port_region, unsigned int port)
 {
     unsigned int base = port_region->base;
