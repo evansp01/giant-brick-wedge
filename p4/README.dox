@@ -1,12 +1,34 @@
 /**
 
-@mainpage 15-410 Project 3
+@mainpage 15-410 Project 4
 
 @author Jonathan Ong (jonathao)
 @author Evan Palmer (esp)
 
-??
+Data Structures
+===============
+We maintain a device/server struct for each device and server. All such entries
+are kept in a global hashtable. In addition, threads keep a list of devices &
+servers that they have registered to. References to the hardware device entries
+are also kept in an interrupt table, which allows a universal handler to queue
+interrupts for all the necessary devices whenever an interrupt occurs on that
+IDT slot.
+
+Reg/dereg
+
+Dealing with interrupts
+
+No need for locks
+
+
+Readline
+========
+
+
+Serial Print
 ============
+
+
 
 
 
