@@ -116,7 +116,7 @@ AUTOSTACK_OBJS = autostack.o
 #
 KERN_SYSCALL = syscall/fork.o syscall/syscall.o syscall/exec.o syscall/swexn.o \
                syscall/halt.o syscall/console_syscalls.o syscall/wait_vanish.o \
-               syscall/readline.o syscall/udriv.o
+               syscall/readline.o
 KERN_COMMON = common/int_hash.o common/malloc_wrappers.o common/console.o \
               common/control_block.o common/get_esp.o common/atomic.o
 KERN_LOCK = lock/mutex.o lock/cond.o
@@ -127,7 +127,7 @@ KERN_SCHEDULER = scheduler/scheduler.o scheduler/switch_asm.o \
 				 scheduler/switch.o scheduler/sleep.o scheduler/timer.o
 KERN_VM = vm/vm_asm.o vm/frame_alloc.o vm/vm.o vm/vm_user.o vm/ppd.o \
 		  vm/page_fault.o
-KERN_UDRIV = udriv/udriv.o
+KERN_UDRIV = udriv/device_drive.o udriv/send_wait.o udriv/registration.o
 
 KERNEL_OBJS = kernel.o
 KERNEL_OBJS +=${KERN_SYSCALL}

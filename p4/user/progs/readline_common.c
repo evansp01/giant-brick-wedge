@@ -1,6 +1,6 @@
-/** @file readline_server.c
+/** @file readline_common.c
  *
- *  @brief Readline server to handle user readline requests
+ *  @brief Common readline functions used in serial and readline drivers
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
@@ -49,6 +49,11 @@ static int is_readline(keyboard_t* keyboard)
     return (keyboard->user_buf_len != 0);
 }
 
+/** @brief Has readline produced a new line for the server to consume
+ *
+ *  @param keyboard The readline keyboard
+ *  @return a boolean integer
+ **/
 static int readline_ready(keyboard_t* keyboard)
 {
     if (!is_readline(keyboard))
@@ -74,6 +79,13 @@ static void print_buffer(keyboard_t* keyboard, print_func_t pf)
     }
 }
 
+/** @brief Handle a backspace character for readline 
+ *
+ *  @param keyboard The keyboard structure used to fufill this request
+ *  @param c The backspace character
+ *  @param pf The function used to echo characters
+ *  @return void
+ **/
 void backspace_char(keyboard_t* keyboard, char c, print_func_t pf)
 {
     // If there are characters to delete
@@ -91,6 +103,13 @@ void backspace_char(keyboard_t* keyboard, char c, print_func_t pf)
     }
 }
 
+/** @brief Handle a normal character for readline 
+ *
+ *  @param keyboard The keyboard structure used to fufill this request
+ *  @param c The character (anything but a backspace)
+ *  @param pf The function used to echo characters
+ *  @return void
+ **/
 void regular_char(keyboard_t* keyboard, char c, print_func_t pf)
 {
     // ignore carriage return characters since they are hard to deal with
@@ -117,6 +136,13 @@ void regular_char(keyboard_t* keyboard, char c, print_func_t pf)
     }
 }
 
+/** @brief Add a character to the current readline request
+ *
+ *  @param keyboard The keyboard structure used to fufill this request
+ *  @param c The character
+ *  @param pf The function used to echo characters
+ *  @return void
+ **/
 void handle_char(keyboard_t* keyboard, char c, print_func_t pf)
 {
     // Echo characters which were placed in buffer before readline call
@@ -139,6 +165,14 @@ void handle_char(keyboard_t* keyboard, char c, print_func_t pf)
     mutex_unlock(&keyboard->mutex);
 }
 
+/** @brief Handles a readline request by filling the user buffer with a line
+ *
+ *  @param keyboard The keyboard structure used to fufill this request
+ *  @param buf The buffer to store the line in
+ *  @param len The length of the line requested
+ *  @param pf The function used to echo characters
+ *  @return -1 on failure, the line length on success
+ **/
 int handle_request(keyboard_t* keyboard, char* buf, int len, print_func_t pf)
 {
     if (len > READLINE_MAX_LEN) {
@@ -181,6 +215,10 @@ int handle_request(keyboard_t* keyboard, char* buf, int len, print_func_t pf)
     return i;
 }
 
+/** @brief Initializes a keyboard structure
+ *  @param keyboard The keyboard structure to initialize
+ *  @return void
+ **/
 void init_keyboard(keyboard_t* keyboard)
 {
     mutex_init(&keyboard->mutex);

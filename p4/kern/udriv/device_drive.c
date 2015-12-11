@@ -122,6 +122,14 @@ void free_devserv_entry(devserv_t* entry)
     sfree(entry, sizeof(devserv_t));
 }
 
+
+/** @brief Adds an interrupt handler to the specified device. Attaching
+ *         the device to a userspace driver
+ *
+ *  @param device The device buffer and handler
+ *  @param driv The device specification
+ *  @return void
+ **/
 void add_interrupt_handler(devserv_t* device, const dev_spec_t* driv)
 {
     // install the idt entry
@@ -145,6 +153,9 @@ void add_interrupt_handler(devserv_t* device, const dev_spec_t* driv)
     device->device_table_entry = driv;
 }
 
+/** @brief Initialize devices which user drivers can register for
+ *  @return void
+ **/
 void init_user_drivers()
 {
     // init global device/server hashtable
@@ -209,6 +220,12 @@ void queue_interrupt(tcb_t* tcb, interrupt_t interrupt)
     enable_interrupts();
 }
 
+/** @brief Handle all device interrutps and making them available to the
+ *         userspace drivers
+ *
+ *  @param state Unused
+ *  @return void
+ **/
 void device_handler(ureg_t state)
 {
     // we are using the ureg struct for device interrupts
