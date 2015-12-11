@@ -49,7 +49,10 @@ IDT_entry* get_idt(int index)
     return (((IDT_entry*)idt_base()) + index);
 }
 
-
+/** @brief Clear the IDT and install fixed entries
+ *
+ *  @return void
+ **/
 void install_idt()
 {
     install_exceptions();
@@ -159,7 +162,6 @@ void set_idt_syscall(void* handler, int index)
 /** @brief Installs a device interrupt handler into the IDT
  *
  *  @param handler Pointer to the handler function
- *  @param type Type of exception
  *  @param index IDT index at which to install handler
  *  @return void
  */

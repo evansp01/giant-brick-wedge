@@ -18,7 +18,6 @@
 #include <ipc_server.h>
 #include <stdio.h>
 #include <simics.h>
-
 #include "readline_common.h"
 
 /** @brief The previous index in the circular keyboard buffer
@@ -64,8 +63,6 @@ static int readline_ready(keyboard_t* keyboard)
         return 1;
     return 0;
 }
-
-
 
 /** @brief Prints the current readline buffer
  *  @return void
@@ -224,4 +221,3 @@ void init_keyboard(keyboard_t* keyboard)
     mutex_init(&keyboard->mutex);
     cond_init(&keyboard->cvar);
 }
-

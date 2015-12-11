@@ -1,6 +1,6 @@
-/** @file udriv.c
+/** @file send_wait.c
  *
- *  @brief Functions to handle udriv syscalls
+ *  @brief Functions to handle udriv send and wait syscalls
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
@@ -60,6 +60,7 @@ return_fail:
 }
 
 /** @brief Wait for an interrupt for the current thread
+ *  @param tcb TCB of the current thread
  *  @param driv_recv Pointer to store driver_id of interrupt
  *  @param msg_recv Pointer to store message received
  *  @param msg_size Pointer to store message size
@@ -180,7 +181,6 @@ return_fail:
     state.eax = -1;
     return;
 }
-
 
 /** @brief The udriv_mmap syscall
  *  @param state The current state in user mode

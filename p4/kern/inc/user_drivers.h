@@ -1,6 +1,14 @@
+/** @file user_drivers.h
+ *
+ *  @brief Interface for user driver related functions
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
 
-#ifndef USER_DRIVERS
-#define USER_DRIVERS
+#ifndef KERN_USER_DRIVERS_H
+#define KERN_USER_DRIVERS_H
 
 #include <variable_queue.h>
 #include <variable_htable.h>
@@ -10,6 +18,7 @@
 #define INTERRUPT_BUFFER_SIZE 512
 #define CONTROL_NO_DEVICE 0
 
+/** @brief Type for an IPC message */
 typedef unsigned long long message_t;
 
 /** @brief The struct for list of devices/servers */
@@ -45,6 +54,7 @@ typedef struct int_control {
     int num_devices;
 } int_control_t;
 
+/** @brief Global interrupt table for devices */
 extern int_control_t interrupt_table[]; 
 
 int assign_driver_id();
@@ -58,4 +68,4 @@ void free_devserv_entry(devserv_t *entry);
 void init_user_drivers();
 void queue_interrupt(struct tcb *tcb, interrupt_t interrupt);
 
-#endif // USER_DRIVERS
+#endif // KERN_USER_DRIVERS_H

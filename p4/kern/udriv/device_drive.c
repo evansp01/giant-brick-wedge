@@ -1,3 +1,12 @@
+/** @file device_drive.c
+ *
+ *  @brief Functions to handle udriv device related functions
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <ureg.h>
 #include <keyhelp.h>
 #include <simics.h>
@@ -16,7 +25,7 @@
 #include <scheduler.h>
 #include <atomic.h>
 
-// table of control entries for IDT entries
+/** @brief  table of control entries for IDT entries */
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
 
 /** @brief Struct for global device/server hashtable and lock */
@@ -25,10 +34,10 @@ typedef struct g_devserv {
     device_hash_t all_devserv;
 } g_devserv_t;
 
-// global hashtable and lock
+/** @brief global hashtable and lock */
 g_devserv_t all_ds;
 
-// counter for kernel assigned driver ids
+/** @brief counter for kernel assigned driver ids */
 int assigned_driver_id;
 
 /** @brief Assigns a driver id
@@ -121,7 +130,6 @@ void free_devserv_entry(devserv_t* entry)
     mutex_destroy(&entry->mutex);
     sfree(entry, sizeof(devserv_t));
 }
-
 
 /** @brief Adds an interrupt handler to the specified device. Attaching
  *         the device to a userspace driver
