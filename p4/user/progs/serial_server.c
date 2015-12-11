@@ -25,8 +25,7 @@
 #define BUF_LEN 1024
 #define COMMAND_CANCEL 1
 #define MOD_CNTL_MASTER_INT 8
-#define INTERRUPTS \
-    (IER_RX_FULL_INT_EN | IER_TX_EMPTY_INT_EN | IER_RECV_LINE_STAT_INT_EN)
+#define INTERRUPTS IER_RX_FULL_INT_EN
 
 typedef union {
     message_t raw;
@@ -57,7 +56,7 @@ extern void console_set_server(driv_id_t serv);
 void write_port(port_t port, reg_t reg, int value)
 {
     if (udriv_outb(port + reg, value) < 0) {
-        lprintf("ut oh");
+        lprintf("udriv_outb syscall failed");
     }
 }
 
@@ -65,14 +64,13 @@ int read_port(port_t port, reg_t reg)
 {
     unsigned char val;
     if (udriv_inb(port + reg, &val) < 0) {
-        lprintf("oh noes");
+        lprintf("udriv_inb syscall failed");
     }
     return val;
 }
 
 char readchar(int scan)
 {
-    lprintf("scan num %d", scan);
     if (scan == 13) {
         return '\n';
     }
@@ -82,16 +80,23 @@ char readchar(int scan)
     return scan;
 }
 
+void print_chars()
+{
+    char c;
+    while (get_next_char(&c)) {
+        write_port(serial_driver.com_port, REG_DATA, c);
+    }
+}
+
 void* interrupt_loop(void* arg)
 {
     driv_id_t driv_recv;
-    message_t cause;
+    message_t scancode;
     unsigned int size;
 
     // register for keyboard driver
-    lprintf("lets register for %d", serial_driver.keyboard_id);
     if (udriv_register(serial_driver.keyboard_id,
-                       serial_driver.com_port + REG_INT_ID, 1) < 0) {
+                       serial_driver.com_port + REG_DATA, 1) < 0) {
         printf("cannot register for com driver");
         return (void*)-1;
     }
@@ -113,42 +118,18 @@ void* interrupt_loop(void* arg)
 
     while (1) {
         // get scancode
-        if (udriv_wait(&driv_recv, &cause, &size) < 0) {
+        if (udriv_wait(&driv_recv, &scancode, &size) < 0) {
             printf("user keyboard interrupt handler failed to get scancode");
             return (void*)-1;
         }
         if (driv_recv == serial_driver.keyboard_id) {
-            // we need causation for rx since we don't want to write
-            // characters more than once
-            if (cause & IIR_INT_TYPE_RX) {
-                char c = readchar(read_port(serial_driver.com_port, REG_DATA));
-                lprintf("scan %c", c);
-                handle_char(&serial_driver.keyboard, c, send_to_print);
-                int state = read_port(serial_driver.com_port, REG_LINE_STAT);
-                // but for prints who chares. If there is space, print the thing
-                if (state & LSR_TX_EMPTY) {
-                    char c;
-                    if (get_next_char(&c)) {
-                        write_port(serial_driver.com_port, REG_DATA, c);
-                    }
-                }
-            }
-            if (cause & IIR_INT_TYPE_TX) {
-                char c;
-                if (get_next_char(&c)) {
-                    write_port(serial_driver.com_port, REG_DATA, c);
-                }
-            }
-        } else if (driv_recv == serial_driver.suggest_id) {
-            lprintf("received suggestion");
-            int state = read_port(serial_driver.com_port, REG_LINE_STAT);
+            char c = readchar(scancode);
+            handle_char(&serial_driver.keyboard, c, send_to_print);
             // but for prints who chares. If there is space, print the thing
-            if (state & LSR_TX_EMPTY) {
-                char c;
-                if (get_next_char(&c)) {
-                    write_port(serial_driver.com_port, REG_DATA, c);
-                }
-            }
+            print_chars();
+        } else if (driv_recv == serial_driver.suggest_id) {
+            // but for prints who chares. If there is space, print the thing
+            print_chars();
         } else {
             printf("received interrupt from unexpected source");
             return (void*)-1;
@@ -203,7 +184,6 @@ void* print_server(void* arg)
             ipc_server_cancel(state);
             return (void*)-1;
         }
-        lprintf("attempting to print");
         print_message(len, serial_driver.suggest_id);
         // print the message
     }
@@ -220,7 +200,6 @@ void respond_failure(driv_id_t sender)
 
 int readline_server()
 {
-
     ipc_state_t* state;
     if (ipc_server_init(&state, serial_driver.read_id) < 0) {
         printf("could not register for readline server, exiting...\n");
@@ -257,14 +236,12 @@ int readline_server()
 
 int main(int argc, char** argv)
 {
-
     int pid;
     if ((pid = fork()) != 0) {
         if (pid < 0) {
             printf("serial readline server could not be started\n");
             return -1;
         } else {
-            lprintf("readline on %d", pid);
             return 0;
         }
     }
@@ -280,7 +257,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    lprintf("loop on %d", thr_create(interrupt_loop, NULL));
-    lprintf("print on %d", thr_create(print_server, NULL));
+    thr_create(interrupt_loop, NULL);
+    thr_create(print_server, NULL);
     return readline_server();
 }

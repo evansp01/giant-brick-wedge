@@ -31,13 +31,10 @@ void print_message(int len, int suggest_id)
     mutex_lock(&printer.mutex);
     printer.len = len;
     printer.index = 0;
-    lprintf("printing %d", len);
     // we should suggest that the print driver prints
     udriv_send(suggest_id, 0, 0);
-    lprintf("printing suggest %d", len);
     cond_wait(&printer.cvar, &printer.mutex);
     mutex_unlock(&printer.mutex);
-    lprintf("printing end %d", len);
 }
 
 int get_print_char(char* c)
@@ -46,7 +43,6 @@ int get_print_char(char* c)
     mutex_lock(&printer.mutex);
     // if we can print something from the print buffer
     if (printer.index < printer.len) {
-        lprintf("want to print %d", printer.index);
         *c = printer.buf[printer.index];
         printer.index++;
         if (printer.index == printer.len) {
