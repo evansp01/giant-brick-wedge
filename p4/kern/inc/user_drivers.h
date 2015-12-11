@@ -18,6 +18,7 @@
 #define INTERRUPT_BUFFER_SIZE 512
 #define CONTROL_NO_DEVICE 0
 
+/** @brief Type for an IPC message */
 typedef unsigned long long message_t;
 
 /** @brief The struct for list of devices/servers */
@@ -53,6 +54,7 @@ typedef struct int_control {
     int num_devices;
 } int_control_t;
 
+/** @brief Global interrupt table for devices */
 extern int_control_t interrupt_table[]; 
 
 int assign_driver_id();

@@ -25,7 +25,7 @@
 #include <scheduler.h>
 #include <atomic.h>
 
-// table of control entries for IDT entries
+/** @brief  table of control entries for IDT entries */
 int_control_t interrupt_table[IDT_ENTS] = { { { 0 } } };
 
 /** @brief Struct for global device/server hashtable and lock */
@@ -34,10 +34,10 @@ typedef struct g_devserv {
     device_hash_t all_devserv;
 } g_devserv_t;
 
-// global hashtable and lock
+/** @brief global hashtable and lock */
 g_devserv_t all_ds;
 
-// counter for kernel assigned driver ids
+/** @brief counter for kernel assigned driver ids */
 int assigned_driver_id;
 
 /** @brief Assigns a driver id

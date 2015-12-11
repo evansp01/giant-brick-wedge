@@ -60,6 +60,7 @@ return_fail:
 }
 
 /** @brief Wait for an interrupt for the current thread
+ *  @param tcb TCB of the current thread
  *  @param driv_recv Pointer to store driver_id of interrupt
  *  @param msg_recv Pointer to store message received
  *  @param msg_size Pointer to store message size

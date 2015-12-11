@@ -32,6 +32,7 @@ int can_access(const udrv_region_t* port_region, unsigned int port)
 }
 
 /** @brief Check if the arguments for registering a hardware device are valid
+ *  @param tcb TCB of current thread
  *  @param device Pointer to device entry
  *  @param in_port Port address if bytes are required
  *  @param in_bytes Number of bytes requested from port
@@ -98,7 +99,7 @@ void register_hw_drv(devserv_t* device, tcb_t* tcb, unsigned int in_port,
 
 /** @brief Creates a device/server and registers it in the global hashtable
  *  @param driver_id Driver ID
- *  @param tcb TCB of current thread
+ *  @param owner TCB of current thread
  *  @return Pointer to the device/server struct
  */
 devserv_t* create_and_register_devserv(int driver_id, tcb_t* owner)
