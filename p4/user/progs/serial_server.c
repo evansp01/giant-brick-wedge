@@ -1,6 +1,6 @@
-/** @file readline_server.c
+/** @file serial_server.c
  *
- *  @brief Readline server to handle user readline requests
+ *  @brief Serial server to handle user readline requests
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
