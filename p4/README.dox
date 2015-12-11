@@ -28,8 +28,21 @@ Readline
 Serial Print
 ============
 
+In our serial driver, we have three threads. One for the readline server, one
+for the print server, and one for the serial driver. The communication
+between the readline server and serial driver is simple because any time the
+serial server has new information for readline, it receives an interrupt, and
+can communicate with readline. The print server, however needs to communicate
+with the serial driver to instruct it to print things at times when it may
+be sleeping.
 
+In order to allow for this, we also register the serial driver as a server. It
+listens for suggestions to wake up from the print server. This allows the print
+server to wake up the serial driver.
 
-
+Additionally, we would like to call print from within the serial driver to echo
+characters from readline, but we cannot use an ipc call due to interference
+from interrupts. We use a circular buffer which is polled by the interrupt loop
+to echo characters.
 
 */
