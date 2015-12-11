@@ -19,6 +19,7 @@
 #define BUF_LEN 1024
 #define COMMAND_CANCEL 1
 
+/** @brief Request message structure */
 typedef union {
     message_t raw;
     struct {
@@ -29,7 +30,9 @@ typedef union {
     };
 } request_msg_t;
 
+/** @brief Keyboard buffer for readline */
 static keyboard_t keyboard;
+/** @brief Buffer to store characters for a readline request */
 static char readline_buf[READLINE_MAX_LEN];
 
 /** @brief Processes a single scancode into a character
@@ -48,6 +51,11 @@ int readchar(uint8_t scancode)
     return KH_GETCHAR(key);
 }
 
+/** @brief Main loop to receive keyboard interrupts
+ *
+ *  @param arg Not used
+ *  @return Does not return
+ **/
 void* interrupt_loop(void* arg)
 {
     driv_id_t driv_recv;
@@ -78,6 +86,11 @@ void* interrupt_loop(void* arg)
     return NULL;
 }
 
+/** @brief Respond to a failed readline request
+ *
+ *  @param sender The id of the sender to respond to
+ *  @return void
+ **/
 void respond_failure(driv_id_t sender)
 {
     request_msg_t req;
@@ -86,6 +99,11 @@ void respond_failure(driv_id_t sender)
 }
 
 
+/** @brief The main loop of the readline server. Listens for requests
+ *         and responds with lines
+ *
+ *  @return Returns -1 on server abort
+ **/
 int main()
 {
 
