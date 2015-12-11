@@ -1,6 +1,14 @@
+/** @file user_drivers.h
+ *
+ *  @brief Interface for user driver related functions
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
 
-#ifndef USER_DRIVERS
-#define USER_DRIVERS
+#ifndef KERN_USER_DRIVERS_H
+#define KERN_USER_DRIVERS_H
 
 #include <variable_queue.h>
 #include <variable_htable.h>
@@ -58,4 +66,4 @@ void free_devserv_entry(devserv_t *entry);
 void init_user_drivers();
 void queue_interrupt(struct tcb *tcb, interrupt_t interrupt);
 
-#endif // USER_DRIVERS
+#endif // KERN_USER_DRIVERS_H

@@ -1,6 +1,6 @@
-/** @file udriv.c
+/** @file registration.c
  *
- *  @brief Functions to handle udriv syscalls
+ *  @brief Functions to handle udriv registration and deregistration syscalls
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
@@ -96,6 +96,11 @@ void register_hw_drv(devserv_t* device, tcb_t* tcb, unsigned int in_port,
     Q_INSERT_FRONT(&tcb->devserv, device, tcb_link);
 }
 
+/** @brief Creates a device/server and registers it in the global hashtable
+ *  @param driver_id Driver ID
+ *  @param tcb TCB of current thread
+ *  @return Pointer to the device/server struct
+ */
 devserv_t* create_and_register_devserv(int driver_id, tcb_t* owner)
 {
     devserv_t* server = create_devserv_entry(driver_id);
@@ -255,7 +260,6 @@ void udriv_deregister_syscall(ureg_t state)
     }
 }
 
-
 /** @brief Checks if the thread has permissions to access the port
  *  @param tcb TCB of the current thread
  *  @param port Port that needs to be validated
@@ -283,8 +287,6 @@ int check_port_permissions(tcb_t* tcb, unsigned int port)
     }
     return -1;
 }
-
-
 
 /** @brief The udriv_inb syscall
  *  @param state The current state in user mode
@@ -358,4 +360,3 @@ return_fail:
     state.eax = -1;
     return;
 }
-

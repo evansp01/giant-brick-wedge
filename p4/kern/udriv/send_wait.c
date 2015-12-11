@@ -1,6 +1,6 @@
-/** @file udriv.c
+/** @file send_wait.c
  *
- *  @brief Functions to handle udriv syscalls
+ *  @brief Functions to handle udriv send and wait syscalls
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
@@ -180,7 +180,6 @@ return_fail:
     state.eax = -1;
     return;
 }
-
 
 /** @brief The udriv_mmap syscall
  *  @param state The current state in user mode

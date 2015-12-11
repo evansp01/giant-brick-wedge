@@ -1,3 +1,12 @@
+/** @file device_drive.c
+ *
+ *  @brief Functions to handle udriv device related functions
+ *
+ *  @author Jonathan Ong (jonathao)
+ *  @author Evan Palmer (esp)
+ *  @bug No known bugs.
+ **/
+
 #include <ureg.h>
 #include <keyhelp.h>
 #include <simics.h>
@@ -121,7 +130,6 @@ void free_devserv_entry(devserv_t* entry)
     mutex_destroy(&entry->mutex);
     sfree(entry, sizeof(devserv_t));
 }
-
 
 /** @brief Adds an interrupt handler to the specified device. Attaching
  *         the device to a userspace driver
