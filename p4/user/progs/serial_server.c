@@ -1,6 +1,6 @@
-/** @file readline_server.c
+/** @file serial_server.c
  *
- *  @brief Readline server to handle user readline requests
+ *  @brief Serial server to handle user readline requests
  *
  *  @author Jonathan Ong (jonathao)
  *  @author Evan Palmer (esp)
@@ -27,6 +27,7 @@
 #define MOD_CNTL_MASTER_INT 8
 #define INTERRUPTS IER_RX_FULL_INT_EN
 
+/** @brief The message type */
 typedef union {
     message_t raw;
     struct {
@@ -37,6 +38,7 @@ typedef union {
     };
 } request_msg_t;
 
+/** @brief A structure containg driver ids for the serial driver */
 struct {
     int suggest_id;
     driv_id_t read_id;
@@ -53,6 +55,11 @@ struct {
 #define MSB(val) ((val >> 8) & 0xFF)
 extern void console_set_server(driv_id_t serv);
 
+/** @brief Write to a port region
+ *  @param port The port to write to
+ *  @param reg The register of the port region
+ *  @param value The value to write
+ **/
 void write_port(port_t port, reg_t reg, int value)
 {
     if (udriv_outb(port + reg, value) < 0) {
@@ -60,6 +67,11 @@ void write_port(port_t port, reg_t reg, int value)
     }
 }
 
+/** @brief A untility function which reads from a port region
+ *  @param port The port region
+ *  @param reg The register of the port region
+ *  @return The value read
+ **/
 int read_port(port_t port, reg_t reg)
 {
     unsigned char val;
@@ -69,17 +81,27 @@ int read_port(port_t port, reg_t reg)
     return val;
 }
 
+#define NEWLINE_SCANCODE 13
+#define BACKSPACE_SCANCODE 8
+/** @brief Turns a scancode from the serial driver into a character. Notably
+ *         converts backspaces and newlines
+ *  @param scan The scancode from the serial driver
+ *  @return char The character read
+ **/
 char readchar(int scan)
 {
-    if (scan == 13) {
+    if (scan == NEWLINE_SCANCODE) {
         return '\n';
     }
-    if (scan == 8) {
+    if (scan == BACKSPACE_SCANCODE) {
         return '\b';
     }
     return scan;
 }
 
+/** @brief Send all available characters to the serial driver
+ *  @return void
+ **/
 void print_chars()
 {
     char c;
@@ -88,6 +110,11 @@ void print_chars()
     }
 }
 
+/** @brief Interrrupt loop for the serial port driver. Accepts characters
+ *         from the serial port, and sends characters to be printed
+ *  @param arg Unused
+ *  @return -1 on failure
+ **/
 void* interrupt_loop(void* arg)
 {
     driv_id_t driv_recv;
@@ -125,10 +152,8 @@ void* interrupt_loop(void* arg)
         if (driv_recv == serial_driver.keyboard_id) {
             char c = readchar(scancode);
             handle_char(&serial_driver.keyboard, c, send_to_print);
-            // but for prints who chares. If there is space, print the thing
             print_chars();
         } else if (driv_recv == serial_driver.suggest_id) {
-            // but for prints who chares. If there is space, print the thing
             print_chars();
         } else {
             printf("received interrupt from unexpected source");
@@ -138,6 +163,10 @@ void* interrupt_loop(void* arg)
     return NULL;
 }
 
+/** @brief Choose a serial driver port based on the arguments to main
+ *  @param com The communication port
+ *  @return -1 on failure. Zero otherwise
+ **/
 int setup_serial_driver(char* com)
 {
     if (strcmp(com, "COM1") == 0) {
@@ -151,6 +180,7 @@ int setup_serial_driver(char* com)
         serial_driver.keyboard_id = UDR_DEV_COM2;
         serial_driver.com_port = COM2_IO_BASE;
     } else if (strcmp(com, "COM3") == 0) {
+
         serial_driver.read_id = UDR_COM3_READLINE_SERVER;
         serial_driver.print_id = UDR_COM3_PRINT_SERVER;
         serial_driver.keyboard_id = UDR_DEV_COM3;
@@ -167,6 +197,12 @@ int setup_serial_driver(char* com)
     return 0;
 }
 
+/** @brief The main loop for the print server. Repeatedly services clients
+ *         and sends their messages to the serial driver
+ *
+ *  @param arg Unused
+ *  @return -1 on failure
+ **/
 void* print_server(void* arg)
 {
     ipc_state_t* state;
@@ -191,6 +227,11 @@ void* print_server(void* arg)
     // Should never get here
 }
 
+/** @brief Send the cliend a message indicating that readline failed
+ *
+ *  @param sender The client to respond to
+ *  @return void
+ **/
 void respond_failure(driv_id_t sender)
 {
     request_msg_t req;
@@ -198,6 +239,11 @@ void respond_failure(driv_id_t sender)
     udriv_send(sender, req.raw, sizeof(request_msg_t));
 }
 
+/** @brief The main loop for the readline server. Repeatedly services clients
+ *         getting lines from the serial driver
+ *
+ *  @return -1 on failure
+ **/
 int readline_server()
 {
     ipc_state_t* state;
@@ -234,6 +280,11 @@ int readline_server()
     return -1;
 }
 
+/** @brief Entrypoint of program. Forks and starts several servers
+ *  @param argc The number of parameters passed by exec
+ *  @param argv The arguments to the program.
+ *  @return -1 on failure
+ **/
 int main(int argc, char** argv)
 {
     int pid;
