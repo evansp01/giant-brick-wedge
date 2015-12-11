@@ -14,16 +14,28 @@ are also kept in an interrupt table, which allows a universal handler to queue
 interrupts for all the necessary devices whenever an interrupt occurs on that
 IDT slot.
 
-Reg/dereg
+Universal handlers are installed in IDT slots based on the specifications
+provided in the udriv table. These universal handlers run whenever an interrupt
+occurs, and queue interrupts for the devices which are registered to the IDT
+slot which have owners.
 
-Dealing with interrupts
+Upon registration, the device/server entry is added to the calling thread's
+list. The thread can also specify a port and the number of bytes to retrieve
+when an interrupt occurs. This information is stored within the device/server
+entry for the universal handler to use when an interrupt occurs.
 
-No need for locks
-
+We ensure that locks are not used within the universal interrupt handler. We use
+a lock for accesses to the global hash table, as well as for individual device
+& server entries, to ensure that synchronization issues do not occur when
+multiple user threads attempt to interact with the same devices/servers
+simultaneously.
 
 Readline
 ========
-
+We moved the bulk of our kernel readline into user space to implement the
+readline server. We use two threads in our implementation, one to continuously
+process requests from clients, and the other to handle interrupts in a manner
+similar to our p3 keyboard driver.
 
 Serial Print
 ============
